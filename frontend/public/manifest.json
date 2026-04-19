@@ -1,0 +1,17 @@
+{
+  "name": "POS Matrix",
+  "short_name": "POSMatrix",
+  "description": "Premium Retail Management System",
+  "start_url": "/backoffice",
+  "display": "standalone",
+  "background_color": "#FCF9EA",
+  "theme_color": "#E9762B",
+  "orientation": "portrait",
+  "icons": [
+    {
+      "src": "/favicon.ico",
+      "sizes": "64x64 32x32 24x24 16x16",
+      "type": "image/x-icon"
+    }
+  ]
+}

@@ -1,0 +1,199 @@
+/* Modern Native-App style Sign In Page */
+
+.login-container {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, #FCF9EA 0%, #F5F0D5 100%);
+  padding: 1.5rem;
+  transition: background 0.5s ease;
+}
+
+.login-card {
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(10px);
+  width: 100%;
+  max-width: 420px;
+  padding: 3rem;
+  border-radius: 24px;
+  box-shadow: 0 20px 50px rgba(44, 24, 16, 0.08);
+  animation: cardEntrance 0.8s cubic-bezier(0.16, 1, 0.3, 1);
+  border: 1px solid rgba(232, 228, 216, 0.5);
+  position: relative;
+  z-index: 2;
+}
+
+@keyframes cardEntrance {
+  from { opacity: 0; transform: translateY(30px) scale(0.98); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+.login-brand-section {
+  text-align: center;
+  margin-bottom: 2.5rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.brand-icon-wrapper {
+  width: 64px;
+  height: 64px;
+  background-color: #E9762B;
+  border-radius: 18px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  margin-bottom: 1rem;
+  box-shadow: 0 10px 20px rgba(233, 118, 43, 0.2);
+}
+
+.login-header {
+  margin-bottom: 2rem;
+  text-align: center;
+}
+
+.login-title {
+  font-size: 1.85rem;
+  font-weight: 800;
+  color: #2c1810;
+  letter-spacing: -0.02em;
+  margin-bottom: 0.5rem;
+}
+
+.login-subtitle {
+  color: #5d4037;
+  font-size: 0.95rem;
+  opacity: 0.8;
+}
+
+.form-group {
+  margin-bottom: 1.5rem;
+}
+
+.form-label {
+  display: block;
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: #2c1810;
+  margin-bottom: 0.6rem;
+  margin-left: 4px;
+}
+
+.form-input {
+  width: 100%;
+  padding: 0.875rem 1rem;
+  background-color: #fcfcfc;
+  border: 1.5px solid #e8e4d8;
+  border-radius: 14px;
+  font-size: 1rem;
+  color: #2c1810;
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  outline: none;
+}
+
+.form-input:focus {
+  border-color: #E9762B;
+  background-color: #ffffff;
+  box-shadow: 0 0 0 4px rgba(233, 118, 43, 0.1);
+}
+
+.login-button {
+  width: 100%;
+  padding: 1rem;
+  background-color: #E9762B;
+  color: white;
+  border: none;
+  border-radius: 16px;
+  font-size: 1rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  margin-top: 1.5rem;
+  box-shadow: 0 8px 20px rgba(233, 118, 43, 0.25);
+}
+
+.login-button:hover {
+  background-color: #d35400;
+  transform: translateY(-2px);
+  box-shadow: 0 12px 25px rgba(233, 118, 43, 0.35);
+}
+
+.login-button:active {
+  transform: translateY(0);
+}
+
+.login-button:disabled {
+  background-color: #ccc;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
+}
+
+.login-footer {
+  margin-top: 2.5rem;
+  text-align: center;
+  font-size: 0.9rem;
+  color: #5d4037;
+}
+
+.login-footer a {
+  color: #E9762B;
+  font-weight: 700;
+  text-decoration: none;
+  margin-left: 4px;
+}
+
+/* Mobile-First Immersive View */
+@media (max-width: 480px) {
+  .login-container {
+    background: linear-gradient(135deg, #E9762B 0%, #D35400 100%);
+    padding: 0;
+    justify-content: flex-end; /* Push card to bottom like a sheet */
+  }
+
+  .login-card {
+    max-width: none;
+    padding: 2.5rem 2rem 3rem 2rem;
+    border-radius: 32px 32px 0 0; /* Bottom sheet style */
+    box-shadow: 0 -10px 40px rgba(0,0,0,0.1);
+    border: none;
+    animation: slideInFromBottom 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+
+  @keyframes slideInFromBottom {
+    from { transform: translateY(100%); }
+    to { transform: translateY(0); }
+  }
+
+  .login-brand-section {
+    position: fixed;
+    top: 10vh;
+    left: 0;
+    right: 0;
+    margin-bottom: 0;
+    color: white;
+    z-index: 1;
+  }
+
+  .brand-icon-wrapper {
+    background: white;
+    color: #E9762B;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.15);
+  }
+  
+  .login-title {
+    font-size: 1.65rem;
+  }
+
+  .mobile-brand-title {
+    color: white;
+    font-weight: 800;
+    font-size: 1.5rem;
+    letter-spacing: 0.05em;
+    margin-top: 0.5rem;
+  }
+}

@@ -1,0 +1,82 @@
+version: '3.8'
+
+services:
+  db:
+    container_name: pos_db
+    image: postgres:15-alpine
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./backend/db-init:/docker-entrypoint-initdb.d
+    environment:
+      - POSTGRES_DB=${POSTGRES_DB:-posdb}
+      - POSTGRES_USER=${POSTGRES_USER:-posuser}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-pospassword}
+    ports:
+      - "5432:5432"
+    networks:
+      - pos_network
+
+  redis:
+    container_name: pos_redis
+    image: redis:7-alpine
+    restart: always
+    ports:
+      - "6379:6379"
+    networks:
+      - pos_network
+
+  web:
+    container_name: pos_backend
+    image: pos_backend:latest
+    build: 
+      context: ./backend
+      dockerfile: Dockerfile
+    # command: python manage.py runserver 0.0.0.0:8000
+    volumes:
+      - ./backend:/app
+    ports:
+      - "8000:8000"
+    env_file:
+      - ./backend/.env
+    depends_on:
+      - db
+    networks:
+      - pos_network
+
+  adminer:
+    container_name: pos_adminer
+    image: adminer
+    profiles:
+      - tools
+    ports:
+      - "8080:8080"
+    depends_on:
+      - db
+    networks:
+      - pos_network
+
+  frontend:
+    image: pos_frontend:latest
+    container_name: pos_frontend
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+      - /app/.next
+    environment:
+      - NODE_ENV=development
+    depends_on:
+      - web
+    networks:
+      - pos_network
+
+volumes:
+  postgres_data:
+
+networks:
+  pos_network:
+    driver: bridge
