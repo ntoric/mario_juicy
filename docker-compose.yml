@@ -73,6 +73,8 @@ services:
       - web
     networks:
       - pos_network
+    profiles:
+      - frontend
 
 volumes:
   postgres_data:
