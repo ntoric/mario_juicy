@@ -100,7 +100,7 @@ export function useAuth() {
 
   const hasPermission = (permission: string) => {
     if (!user) return false;
-    if (user.primary_role === 'SUPER_ADMIN') return true;
+    if (user.primary_role === 'SUPER_ADMIN' || user.primary_role === 'ADMIN') return true;
     
     return user.permissions.includes(permission) || user.permissions.includes(`users.${permission}`);
   };

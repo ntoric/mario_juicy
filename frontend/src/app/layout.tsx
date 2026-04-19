@@ -35,7 +35,7 @@ export default function RootLayout({
         <link rel="manifest" href="/manifest.json" />
       </head>
       <body>
-        <Toaster position="top-right" richColors />
+        <Toaster position="top-center" richColors expand />
         {children}
       </body>
     </html>

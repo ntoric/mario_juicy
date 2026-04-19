@@ -60,6 +60,7 @@ export default function UserModal({
   });
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const [stores, setStores] = useState<Store[]>([]);
 
   useEffect(() => {
@@ -90,6 +91,7 @@ export default function UserModal({
       });
     }
     setShowPassword(false);
+    setError(null);
   }, [mode, user, open]);
 
   const getAvailableRoles = () => {
@@ -102,7 +104,7 @@ export default function UserModal({
     }
     
     if (role === "ADMIN") {
-      return ALL_ROLES.filter(r => r.value !== "SUPER_ADMIN");
+      return ALL_ROLES.filter(r => !["SUPER_ADMIN", "ADMIN"].includes(r.value));
     }
     
     if (role === "MANAGER") {
@@ -127,8 +129,9 @@ export default function UserModal({
       
       await onSubmit(submissionData);
       onClose();
-    } catch (error) {
-      console.error("Failed to submit user:", error);
+    } catch (err: any) {
+      console.error("Failed to submit user:", err);
+      setError(err.message || "An unexpected error occurred. Please try again.");
     } finally {
       setLoading(false);
     }
@@ -148,6 +151,13 @@ export default function UserModal({
         {mode === "create" ? "Add New User" : "Edit User"}
       </DialogTitle>
       <DialogContent sx={{ py: 2 }}>
+        {error && (
+          <Box sx={{ mb: 3, p: 2, bgcolor: "#fff4f4", borderRadius: 2, border: "1px solid #ffebeb" }}>
+            <Typography variant="body2" color="error" sx={{ fontWeight: 600 }}>
+              {error}
+            </Typography>
+          </Box>
+        )}
         <Box sx={{ display: "flex", flexDirection: "column", gap: 3, mt: 1 }}>
           <TextField
             fullWidth

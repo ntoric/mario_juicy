@@ -10,9 +10,9 @@ import {
   IconButton,
   CircularProgress,
   Alert,
-  Snackbar,
   InputAdornment,
 } from "@mui/material";
+import { toast } from 'sonner';
 import {
   Add as AddIcon,
   Refresh as RefreshIcon,
@@ -42,12 +42,7 @@ export default function UsersPage() {
   const [openDeleteDialog, setOpenDeleteDialog] = useState(false);
   const [userToDelete, setUserToDelete] = useState<User | null>(null);
 
-  // Snackbar state
-  const [snackbar, setSnackbar] = useState({
-    open: false,
-    message: "",
-    severity: "success" as "success" | "error",
-  });
+
 
   const fetchUsers = useCallback(async () => {
     setLoading(true);
@@ -107,9 +102,9 @@ export default function UsersPage() {
       try {
         const updated = await userService.toggleStatus(userForStatusChange.id, userForStatusChange.is_active);
         setUsers(users.map(u => u.id === updated.id ? updated : u));
-        showSnackbar(`User ${updated.is_active ? 'enabled' : 'disabled'} successfully`);
+        toast.success(`User ${updated.is_active ? 'enabled' : 'disabled'} successfully`);
       } catch (err: any) {
-        showSnackbar(err.message || "Failed to update status", "error");
+        toast.error(err.message || "Failed to update status");
       } finally {
         setOpenStatusDialog(false);
         setUserForStatusChange(null);
@@ -122,9 +117,9 @@ export default function UsersPage() {
       try {
         await userService.deleteUser(userToDelete.id);
         setUsers(users.filter((u) => u.id !== userToDelete.id));
-        showSnackbar("User deleted successfully");
+        toast.success("User deleted successfully");
       } catch (err: any) {
-        showSnackbar(err.message || "Failed to delete user", "error");
+        toast.error(err.message || "Failed to delete user");
       } finally {
         setOpenDeleteDialog(false);
         setUserToDelete(null);
@@ -136,21 +131,19 @@ export default function UsersPage() {
     try {
       if (modalMode === "create") {
         await userService.createUser(userData);
-        showSnackbar("User created successfully");
+        toast.success("User created successfully");
       } else if (currentUser) {
         await userService.updateUser(currentUser.id, userData);
-        showSnackbar("User updated successfully");
+        toast.success("User updated successfully");
       }
       fetchUsers();
     } catch (err: any) {
-      showSnackbar(err.message || "Operation failed", "error");
+      toast.error(err.message || "Operation failed");
       throw err;
     }
   };
 
-  const showSnackbar = (message: string, severity: "success" | "error" = "success") => {
-    setSnackbar({ open: true, message, severity });
-  };
+
 
   return (
     <Box sx={{ p: { xs: 2, md: 3 }, maxWidth: 1200, mx: 'auto' }}>
@@ -258,21 +251,6 @@ export default function UsersPage() {
         confirmText={userForStatusChange?.is_active ? "Disable" : "Enable"}
         confirmColor={userForStatusChange?.is_active ? "warning" : "success"}
       />
-
-      <Snackbar
-        open={snackbar.open}
-        autoHideDuration={4000}
-        onClose={() => setSnackbar({ ...snackbar, open: false })}
-        anchorOrigin={{ vertical: "bottom", horizontal: "right" }}
-      >
-        <Alert
-          onClose={() => setSnackbar({ ...snackbar, open: false })}
-          severity={snackbar.severity}
-          sx={{ width: "100%", boxShadow: '0 4px 12px rgba(0,0,0,0.1)', borderRadius: 2, fontWeight: 500 }}
-        >
-          {snackbar.message}
-        </Alert>
-      </Snackbar>
     </Box>
   );
 }

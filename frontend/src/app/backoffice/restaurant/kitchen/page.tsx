@@ -262,6 +262,7 @@ export default function KitchenDisplayPage() {
       setLoading(false);
       return;
     }
+    if (items.length === 0) setLoading(true);
     try {
       const data = await restaurantService.getKitchenItems();
       setItems(data);
@@ -270,7 +271,7 @@ export default function KitchenDisplayPage() {
     } catch (e: any) {
       setError(e.message || 'Failed to load');
     } finally { setLoading(false); }
-  }, [canViewKDS]);
+  }, [canViewKDS, items.length]);
 
   useEffect(() => {
     fetchItems();
@@ -344,7 +345,7 @@ export default function KitchenDisplayPage() {
   const orderedCount = items.filter(i => i.status === 'AWAITING' || i.status === 'ORDERED').length;
 
   return (
-    <Box sx={{ height: "100%", display: "flex", flexDirection: "column", p: { xs: 2, md: 4 }, bgcolor: '#FCF9EA', overflow: "hidden" }}>
+    <Box sx={{ height: { xs: 'auto', md: '100%' }, display: "flex", flexDirection: "column", p: { xs: 2, md: 4 }, bgcolor: '#FCF9EA', overflow: { xs: 'visible', md: 'hidden' } }}>
       <Box sx={{ 
         mb: 4, 
         display: { xs: 'none', md: 'flex' }, 
@@ -401,7 +402,7 @@ export default function KitchenDisplayPage() {
         </Grid>
       )}
 
-      <Box sx={{ flexGrow: 1, overflowY: "auto", minHeight: 0 }}>
+      <Box sx={{ flexGrow: { xs: 0, md: 1 }, overflowY: { xs: 'visible', md: 'auto' }, minHeight: 0 }}>
       {loading && items.length === 0 ? (
         <Box sx={{ textAlign: 'center', py: 10 }}><CircularProgress /></Box>
       ) : grouped.length === 0 ? (

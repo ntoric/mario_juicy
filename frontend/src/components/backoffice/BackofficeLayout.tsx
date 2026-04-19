@@ -95,6 +95,11 @@ const DrawerHeader = styled("div")(({ theme }) => ({
   justifyContent: "flex-end",
   padding: theme.spacing(0, 1),
   ...theme.mixins.toolbar,
+  // Add safe area support for mobile
+  minHeight: `calc(${theme.mixins.toolbar.minHeight}px + env(safe-area-inset-top, 0px))`,
+  [theme.breakpoints.up('sm')]: {
+    minHeight: `calc(${theme.mixins.toolbar.minHeight}px + env(safe-area-inset-top, 0px))`,
+  }
 }));
 
 interface AppBarProps extends MuiAppBarProps {
@@ -113,6 +118,10 @@ const AppBar = styled(MuiAppBar, {
   color: "white",
   boxShadow: "none",
   borderBottom: "none",
+  paddingTop: "env(safe-area-inset-top, 0px)",
+  "& .MuiToolbar-root": {
+    minHeight: theme.mixins.toolbar.minHeight,
+  },
   [theme.breakpoints.up("md")]: {
     ...(open && {
       marginLeft: drawerWidth,
@@ -498,7 +507,7 @@ export default function BackofficeLayout({ children }: { children: React.ReactNo
   );
 
   return (
-    <Box sx={{ display: "flex", height: "100vh", overflow: "hidden" }}>
+    <Box sx={{ display: "flex", height: "100dvh", overflow: "hidden" }}>
       <CssBaseline />
       <AppBar position="fixed" open={open}>
         <Toolbar>
@@ -708,7 +717,7 @@ export default function BackofficeLayout({ children }: { children: React.ReactNo
           width: "100%",
           display: "flex",
           flexDirection: "column",
-          pb: isMobile ? 7 : 0 // space for bottom navigation
+          pb: isMobile ? 'calc(100px + env(safe-area-inset-bottom, 0px))' : 0 // space for bottom navigation + extra safe buffer
         }}>
           {children}
         </Box>

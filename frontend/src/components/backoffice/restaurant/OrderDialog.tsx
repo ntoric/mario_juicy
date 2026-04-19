@@ -70,6 +70,7 @@ import {
   Download as DownloadIcon, 
   Visibility as PreviewIcon,
 } from '@mui/icons-material';
+import { getImageUrl } from '@/lib/getImageUrl';
 import ReactDOM from 'react-dom';
 
 const DINE_IN_STATUS_FLOW: Order['status'][] = [
@@ -170,6 +171,27 @@ const OrderDialog: React.FC<OrderDialogProps> = ({ open, onClose, table, initial
     }
 
   }, [open, table, initialOrder]);
+
+  // Auto-collapse order details and totals when keyboard is opened on mobile
+  useEffect(() => {
+    if (!isMobile || typeof window === 'undefined' || !window.visualViewport) return;
+
+    const handleViewportResize = () => {
+      if (!window.visualViewport) return;
+      
+      // If viewport height decreases significantly (keyboard open), collapse sections
+      const isKeyboardOpen = window.visualViewport.height < window.innerHeight * 0.75;
+      if (isKeyboardOpen) {
+        setSummaryExpanded(false);
+        setTotalsExpanded(false);
+      }
+    };
+
+    const viewport = window.visualViewport;
+    viewport.addEventListener('resize', handleViewportResize);
+    return () => viewport.removeEventListener('resize', handleViewportResize);
+  }, [isMobile]);
+
 
   const renderContent = () => {
     // Show error alert at the top of the content area if present
@@ -450,7 +472,7 @@ const OrderDialog: React.FC<OrderDialogProps> = ({ open, onClose, table, initial
                           <Box
                             sx={{
                               height: 100,
-                              backgroundImage: `url(${item.image})`,
+                              backgroundImage: `url(${getImageUrl(item.image)})`,
                               backgroundSize: 'cover',
                               backgroundPosition: 'center',
                               borderBottom: '1px solid #e8e4d8'

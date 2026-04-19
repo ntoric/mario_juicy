@@ -34,6 +34,7 @@ import {
   ListItemText,
   Chip,
 } from "@mui/material";
+import { toast } from 'sonner';
 import {
   Add as AddIcon,
   Edit as EditIcon,
@@ -47,6 +48,7 @@ import {
 } from "@mui/icons-material";
 import { categoryService, Category } from "@/services/categoryService";
 import { useAuth } from "@/hooks/useAuth";
+import { getImageUrl } from "@/lib/getImageUrl";
 
 export default function CategoryPage() {
   const { hasPermission } = useAuth();
@@ -78,12 +80,7 @@ export default function CategoryPage() {
   const [rowMenuAnchorEl, setRowMenuAnchorEl] = useState<null | HTMLElement>(null);
   const [rowMenuActiveCategory, setRowMenuActiveCategory] = useState<Category | null>(null);
 
-  // Snackbar states
-  const [snackbar, setSnackbar] = useState({
-    open: false,
-    message: "",
-    severity: "success" as "success" | "error",
-  });
+
 
   const fetchCategories = useCallback(async () => {
     setLoading(true);
@@ -159,7 +156,7 @@ export default function CategoryPage() {
 
   const handleSubmit = async () => {
     if (!formData.name.trim()) {
-      setSnackbar({ open: true, message: "Name is required", severity: "error" });
+      toast.error("Name is required");
       return;
     }
 
@@ -173,27 +170,25 @@ export default function CategoryPage() {
     try {
       if (dialogMode === "create") {
         await categoryService.createCategory(data);
-        setSnackbar({ open: true, message: "Category created successfully", severity: "success" });
+        toast.success("Category created successfully");
       } else if (currentCategory) {
         await categoryService.updateCategory(currentCategory.id, data);
-        setSnackbar({ open: true, message: "Category updated successfully", severity: "success" });
+        toast.success("Category updated successfully");
       }
       handleCloseDialog();
       fetchCategories();
     } catch (err: any) {
-      setSnackbar({ open: true, message: err.message || "Operation failed", severity: "error" });
+      toast.error(err.message || "Operation failed");
     }
   };
 
   const handleToggleStatus = async (category: Category) => {
     try {
       await categoryService.toggleStatus(category.id);
-      setCategories(categories.map(c => 
-        c.id === category.id ? { ...c, is_enabled: !c.is_enabled } : c
-      ));
-      setSnackbar({ open: true, message: `Category ${!category.is_enabled ? 'enabled' : 'disabled'} successfully`, severity: "success" });
+      fetchCategories();
+      toast.success(`Category ${!category.is_enabled ? 'enabled' : 'disabled'} successfully`);
     } catch (err: any) {
-      setSnackbar({ open: true, message: err.message || "Failed to toggle status", severity: "error" });
+      toast.error(err.message || "Failed to toggle status");
     }
   };
 
@@ -201,10 +196,10 @@ export default function CategoryPage() {
     if (deleteId) {
       try {
         await categoryService.deleteCategory(deleteId);
-        setCategories(categories.filter((c) => c.id !== deleteId));
-        setSnackbar({ open: true, message: "Category deleted successfully", severity: "success" });
+        fetchCategories();
+        toast.success("Category deleted successfully");
       } catch (err: any) {
-        setSnackbar({ open: true, message: err.message || "Failed to delete category", severity: "error" });
+        toast.error(err.message || "Failed to delete category");
       } finally {
         setOpenDeleteDialog(false);
         setDeleteId(null);
@@ -223,7 +218,7 @@ export default function CategoryPage() {
     <Box sx={{ p: { xs: 2, md: 3 } }}>
       <Box sx={{ 
         mb: 4, 
-        display: { xs: 'none', md: 'flex' }, 
+        display: 'flex', 
         justifyContent: "space-between", 
         alignItems: { xs: "flex-start", sm: "center" }, 
         flexWrap: "wrap", 
@@ -303,7 +298,7 @@ export default function CategoryPage() {
                   <TableRow key={category.id} hover>
                     <TableCell>
                       <Avatar
-                        src={category.image || ""}
+                        src={getImageUrl(category.image)}
                         variant="rounded"
                         sx={{ width: 48, height: 48, bgcolor: "#FCF9EA", border: "1px solid #e8e4d8" }}
                       >
@@ -397,7 +392,7 @@ export default function CategoryPage() {
               </InputLabel>
               <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
                 <Avatar
-                  src={imagePreview || ""}
+                  src={getImageUrl(imagePreview)}
                   variant="rounded"
                   sx={{ width: 80, height: 80, bgcolor: "#FCF9EA", border: "1px dashed #e8e4d8" }}
                 >
@@ -462,21 +457,7 @@ export default function CategoryPage() {
         </DialogActions>
       </Dialog>
 
-      {/* Feedback Snackbar */}
-      <Snackbar
-        open={snackbar.open}
-        autoHideDuration={4000}
-        onClose={() => setSnackbar({ ...snackbar, open: false })}
-        anchorOrigin={{ vertical: "bottom", horizontal: "right" }}
-      >
-        <Alert
-          onClose={() => setSnackbar({ ...snackbar, open: false })}
-          severity={snackbar.severity}
-          sx={{ width: "100%", boxShadow: 3 }}
-        >
-          {snackbar.message}
-        </Alert>
-      </Snackbar>
+
 
       {/* Row Actions Menu (Mobile/Tablet) */}
       <Menu

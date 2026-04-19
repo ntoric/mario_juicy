@@ -35,6 +35,7 @@ import {
   ToggleOff as ToggleOffIcon,
 } from "@mui/icons-material";
 import { Item } from "@/services/itemService";
+import { getImageUrl } from "@/lib/getImageUrl";
 
 interface ItemTableProps {
   items: Item[];
@@ -105,7 +106,7 @@ export default function ItemTable({
               >
                 <Box sx={{ display: 'flex', position: 'relative' }}>
                   <Avatar
-                    src={item.image || ""}
+                    src={getImageUrl(item.image)}
                     variant="square"
                     sx={{ width: 100, height: 100, bgcolor: "#FCF9EA" }}
                   >
@@ -226,7 +227,7 @@ export default function ItemTable({
             >
               <TableCell>
                 <Avatar
-                  src={item.image || ""}
+                  src={getImageUrl(item.image)}
                   variant="rounded"
                   sx={{ width: 48, height: 48, bgcolor: "#FCF9EA", border: "1px solid #e8e4d8" }}
                 >

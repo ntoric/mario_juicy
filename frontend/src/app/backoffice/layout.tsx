@@ -23,19 +23,21 @@ export default function BackofficeRouteLayout({
 }) {
   const router = useRouter();
   const pathname = usePathname();
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(() => {
+    return typeof window !== 'undefined' ? !isAuthenticated() : true;
+  });
 
   useEffect(() => {
     const checkAuth = () => {
       if (!isAuthenticated()) {
-        router.push("/login");
+        router.replace("/login");
       } else {
         setLoading(false);
       }
     };
 
     checkAuth();
-  }, [router, pathname]);
+  }, [router]);
 
   if (loading) {
     return (

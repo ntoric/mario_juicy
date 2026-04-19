@@ -59,6 +59,8 @@
 
 html, body {
   height: 100vh;
+  margin: 0;
+  padding: 0;
   overflow: hidden;
   /* Prevent pull-to-refresh on mobile if desired, or keep for native-like feel */
   overscroll-behavior-y: none;

@@ -25,10 +25,17 @@ class UserViewSet(viewsets.ModelViewSet):
         if not creator.is_super_admin:
             if target_role == 'SUPER_ADMIN':
                 raise permissions.exceptions.PermissionDenied("Only Super Admins can create Super Admins")
-            if target_role == 'ADMIN' and not creator.is_super_admin:
-                raise permissions.exceptions.PermissionDenied("Only Super Admins can create Admins")
-            if creator.is_manager and target_role not in ['CASHIER', 'STAFF']:
-                 raise permissions.exceptions.PermissionDenied("Managers can only create Cashiers or Staff")
+            if target_role == 'ADMIN':
+                raise permissions.exceptions.PermissionDenied("Only Super Admins can create Administrators")
+            
+            if creator.is_admin:
+                if target_role not in ['MANAGER', 'CASHIER', 'STAFF']:
+                    raise permissions.exceptions.PermissionDenied("Administrators can only create Managers, Cashiers or Staff")
+            elif creator.is_manager:
+                if target_role not in ['CASHIER', 'STAFF']:
+                    raise permissions.exceptions.PermissionDenied("Managers can only create Cashiers or Staff")
+            else:
+                raise permissions.exceptions.PermissionDenied("You do not have permission to create users")
         
         if not creator.is_super_admin and creator.store:
             # Non-superadmins can only create users for their own store

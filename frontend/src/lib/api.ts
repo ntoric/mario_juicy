@@ -1,4 +1,4 @@
-const BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api';
+const BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'https://mario-api.ntoric.com/api';
 
 /**
  * Raw fetch wrapper to handle headers and logging

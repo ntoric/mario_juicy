@@ -22,6 +22,7 @@ import {
   AttachMoney as MoneyIcon,
 } from "@mui/icons-material";
 import { Item } from "@/services/itemService";
+import { getImageUrl } from "@/lib/getImageUrl";
 
 interface ItemDetailDialogProps {
   open: boolean;
@@ -66,7 +67,7 @@ export default function ItemDetailDialog({
         <Box sx={{ height: 200, bgcolor: "#FCF9EA", display: "flex", alignItems: "center", justifyContent: "center", overflow: "hidden" }}>
           {item.image ? (
             <img
-              src={item.image}
+              src={getImageUrl(item.image)}
               alt={item.name}
               style={{ width: "100%", height: "100%", objectFit: "cover" }}
             />

@@ -146,7 +146,7 @@ export default function BillingPage() {
   const cancelledOrders = filteredOrders.filter(o => o.status === 'CANCELLED');
 
   return (
-    <Box sx={{ height: "100%", display: "flex", flexDirection: "column", p: { xs: 2, md: 3 }, overflow: "hidden" }}>
+    <Box sx={{ height: { xs: 'auto', md: '100%' }, display: "flex", flexDirection: "column", p: { xs: 2, md: 3 }, overflow: { xs: 'visible', md: 'hidden' } }}>
       <Box sx={{ 
         mb: 4, 
         display: { xs: 'none', md: 'flex' }, 
@@ -496,7 +496,7 @@ export default function BillingPage() {
 
         {/* Card View for Mobile */}
         {isMobile && (
-          <Box sx={{ flexGrow: 1, overflowY: 'auto', p: 2 }}>
+          <Box sx={{ flexGrow: { xs: 0, md: 1 }, overflowY: { xs: 'visible', md: 'auto' }, p: 2, minHeight: 0 }}>
             {loading ? (
               <Box sx={{ display: 'flex', justifyContent: 'center', py: 5 }}>
                 <CircularProgress size={32} />

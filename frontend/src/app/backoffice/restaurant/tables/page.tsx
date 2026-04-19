@@ -125,14 +125,14 @@ export default function TableMapPage() {
   const [editOpen, setEditOpen] = useState(false);
 
   const fetchTables = useCallback(async () => {
-    setLoading(true);
+    if (tables.length === 0) setLoading(true);
     try {
       const data = await restaurantService.getTables();
       setTables(data);
       setError(null);
     } catch (e: any) { setError(e.message || 'Failed to load tables'); }
     finally { setLoading(false); }
-  }, []);
+  }, [tables.length]);
   
   const handleSyncAll = async () => {
     setSyncing(true);
@@ -202,7 +202,7 @@ export default function TableMapPage() {
   const visible = filterStatus ? tables.filter(t => t.status === filterStatus) : tables;
 
   return (
-    <Box sx={{ height: "100%", display: "flex", flexDirection: "column", p: { xs: 2, md: 3 }, overflow: "hidden" }}>
+    <Box sx={{ height: { xs: 'auto', md: '100%' }, display: "flex", flexDirection: "column", p: { xs: 2, md: 3 }, overflow: { xs: 'visible', md: 'hidden' } }}>
       <Box sx={{ 
         mb: 4, 
         display: { xs: 'none', md: 'flex' }, 
@@ -347,8 +347,8 @@ export default function TableMapPage() {
           gridTemplateColumns: 'repeat(auto-fill, minmax(75px, 1fr))',
           gap: 1,
           p: 1,
-          overflow: 'auto',
-          height: '100%'
+          overflow: { xs: 'visible', md: 'auto' },
+          height: { xs: 'auto', md: '100%' }
         } : { position: 'relative', width: '100%', height: '100%' }}>
           {visible.map(table => {
             const pos = pending[table.id] ?? { pos_x: table.pos_x, pos_y: table.pos_y };

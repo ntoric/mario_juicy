@@ -21,11 +21,17 @@ export default function RootPage() {
 
   useEffect(() => {
     // Check authentication status on the client side
-    if (isAuthenticated()) {
-      router.push("/backoffice");
-    } else {
-      router.push("/login");
-    }
+    // Added a small delay for Electron context stability
+    const redirect = () => {
+      if (isAuthenticated()) {
+        router.replace("/backoffice");
+      } else {
+        router.replace("/login");
+      }
+    };
+    
+    const timer = setTimeout(redirect, 100);
+    return () => clearTimeout(timer);
   }, [router]);
 
   return (

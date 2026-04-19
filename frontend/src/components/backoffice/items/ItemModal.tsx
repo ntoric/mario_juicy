@@ -21,6 +21,7 @@ import {
 import { Image as ImageIcon } from "@mui/icons-material";
 import { Item } from "@/services/itemService";
 import { categoryService, Category } from "@/services/categoryService";
+import { getImageUrl } from "@/lib/getImageUrl";
 
 interface ItemModalProps {
   open: boolean;
@@ -193,7 +194,7 @@ export default function ItemModal({
             </InputLabel>
             <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
               <Avatar
-                src={imagePreview || ""}
+                src={getImageUrl(imagePreview)}
                 variant="rounded"
                 sx={{ width: 100, height: 100, bgcolor: "#FCF9EA", border: "1px dashed #e8e4d8" }}
               >

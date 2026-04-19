@@ -9,8 +9,8 @@ import {
   TextField,
   IconButton,
   Alert,
-  Snackbar,
 } from "@mui/material";
+import { toast } from 'sonner';
 import {
   Add as AddIcon,
   Refresh as RefreshIcon,
@@ -48,12 +48,7 @@ export default function ItemsPage() {
   const [openDeleteDialog, setOpenDeleteDialog] = useState(false);
   const [itemToDelete, setItemToDelete] = useState<Item | null>(null);
 
-  // Snackbar state
-  const [snackbar, setSnackbar] = useState({
-    open: false,
-    message: "",
-    severity: "success" as "success" | "error",
-  });
+
 
   const fetchItems = useCallback(async () => {
     setLoading(true);
@@ -108,9 +103,9 @@ export default function ItemsPage() {
       setItems(items.map(i => 
         i.id === item.id ? { ...i, is_enabled: !i.is_enabled } : i
       ));
-      showSnackbar(`Item ${!item.is_enabled ? 'enabled' : 'disabled'} successfully`);
+      toast.success(`Item ${!item.is_enabled ? 'enabled' : 'disabled'} successfully`);
     } catch (err: any) {
-      showSnackbar(err.message || "Failed to toggle status", "error");
+      toast.error(err.message || "Failed to toggle status");
     }
   };
 
@@ -119,9 +114,9 @@ export default function ItemsPage() {
       try {
         await itemService.deleteItem(itemToDelete.id);
         setItems(items.filter((i) => i.id !== itemToDelete.id));
-        showSnackbar("Item deleted successfully");
+        toast.success("Item deleted successfully");
       } catch (err: any) {
-        showSnackbar(err.message || "Failed to delete item", "error");
+        toast.error(err.message || "Failed to delete item");
       } finally {
         setOpenDeleteDialog(false);
         setItemToDelete(null);
@@ -133,14 +128,14 @@ export default function ItemsPage() {
     try {
       if (modalMode === "create") {
         await itemService.createItem(formData);
-        showSnackbar("Item created successfully");
+        toast.success("Item created successfully");
       } else if (currentItem) {
         await itemService.updateItem(currentItem.id, formData);
-        showSnackbar("Item updated successfully");
+        toast.success("Item updated successfully");
       }
       fetchItems();
     } catch (err: any) {
-      showSnackbar(err.message || "Operation failed", "error");
+      toast.error(err.message || "Operation failed");
       throw err;
     }
   };
@@ -150,15 +145,13 @@ export default function ItemsPage() {
     setOpenDetailDialog(true);
   };
 
-  const showSnackbar = (message: string, severity: "success" | "error" = "success") => {
-    setSnackbar({ open: true, message, severity });
-  };
+
 
   return (
-    <Box sx={{ height: "100%", display: "flex", flexDirection: "column", p: { xs: 2, md: 3 }, overflow: "hidden" }}>
+    <Box sx={{ height: { xs: 'auto', md: '100%' }, display: "flex", flexDirection: "column", p: { xs: 2, md: 3 }, overflow: { xs: 'visible', md: 'hidden' } }}>
       <Box sx={{ 
         mb: 4, 
-        display: { xs: 'none', md: 'flex' }, 
+        display: 'flex', 
         justifyContent: "space-between", 
         alignItems: { xs: "flex-start", sm: "center" }, 
         gap: 2, 
@@ -212,7 +205,7 @@ export default function ItemsPage() {
           <Preloader fullScreen={false} size={80} message="Loading inventory..." />
         </Box>
       ) : (
-        <Box sx={{ flexGrow: 1, overflowY: "auto", minHeight: 0 }}>
+        <Box sx={{ flexGrow: { xs: 0, md: 1 }, overflowY: { xs: 'visible', md: 'auto' }, minHeight: 0 }}>
           <ItemTable 
             items={filteredItems} 
             onEdit={handleOpenEdit} 
@@ -245,20 +238,7 @@ export default function ItemsPage() {
         onConfirm={handleDeleteConfirm}
       />
 
-      <Snackbar
-        open={snackbar.open}
-        autoHideDuration={4000}
-        onClose={() => setSnackbar({ ...snackbar, open: false })}
-        anchorOrigin={{ vertical: "bottom", horizontal: "right" }}
-      >
-        <Alert
-          onClose={() => setSnackbar({ ...snackbar, open: false })}
-          severity={snackbar.severity}
-          sx={{ width: "100%", boxShadow: 3 }}
-        >
-          {snackbar.message}
-        </Alert>
-      </Snackbar>
+
     </Box>
   );
 }
