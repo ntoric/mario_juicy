@@ -1,14 +1,13 @@
-# Use an official Python runtime as a parent image
-FROM python:3.9-slim
+# Use stable Python
+FROM python:3.11-slim-bookworm
 
-# Set environment variables
-ENV PYTHONDONTWRITEBYTECODE 1
-ENV PYTHONUNBUFFERED 1
+# Environment
+ENV PYTHONDONTWRITEBYTECODE=1
+ENV PYTHONUNBUFFERED=1
 
-# Set the working directory
 WORKDIR /app
 
-# Install system dependencies
+# System deps (optimized order for caching)
 RUN apt-get update && apt-get install -y \
     libpq-dev \
     gcc \
@@ -24,20 +23,16 @@ RUN apt-get update && apt-get install -y \
     shared-mime-info \
     && rm -rf /var/lib/apt/lists/*
 
-# Install Python dependencies
+# Install Python deps first (better caching)
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Copy the current directory contents into the container at /app
-COPY . /app/
+# Copy app
+COPY . .
 
-# Copy and set permissions for the entrypoint script
+# Entrypoint
 COPY scripts/docker-entrypoint.sh /usr/local/bin/
 RUN chmod +x /usr/local/bin/docker-entrypoint.sh
 
-# Expose port 8000
 EXPOSE 8000
-
-# Set the entrypoint
 ENTRYPOINT ["docker-entrypoint.sh"]
-
