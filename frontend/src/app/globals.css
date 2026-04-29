@@ -62,10 +62,35 @@ html, body {
   margin: 0;
   padding: 0;
   overflow: hidden;
-  /* Prevent pull-to-refresh on mobile if desired, or keep for native-like feel */
   overscroll-behavior-y: none;
   -webkit-tap-highlight-color: transparent;
-  user-select: none; /* Prevent text selection in UI elements for native feel */
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+/* Scrollbar Styling for Native App Feel */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(44, 24, 16, 0.1);
+  border-radius: 10px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(44, 24, 16, 0.2);
+}
+
+/* For Firefox */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(44, 24, 16, 0.1) transparent;
 }
 
 body {
@@ -183,4 +208,16 @@ body {
 .sidebar-item.active {
   background: var(--accent-primary);
   color: white;
+}
+
+/* Allow text selection only in specific areas for native feel */
+.allow-select, input, textarea, [contenteditable="true"] {
+  user-select: text !important;
+  -webkit-user-select: text !important;
+}
+
+/* Native-like focus states */
+:focus-visible {
+  outline: 2px solid var(--accent-primary);
+  outline-offset: 2px;
 }

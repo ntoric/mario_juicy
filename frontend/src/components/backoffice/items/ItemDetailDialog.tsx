@@ -12,6 +12,7 @@ import {
   Chip,
   Card,
   CardContent,
+  Button,
 } from "@mui/material";
 import {
   Close as CloseIcon,
@@ -28,12 +29,16 @@ interface ItemDetailDialogProps {
   open: boolean;
   item: Item | null;
   onClose: () => void;
+  onEdit?: (item: Item) => void;
+  canEdit?: boolean;
 }
 
 export default function ItemDetailDialog({
   open,
   item,
   onClose,
+  onEdit,
+  canEdit = true,
 }: ItemDetailDialogProps) {
   if (!item) return null;
 
@@ -45,7 +50,7 @@ export default function ItemDetailDialog({
       maxWidth="xs"
       slotProps={{
         paper: {
-            sx: { borderRadius: 3, overflow: "hidden" }
+            sx: { borderRadius: '7px', overflow: "hidden" }
         }
       }}
     >
@@ -77,7 +82,7 @@ export default function ItemDetailDialog({
         </Box>
 
         <DialogContent sx={{ mt: -3, position: "relative", px: 2, pb: 3 }}>
-          <Card elevation={4} sx={{ borderRadius: 3, border: "none" }}>
+          <Card elevation={4} sx={{ borderRadius: '7px', border: "none" }}>
             <CardContent>
               <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", mb: 2 }}>
                 <Box>
@@ -123,6 +128,18 @@ export default function ItemDetailDialog({
                 </Box>
               </Box>
 
+              {canEdit && onEdit && (
+                <Box sx={{ mt: 3 }}>
+                  <Button
+                    fullWidth
+                    variant="contained"
+                    onClick={() => onEdit(item)}
+                    sx={{ borderRadius: '7px' }}
+                  >
+                    Edit Item
+                  </Button>
+                </Box>
+              )}
               <Box sx={{ mt: 3, pt: 2, borderTop: "1px dashed #e8e4d8" }}>
                   <Typography variant="caption" color="text.disabled" sx={{ display: 'block' }}>
                     Created: {new Date(item.created_at).toLocaleString()}

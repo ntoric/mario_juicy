@@ -18,6 +18,7 @@ import {
   Tabs,
   useTheme,
   useMediaQuery,
+  alpha,
 } from '@mui/material';
 import {
   Refresh as RefreshIcon,
@@ -51,13 +52,13 @@ function OrderCard({ order, onClick, onDelete, showDelete }: { order: Order; onC
       sx={{
         cursor: 'pointer',
         transition: 'border-color 0.15s, box-shadow 0.15s, transform 0.1s',
-        borderRadius: '5px',
+        borderRadius: '7px',
         position: 'relative',
-        bgcolor: order.status === 'CANCELLED' ? '#fffafb' : 'white',
-        borderColor: order.status === 'CANCELLED' ? 'error.light' : 'divider',
+        bgcolor: order.status === 'CANCELLED' ? alpha(theme.palette.error.main, 0.02) : 'white',
+        borderColor: order.status === 'CANCELLED' ? alpha(theme.palette.error.main, 0.2) : 'divider',
         '&:hover': { 
           borderColor: order.status === 'CANCELLED' ? 'error.main' : 'primary.main', 
-          boxShadow: '0 4px 14px rgba(0,0,0,0.08)',
+          boxShadow: '0 8px 24px rgba(44, 24, 16, 0.06)',
           transform: 'translateY(-2px)'
         },
       }}
@@ -193,43 +194,54 @@ export default function LiveOrdersPage() {
   const filtered = orders.filter(TABS[tab].filter);
 
   return (
-    <Box sx={{ p: { xs: 2, md: 3 } }}>
+    <Box sx={{ p: { xs: 1.5, md: 2 } }}>
       <Box sx={{ 
-        mb: 4, 
-        display: { xs: 'none', md: 'flex' }, 
+        mb: 2, 
+        display: 'flex', 
         justifyContent: "space-between", 
-        alignItems: { xs: "flex-start", sm: "center" }, 
-        flexWrap: "wrap", 
+        alignItems: "center", 
         gap: 2, 
-        flexDirection: { xs: "column", sm: "row" } 
       }}>
-        <Box>
-          <Typography variant="h4" sx={{ fontWeight: 500, color: '#e9762b', fontSize: '1.5rem' }}>
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+          <Typography variant="h4" sx={{ fontWeight: 500, color: '#e9762b', fontSize: '1.25rem' }}>
             Live Orders
           </Typography>
         </Box>
-        <Stack direction="row" spacing={1} sx={{ width: { xs: '100%', sm: 'auto' } }}>
-          <Button 
-            variant="outlined" 
-            startIcon={<RefreshIcon />} 
-            onClick={fetchOrders} 
-            disabled={loading}
-            sx={{ borderRadius: 2, height: 48 }}
-          >
-            Refresh
-          </Button>
+        <Stack direction="row" spacing={1} sx={{ alignItems: 'center' }}>
+          {isMobile ? (
+            <IconButton onClick={fetchOrders} size="small" sx={{ color: 'primary.main', border: '1px solid', borderColor: 'divider', borderRadius: '7px' }}>
+              <RefreshIcon fontSize="small" />
+            </IconButton>
+          ) : (
+            <Tooltip title="Refresh Orders">
+              <Button 
+                variant="outlined" 
+                onClick={fetchOrders} 
+                disabled={loading}
+                sx={{ minWidth: 40, width: 40, height: 40, p: 0, borderRadius: '7px' }}
+              >
+                <RefreshIcon fontSize="small" />
+              </Button>
+            </Tooltip>
+          )}
         </Stack>
       </Box>
 
       {error && <Alert severity="error" sx={{ mb: 2 }} onClose={() => setError(null)}>{error}</Alert>}
 
-      <Paper sx={{ borderRadius: '5px' }}>
+      <Paper elevation={0} sx={{ borderRadius: '7px', border: '1px solid', borderColor: 'divider', overflow: 'hidden' }}>
         <Tabs
           value={tab}
           onChange={(_, v) => setTab(v)}
           variant="scrollable"
           scrollButtons="auto"
-          sx={{ borderBottom: '1px solid', borderColor: 'divider', minHeight: 44 }}
+          sx={{ 
+            bgcolor: alpha(theme.palette.primary.main, 0.03),
+            borderBottom: '1px solid', 
+            borderColor: 'divider', 
+            minHeight: 44,
+            '& .MuiTab-root': { fontWeight: 800, textTransform: 'none', minHeight: 44 }
+          }}
         >
           {TABS.map((t, i) => {
             const count = orders.filter(t.filter).length;

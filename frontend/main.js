@@ -1,16 +1,67 @@
-const { app, BrowserWindow, Menu, protocol, net } = require('electron');
+const { app, BrowserWindow, Menu, protocol, net, ipcMain } = require('electron');
 const path = require('path');
 const fs = require('fs');
+const { spawn } = require('child_process');
 
 const isDev = !app.isPackaged;
+let printerProcess = null;
+
+function startPrinterService() {
+  const binaryName = process.platform === 'win32' ? 'mario-printer.exe' : 'mario-printer';
+  
+  // In development, look in the sibling directory
+  // In production, electron-builder will put it in resources/bin
+  const printerPath = isDev 
+    ? path.join(__dirname, '..', 'mario-printer', binaryName)
+    : path.join(process.resourcesPath, 'bin', binaryName);
+
+  console.log('Starting printer service from:', printerPath);
+
+  if (fs.existsSync(printerPath)) {
+    try {
+      printerProcess = spawn(printerPath, [], {
+        stdio: 'inherit',
+        windowsHide: true,
+        // Ensure the process is killed when the main process exits
+        detached: false
+      });
+
+      printerProcess.on('error', (err) => {
+        console.error('Failed to start printer service:', err);
+      });
+
+      printerProcess.on('exit', (code) => {
+        console.log(`Printer service exited with code ${code}`);
+      });
+    } catch (err) {
+      console.error('Error spawning printer service:', err);
+    }
+  } else {
+    console.warn('Printer service binary not found at', printerPath);
+  }
+}
+
+function stopPrinterService() {
+  if (printerProcess) {
+    console.log('Stopping printer service...');
+    try {
+      printerProcess.kill();
+    } catch (err) {
+      console.error('Error killing printer service:', err);
+    }
+    printerProcess = null;
+  }
+}
 
 // Register the custom protocol as privileged
 protocol.registerSchemesAsPrivileged([
   { scheme: 'app', privileges: { standard: true, secure: true, supportFetchAPI: true } }
 ]);
 
+let mainWindow;
+
 function createWindow() {
-  const mainWindow = new BrowserWindow({
+  mainWindow = new BrowserWindow({
     width: 1200,
     height: 800,
     show: false,
@@ -51,6 +102,99 @@ function createWindow() {
   });
 }
 
+// IPC Handlers
+ipcMain.handle('get-printers', async () => {
+  return await mainWindow.webContents.getPrintersAsync();
+});
+
+ipcMain.handle('print-invoice', async (event, { html, printerName, paperSize }) => {
+  const isSmall = paperSize === '2_INCH';
+  
+  return new Promise((resolve, reject) => {
+    let workerWindow = new BrowserWindow({
+      show: false,
+      webPreferences: {
+        nodeIntegration: false
+      }
+    });
+
+    const fullHtml = `
+      <html>
+        <head>
+          <style>
+            @page { margin: 0; }
+            body, html { 
+              margin: 0 !important; 
+              padding: 0 !important; 
+              width: ${isSmall ? '58mm' : '80mm'} !important;
+              overflow: hidden;
+            }
+            * { -webkit-print-color-adjust: exact; }
+          </style>
+        </head>
+        <body>
+          ${html}
+        </body>
+      </html>
+    `;
+
+    workerWindow.loadURL(`data:text/html;charset=utf-8,${encodeURIComponent(fullHtml)}`);
+
+    workerWindow.webContents.on('did-finish-load', async () => {
+      try {
+        const printOptions = {
+          silent: true,
+          deviceName: printerName,
+          printBackground: true,
+          color: false,
+          margin: {
+            marginType: 'none'
+          },
+          pageSize: {
+            width: isSmall ? 58000 : 80000,
+            height: 250000 
+          }
+        };
+        await workerWindow.webContents.print(printOptions);
+        workerWindow.close();
+        event.sender.send('print-success');
+        resolve(true);
+      } catch (err) {
+        console.error('Printing failed:', err);
+        workerWindow.close();
+        event.sender.send('print-error', err.message);
+        reject(err);
+      }
+    });
+  });
+});
+
+ipcMain.handle('print-to-service', async (event, data) => {
+  try {
+    const response = await net.fetch('http://localhost:8085/print', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(data)
+    });
+    
+    if (response.ok) {
+      return { success: true };
+    } else {
+      const errorText = await response.text();
+      throw new Error(`Printer service error: ${errorText}`);
+    }
+  } catch (err) {
+    console.error('Failed to send print request to service:', err);
+    throw err;
+  }
+});
+
+ipcMain.on('quit-app', () => {
+  app.quit();
+});
+
 app.whenReady().then(() => {
   // Set up the custom protocol handler
   if (!isDev) {
@@ -88,13 +232,13 @@ app.whenReady().then(() => {
       }
 
       // 3. Fallback to main index.html for SPA client-side routing
-      // This is the safety net that prevents hanging on the preloader
       const mainIndexPath = path.join(__dirname, 'out', 'index.html');
       return net.fetch(`file://${mainIndexPath}`);
     });
   }
 
   createWindow();
+  startPrinterService();
 
   app.on('activate', function () {
     if (BrowserWindow.getAllWindows().length === 0) createWindow();
@@ -103,4 +247,8 @@ app.whenReady().then(() => {
 
 app.on('window-all-closed', function () {
   if (process.platform !== 'darwin') app.quit();
+});
+
+app.on('will-quit', () => {
+  stopPrinterService();
 });

@@ -9,5 +9,6 @@ class StoreSerializer(serializers.ModelSerializer):
             'location', 'fssai_lic_no', 'mobile', 'invoice_prefix', 'logo',
             'is_active', 'is_kitchen_step_enabled', 'is_take_away_enabled', 
             'is_reservations_enabled', 'thermal_printer_size',
+            'thermal_printer_name', 'thermal_printer_vendor_id', 'thermal_printer_product_id',
             'created_at', 'updated_at'
         ]

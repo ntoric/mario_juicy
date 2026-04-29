@@ -22,11 +22,13 @@ import {
   Alert,
   Tabs,
   Tab,
+  Tooltip,
   useMediaQuery,
   Grid,
   Card as MuiCard,
   CardContent,
-} from '@mui/material';
+  alpha,
+} from "@mui/material";
 import {
   Search as SearchIcon,
   Print as PrintIcon,
@@ -88,28 +90,94 @@ export default function BillingPage() {
     return () => window.removeEventListener('app-refresh', handleRefresh);
   }, [fetchData]);
 
-  const handlePrint = (invoice: any) => {
+  const handlePrint = async (invoice: any) => {
     setPrintingInvoice(invoice);
-    setTimeout(() => {
-      const printWindow = window.open('', '_blank', 'width=300,height=600');
-      if (!printWindow) return;
-
+    
+    // Give react time to render the printingInvoice in the hidden container
+    setTimeout(async () => {
       const invoiceEl = document.getElementById('thermal-invoice-container');
-      if (!invoiceEl) return;
-
-      printWindow.document.write('<html><head><title>Print Invoice</title>');
-      printWindow.document.write('<style>@media print { body { margin: 0; } }</style>');
-      printWindow.document.write('</head><body>');
-      printWindow.document.write(invoiceEl.innerHTML);
-      printWindow.document.write('</body></html>');
-      printWindow.document.close();
-      printWindow.focus();
-      setTimeout(() => {
-        printWindow.print();
-        printWindow.close();
+      if (!invoiceEl) {
         setPrintingInvoice(null);
-      }, 250);
+        return;
+      }
+
+      // TRY 1: Local Go Service (Port 8085) - Direct Fetch (Primary for Browser/Electron)
+      try {
+        const { mapToPrinterServiceData } = await import('@/utils/printerService');
+        const printData = mapToPrinterServiceData(invoice, invoice.items || []);
+        
+        const response = await fetch('http://localhost:8085/print', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(printData)
+        });
+
+        if (response.ok) {
+          setPrintingInvoice(null);
+          return;
+        }
+      } catch (e: any) {
+        console.warn("Direct fetch to printer service failed (service likely not running):", e);
+      }
+
+      // TRY 2: Electron API (Fallback)
+      if (typeof window !== 'undefined' && (window as any).api) {
+        const api = (window as any).api;
+
+        // Try local service via bridge
+        if (api.printToService) {
+          try {
+            const { mapToPrinterServiceData } = await import('@/utils/printerService');
+            const printData = mapToPrinterServiceData(invoice, invoice.items || []);
+            await api.printToService(printData);
+            setPrintingInvoice(null);
+            return;
+          } catch (e: any) {
+            console.error("Local service print via bridge failed:", e);
+          }
+        }
+
+        // Fallback to system print via bridge
+        if (api.print) {
+          const store = invoice?.store_details || user?.store;
+          const printerName = store?.thermal_printer_name;
+          const paperSize = store?.thermal_printer_size || '3_INCH';
+
+          try {
+            await api.print({ 
+              html: invoiceEl.innerHTML, 
+              printerName: printerName || undefined,
+              paperSize
+            });
+            setPrintingInvoice(null);
+            return;
+          } catch (e: any) {
+            console.error("Direct system print failed:", e);
+          }
+        }
+      }
+
+      // TRY 3: Browser Fallback (Standard Dialog)
+      fallbackPrint(invoiceEl.innerHTML);
+      setPrintingInvoice(null);
     }, 100);
+  };
+
+  const fallbackPrint = (html: string) => {
+    const printWindow = window.open('', '_blank', 'width=300,height=600');
+    if (!printWindow) return;
+
+    printWindow.document.write('<html><head><title>Print Invoice</title>');
+    printWindow.document.write('<style>@media print { body { margin: 0; } }</style>');
+    printWindow.document.write('</head><body>');
+    printWindow.document.write(html);
+    printWindow.document.write('</body></html>');
+    printWindow.document.close();
+    printWindow.focus();
+    setTimeout(() => {
+      printWindow.print();
+      printWindow.close();
+    }, 250);
   };
   
   const handleDownload = async (invoice: any) => {
@@ -146,75 +214,129 @@ export default function BillingPage() {
   const cancelledOrders = filteredOrders.filter(o => o.status === 'CANCELLED');
 
   return (
-    <Box sx={{ height: { xs: 'auto', md: '100%' }, display: "flex", flexDirection: "column", p: { xs: 2, md: 3 }, overflow: { xs: 'visible', md: 'hidden' } }}>
+    <Box sx={{ height: { xs: 'auto', md: '100%' }, display: "flex", flexDirection: "column", p: { xs: 1.5, md: 2 }, overflow: { xs: 'visible', md: 'hidden' } }}>
+      {/* Optimized Header Row */}
       <Box sx={{ 
-        mb: 4, 
-        display: { xs: 'none', md: 'flex' }, 
+        mb: 2, 
+        display: 'flex', 
         justifyContent: 'space-between', 
         alignItems: 'center', 
-        flexWrap: 'wrap', 
         gap: 2 
       }}>
-        <Box>
-          <Typography variant="h4" sx={{ fontWeight: 500, color: '#e9762b', fontSize: '1.5rem' }}>
-            Billing & Invoices
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+          <Typography variant="h4" sx={{ fontWeight: 500, color: '#e9762b', fontSize: '1.25rem', whiteSpace: 'nowrap' }}>
+            Billing
           </Typography>
+          
+          <Tabs 
+            value={tab} 
+            onChange={(_, v) => setTab(v)}
+            sx={{ 
+              display: { xs: 'none', sm: 'flex' },
+              minHeight: 40,
+              '& .MuiTabs-indicator': { height: 3, borderRadius: '7px 7px 0 0' },
+              '& .MuiTab-root': { 
+                fontWeight: 700, 
+                fontSize: '0.8rem', 
+                minHeight: 40, 
+                px: 1.5,
+                color: 'text.secondary',
+                '&.Mui-selected': { color: 'primary.main' }
+              }
+            }}
+          >
+            <Tab label="Pending" />
+            <Tab label="Cancelled" />
+            <Tab label="History" />
+          </Tabs>
         </Box>
-        <Button
-          variant="outlined"
-          startIcon={<RefreshIcon />}
-          onClick={fetchData}
-          disabled={loading}
-          sx={{ borderRadius: 2, height: 48, px: 3, fontWeight: 700 }}
-        >
-          Refresh
-        </Button>
-      </Box>
 
-      {error && <Alert severity="error" sx={{ mb: 3, borderRadius: 2 }}>{error}</Alert>}
-
-      <Box sx={{ mb: 3 }}>
-        <Tabs 
-          value={tab} 
-          onChange={(_, v) => setTab(v)}
-          variant={isMobile ? "scrollable" : "standard"}
-          scrollButtons="auto"
-          sx={{ 
-            '& .MuiTabs-indicator': { height: 3, borderRadius: '3px 3px 0 0' },
-            '& .MuiTab-root': { fontWeight: 700, fontSize: isMobile ? '0.85rem' : '0.95rem', px: { xs: 2, md: 4 } }
-          }}
-        >
-          <Tab icon={<SettlementIcon sx={{ mr: 1 }} />} iconPosition="start" label="Pending" />
-          <Tab icon={<DeleteIcon sx={{ mr: 1 }} />} iconPosition="start" label="Cancelled" />
-          <Tab icon={<BillIcon sx={{ mr: 1 }} />} iconPosition="start" label="History" />
-        </Tabs>
-      </Box>
-
-      <Paper sx={{ flexGrow: 1, display: 'flex', flexDirection: 'column', borderRadius: 2, overflow: 'hidden', border: '1px solid #e8e4d8', boxShadow: 'none', minHeight: 0 }}>
-        <Box sx={{ p: 2.5, borderBottom: '1px solid #e8e4d8', bgcolor: '#FCF9EA' }}>
+        <Box sx={{ flexGrow: 1, maxWidth: 400, mx: 2, display: { xs: 'none', md: 'block' } }}>
           <TextField
             fullWidth
-            placeholder="Search..."
+            size="small"
+            placeholder="Search orders, tables..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             slotProps={{
               input: {
                 startAdornment: (
                   <InputAdornment position="start">
-                    <SearchIcon sx={{ color: 'text.disabled' }} />
+                    <SearchIcon sx={{ color: 'text.disabled', fontSize: 18 }} />
                   </InputAdornment>
                 ),
-              }
-            }}
-            sx={{ 
-              maxWidth: { xs: '100%', md: 400 },
-              '& .MuiOutlinedInput-root': {
-                bgcolor: 'white',
-                borderRadius: 2
+                sx: { borderRadius: '7px', height: 36, bgcolor: 'white' }
               }
             }}
           />
         </Box>
+
+        <Stack direction="row" spacing={1} sx={{ alignItems: 'center' }}>
+          {isMobile && (
+            <IconButton onClick={fetchData} size="small" sx={{ color: 'primary.main', border: '1px solid', borderColor: 'divider', borderRadius: '7px' }}>
+              <RefreshIcon fontSize="small" />
+            </IconButton>
+          )}
+          {!isMobile && (
+            <Tooltip title="Refresh List">
+              <Button
+                variant="outlined"
+                size="small"
+                onClick={fetchData}
+                disabled={loading}
+                sx={{ borderRadius: '7px', height: 36, minWidth: 36, p: 0 }}
+              >
+                <RefreshIcon fontSize="small" />
+              </Button>
+            </Tooltip>
+          )}
+        </Stack>
+      </Box>
+
+      {/* Mobile Only Content (Search + Tabs) */}
+      {isMobile && (
+        <Box sx={{ mb: 2 }}>
+          <Tabs 
+            value={tab} 
+            onChange={(_, v) => setTab(v)}
+            variant="fullWidth"
+            sx={{ 
+              mb: 2,
+              bgcolor: alpha(theme.palette.primary.main, 0.03),
+              borderRadius: '7px',
+              '& .MuiTabs-indicator': { height: 3, borderRadius: '7px' },
+              '& .MuiTab-root': { fontWeight: 800, fontSize: '0.75rem', minHeight: 44 }
+            }}
+          >
+            <Tab label="Pending" />
+            <Tab label="Cancelled" />
+            <Tab label="History" />
+          </Tabs>
+          
+          <TextField
+            fullWidth
+            size="small"
+            placeholder="Search orders..."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            slotProps={{
+              input: {
+                startAdornment: (
+                  <InputAdornment position="start">
+                    <SearchIcon sx={{ color: 'text.disabled', fontSize: 18 }} />
+                  </InputAdornment>
+                ),
+                sx: { borderRadius: '7px', bgcolor: 'white' }
+              }
+            }}
+          />
+        </Box>
+      )}
+
+      {error && <Alert severity="error" sx={{ mb: 2, borderRadius: '7px' }}>{error}</Alert>}
+
+      <Paper sx={{ flexGrow: 1, display: 'flex', flexDirection: 'column', borderRadius: '7px', overflow: 'hidden', border: '1px solid #e8e4d8', boxShadow: 'none', minHeight: 0 }}>
+
 
         <TableContainer sx={{ flexGrow: 1, overflowY: 'auto', display: isMobile ? 'none' : 'block' }}>
           <Table>
@@ -222,30 +344,30 @@ export default function BillingPage() {
               <TableRow sx={{ bgcolor: '#FCF9EA' }}>
                 {tab === 0 ? (
                   <>
-                    <TableCell sx={{ fontWeight: 800, py: 2 }}>Order Ref</TableCell>
-                    <TableCell sx={{ fontWeight: 800 }}>Table/Type</TableCell>
-                    <TableCell sx={{ fontWeight: 800 }}>Waiter</TableCell>
-                    <TableCell sx={{ fontWeight: 800 }}>Status</TableCell>
-                    <TableCell sx={{ fontWeight: 800 }} align="right">Amount</TableCell>
-                    <TableCell sx={{ fontWeight: 800 }} align="right">Actions</TableCell>
+                    <TableCell sx={{ fontWeight: 800, py: 2, fontSize: '0.75rem', textTransform: 'uppercase', color: '#e9762b' }}>Order Ref</TableCell>
+                    <TableCell sx={{ fontWeight: 800, fontSize: '0.75rem', textTransform: 'uppercase', color: '#e9762b' }}>Table/Type</TableCell>
+                    <TableCell sx={{ fontWeight: 800, fontSize: '0.75rem', textTransform: 'uppercase', color: '#e9762b' }}>Waiter</TableCell>
+                    <TableCell sx={{ fontWeight: 800, fontSize: '0.75rem', textTransform: 'uppercase', color: '#e9762b' }}>Status</TableCell>
+                    <TableCell sx={{ fontWeight: 800, fontSize: '0.75rem', textTransform: 'uppercase', color: '#e9762b' }} align="right">Amount</TableCell>
+                    <TableCell sx={{ fontWeight: 800, fontSize: '0.75rem', textTransform: 'uppercase', color: '#e9762b' }} align="right">Actions</TableCell>
                   </>
                 ) : tab === 1 ? (
                   <>
-                    <TableCell sx={{ fontWeight: 800, py: 2 }}>Order Ref</TableCell>
-                    <TableCell sx={{ fontWeight: 800 }}>Status</TableCell>
-                    <TableCell sx={{ fontWeight: 800 }}>Waiter</TableCell>
-                    <TableCell sx={{ fontWeight: 800 }}>Reason</TableCell>
-                    <TableCell sx={{ fontWeight: 800 }} align="right">Amount</TableCell>
-                    <TableCell sx={{ fontWeight: 800 }} align="right">Actions</TableCell>
+                    <TableCell sx={{ fontWeight: 800, py: 2, fontSize: '0.75rem', textTransform: 'uppercase', color: '#e9762b' }}>Order Ref</TableCell>
+                    <TableCell sx={{ fontWeight: 800, fontSize: '0.75rem', textTransform: 'uppercase', color: '#e9762b' }}>Status</TableCell>
+                    <TableCell sx={{ fontWeight: 800, fontSize: '0.75rem', textTransform: 'uppercase', color: '#e9762b' }}>Waiter</TableCell>
+                    <TableCell sx={{ fontWeight: 800, fontSize: '0.75rem', textTransform: 'uppercase', color: '#e9762b' }}>Reason</TableCell>
+                    <TableCell sx={{ fontWeight: 800, fontSize: '0.75rem', textTransform: 'uppercase', color: '#e9762b' }} align="right">Amount</TableCell>
+                    <TableCell sx={{ fontWeight: 800, fontSize: '0.75rem', textTransform: 'uppercase', color: '#e9762b' }} align="right">Actions</TableCell>
                   </>
                 ) : (
                   <>
-                    <TableCell sx={{ fontWeight: 800, py: 2 }}>Invoice Number</TableCell>
-                    <TableCell sx={{ fontWeight: 800 }}>Date & Time</TableCell>
-                    <TableCell sx={{ fontWeight: 800 }}>Order Ref</TableCell>
-                    <TableCell sx={{ fontWeight: 800 }}>Payment Method</TableCell>
-                    <TableCell sx={{ fontWeight: 800 }} align="right">Amount</TableCell>
-                    <TableCell sx={{ fontWeight: 800 }} align="right">Actions</TableCell>
+                    <TableCell sx={{ fontWeight: 800, py: 2, fontSize: '0.75rem', textTransform: 'uppercase', color: '#e9762b' }}>Invoice Number</TableCell>
+                    <TableCell sx={{ fontWeight: 800, fontSize: '0.75rem', textTransform: 'uppercase', color: '#e9762b' }}>Date & Time</TableCell>
+                    <TableCell sx={{ fontWeight: 800, fontSize: '0.75rem', textTransform: 'uppercase', color: '#e9762b' }}>Order Ref</TableCell>
+                    <TableCell sx={{ fontWeight: 800, fontSize: '0.75rem', textTransform: 'uppercase', color: '#e9762b' }}>Payment Method</TableCell>
+                    <TableCell sx={{ fontWeight: 800, fontSize: '0.75rem', textTransform: 'uppercase', color: '#e9762b' }} align="right">Amount</TableCell>
+                    <TableCell sx={{ fontWeight: 800, fontSize: '0.75rem', textTransform: 'uppercase', color: '#e9762b' }} align="right">Actions</TableCell>
                   </>
                 )}
               </TableRow>
@@ -278,7 +400,7 @@ export default function BillingPage() {
                             <Typography variant="subtitle2" sx={{ fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
                               Dine-in Orders
                             </Typography>
-                            <Chip label={dineInOrders.length} size="small" sx={{ fontWeight: 800, height: 20, bgcolor: 'primary.main', color: 'white' }} />
+                            <Chip label={dineInOrders.length} size="small" sx={{ fontWeight: 800, height: 20, bgcolor: 'primary.main', color: 'white', borderRadius: '7px' }} />
                           </Stack>
                         </TableCell>
                       </TableRow>
@@ -293,7 +415,7 @@ export default function BillingPage() {
                             label={`Table ${order.table_number}`} 
                             size="small" 
                             variant="outlined" 
-                            sx={{ fontWeight: 600, borderRadius: 1.5 }} 
+                            sx={{ fontWeight: 600, borderRadius: '7px' }} 
                           />
                         </TableCell>
                         <TableCell>
@@ -304,7 +426,7 @@ export default function BillingPage() {
                             label={order.invoice ? "Bill Generated" : order.status} 
                             size="small"
                             color={order.invoice ? "info" : "warning"}
-                            sx={{ fontWeight: 800, borderRadius: 1, fontSize: '0.65rem' }} 
+                            sx={{ fontWeight: 800, borderRadius: '7px', fontSize: '0.65rem' }} 
                           />
                         </TableCell>
                         <TableCell align="right">
@@ -313,15 +435,16 @@ export default function BillingPage() {
                           </Typography>
                         </TableCell>
                         <TableCell align="right">
-                          <Button
-                            variant="contained"
-                            size="small"
-                            startIcon={<SettlementIcon />}
-                            onClick={() => setSelectedOrder(order)}
-                            sx={{ fontWeight: 700, borderRadius: 1.5 }}
-                          >
-                            Settle
-                          </Button>
+                          <Tooltip title="Settle Order">
+                            <Button
+                              variant="contained"
+                              size="small"
+                              onClick={() => setSelectedOrder(order)}
+                              sx={{ fontWeight: 800, borderRadius: '7px', minWidth: 40, height: 32, p: 0 }}
+                            >
+                              <SettlementIcon fontSize="small" />
+                            </Button>
+                          </Tooltip>
                         </TableCell>
                       </TableRow>
                     ))}
@@ -369,16 +492,17 @@ export default function BillingPage() {
                           </Typography>
                         </TableCell>
                         <TableCell align="right">
-                          <Button
-                            variant="contained"
-                            size="small"
-                            color="secondary"
-                            startIcon={<SettlementIcon />}
-                            onClick={() => setSelectedOrder(order)}
-                            sx={{ fontWeight: 700, borderRadius: 1.5 }}
-                          >
-                            Settle
-                          </Button>
+                          <Tooltip title="Settle Parcel">
+                            <Button
+                              variant="contained"
+                              size="small"
+                              color="secondary"
+                              onClick={() => setSelectedOrder(order)}
+                              sx={{ fontWeight: 800, borderRadius: '7px', minWidth: 40, height: 32, p: 0 }}
+                            >
+                              <SettlementIcon fontSize="small" />
+                            </Button>
+                          </Tooltip>
                         </TableCell>
                       </TableRow>
                     ))}
@@ -419,16 +543,17 @@ export default function BillingPage() {
                           </Typography>
                         </TableCell>
                         <TableCell align="right">
-                          <Button
-                            variant="outlined"
-                            size="small"
-                            color="error"
-                            startIcon={<ViewIcon />}
-                            onClick={() => setSelectedOrder(order)}
-                            sx={{ fontWeight: 700, borderRadius: 1.5 }}
-                          >
-                            Audit
-                          </Button>
+                          <Tooltip title="View Details">
+                            <Button
+                              variant="outlined"
+                              size="small"
+                              color="error"
+                              onClick={() => setSelectedOrder(order)}
+                              sx={{ fontWeight: 800, borderRadius: '7px', minWidth: 40, height: 32, p: 0 }}
+                            >
+                              <ViewIcon fontSize="small" />
+                            </Button>
+                          </Tooltip>
                         </TableCell>
                       </TableRow>
                     ))}
@@ -471,20 +596,24 @@ export default function BillingPage() {
                         </Typography>
                       </TableCell>
                       <TableCell align="right">
-                        <IconButton 
-                          size="small" 
-                          onClick={() => setPreviewInvoice(invoice)}
-                          sx={{ color: 'primary.main', border: '1px solid', borderColor: 'primary.light', borderRadius: 1.5 }}
-                        >
-                          <ViewIcon fontSize="small" />
-                        </IconButton>
-                        <IconButton 
-                          size="small" 
-                          onClick={() => handlePrint(invoice)}
-                          sx={{ color: '#5D4037', border: '1px solid #D7CCC8', borderRadius: 1.5 }}
-                        >
-                          <PrintIcon fontSize="small" />
-                        </IconButton>
+                        <Tooltip title="View Invoice">
+                          <IconButton 
+                            size="small" 
+                            onClick={() => setPreviewInvoice(invoice)}
+                            sx={{ color: 'primary.main', bgcolor: alpha(theme.palette.primary.main, 0.05), borderRadius: '7px', mr: 0.5 }}
+                          >
+                            <ViewIcon fontSize="small" />
+                          </IconButton>
+                        </Tooltip>
+                        <Tooltip title="Print Invoice">
+                          <IconButton 
+                            size="small" 
+                            onClick={() => handlePrint(invoice)}
+                            sx={{ color: '#5D4037', bgcolor: alpha('#5D4037', 0.05), borderRadius: '7px' }}
+                          >
+                            <PrintIcon fontSize="small" />
+                          </IconButton>
+                        </Tooltip>
                       </TableCell>
                     </TableRow>
                   ))

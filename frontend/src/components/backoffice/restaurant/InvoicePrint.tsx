@@ -37,19 +37,19 @@ interface InvoicePrintProps {
       <Box
         id="thermal-invoice"
         sx={{
-          width: isSmall ? '58mm' : '100%',
+          width: isSmall ? '58mm' : '80mm',
           maxWidth: '100%',
-          p: isSmall ? '4mm 2mm' : '10mm 4mm',
+          p: '2mm',
           bgcolor: 'white',
           color: 'black',
           fontFamily: '"Courier New", Courier, monospace',
           display: 'flex',
           flexDirection: 'column',
-          alignItems: 'center',
-          overflowY: 'auto',
+          alignItems: 'flex-start', // Thermal printers are usually left-aligned
           '@media print': {
-            p: isSmall ? '2mm' : '4mm',
-            width: isSmall ? '58mm' : '80mm', // Fixed widths for thermal printing
+            width: isSmall ? '58mm' : '80mm',
+            margin: 0,
+            padding: '1mm',
           }
         }}
       >

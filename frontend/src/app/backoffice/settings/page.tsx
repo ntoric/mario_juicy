@@ -12,22 +12,9 @@ export default function SettingsPage() {
   const isSuperAdmin = isRole('SUPER_ADMIN');
 
   return (
-    <Box>
-      <Box sx={{ mb: 4, display: { xs: 'none', md: 'block' } }}>
-        <Breadcrumbs aria-label="breadcrumb" sx={{ mb: 1 }}>
-          <Link
-            component={NextLink}
-            underline="hover"
-            color="inherit"
-            href="/backoffice"
-            sx={{ fontSize: '0.875rem' }}
-          >
-            Backoffice
-          </Link>
-          <Typography color="text.primary" sx={{ fontSize: '0.875rem' }}>Settings</Typography>
-        </Breadcrumbs>
-        
-        <Typography variant="h4" sx={{ fontWeight: 500, color: '#e9762b', fontSize: '1.5rem' }}>
+    <Box sx={{ p: { xs: 1.5, md: 2 } }}>
+      <Box sx={{ mb: 3 }}>
+        <Typography variant="h4" sx={{ fontWeight: 500, color: '#e9762b', fontSize: '1.25rem' }}>
           Settings
         </Typography>
       </Box>

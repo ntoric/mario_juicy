@@ -22,6 +22,7 @@ import {
   Chip,
   Avatar,
 } from "@mui/material";
+import { alpha } from "@mui/material/styles";
 import {
   Edit as EditIcon,
   Delete as DeleteIcon,
@@ -91,24 +92,24 @@ export default function UserTable({
 
   if (users.length === 0) {
     return (
-      <TableContainer component={Paper} sx={{ borderRadius: "3px" }}>
+      <TableContainer component={Paper} sx={{ borderRadius: "7px", border: '1px solid #e8e4d8', boxShadow: 'none' }}>
         <Box sx={{ p: 5, textAlign: "center" }}>
-          <Typography color="text.secondary">No users found.</Typography>
+          <Typography color="text.secondary" sx={{ fontWeight: 600 }}>No users found.</Typography>
         </Box>
       </TableContainer>
     );
   }
 
   return (
-    <TableContainer component={Paper} sx={{ borderRadius: "3px", overflow: "hidden", border: '1px solid #eee', boxShadow: 'none' }}>
+    <TableContainer component={Paper} sx={{ borderRadius: "7px", overflow: "hidden", border: '1px solid #e8e4d8', boxShadow: '0 2px 8px rgba(0,0,0,0.02)' }}>
       <Table>
-        <TableHead sx={{ backgroundColor: "#000" }}>
+        <TableHead sx={{ backgroundColor: "#FCF9EA" }}>
           <TableRow>
-            <TableCell sx={{ color: "white", fontWeight: 600 }}>User</TableCell>
-            <TableCell sx={{ color: "white", fontWeight: 600 }}>Role</TableCell>
-            <TableCell sx={{ color: "white", fontWeight: 600, display: { xs: "none", md: "table-cell" } }}>Email</TableCell>
-            <TableCell sx={{ color: "white", fontWeight: 600 }}>Status</TableCell>
-            <TableCell sx={{ color: "white", fontWeight: 600, textAlign: "right" }}>Actions</TableCell>
+            <TableCell sx={{ color: "#e9762b", fontWeight: 800, fontSize: '0.75rem', textTransform: 'uppercase' }}>User</TableCell>
+            <TableCell sx={{ color: "#e9762b", fontWeight: 800, fontSize: '0.75rem', textTransform: 'uppercase' }}>Role</TableCell>
+            <TableCell sx={{ color: "#e9762b", fontWeight: 800, fontSize: '0.75rem', textTransform: 'uppercase', display: { xs: "none", md: "table-cell" } }}>Email</TableCell>
+            <TableCell sx={{ color: "#e9762b", fontWeight: 800, fontSize: '0.75rem', textTransform: 'uppercase' }}>Status</TableCell>
+            <TableCell sx={{ color: "#e9762b", fontWeight: 800, fontSize: '0.75rem', textTransform: 'uppercase', textAlign: "right" }}>Actions</TableCell>
           </TableRow>
         </TableHead>
         <TableBody>
@@ -126,85 +127,99 @@ export default function UserTable({
                       }
                   }}
               >
-                <TableCell>
-                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-                    <Avatar sx={{ bgcolor: '#000', width: 36, height: 36 }}>
+                <TableCell sx={{ py: 1.5 }}>
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+                    <Avatar sx={{ bgcolor: alpha('#e9762b', 0.1), color: '#e9762b', width: 32, height: 32, fontSize: '0.9rem', fontWeight: 800, borderRadius: '7px' }}>
                       {user.username.charAt(0).toUpperCase()}
                     </Avatar>
                     <Box>
-                      <Typography variant="body2" sx={{ fontWeight: 600 }}>
+                      <Typography variant="body2" sx={{ fontWeight: 700, color: 'text.primary' }}>
                         {user.username}
                       </Typography>
-                      <Typography variant="caption" color="text.secondary" sx={{ display: { xs: 'block', sm: 'none' } }}>
+                      <Typography variant="caption" color="text.secondary" sx={{ display: { xs: 'block', sm: 'none' }, fontWeight: 600 }}>
                         {role}
                       </Typography>
                     </Box>
                   </Box>
                 </TableCell>
-                <TableCell>
+                <TableCell sx={{ py: 1.5 }}>
                   <Chip
                     icon={getRoleIcon(role)}
-                    label={role}
+                    label={role.toUpperCase()}
                     size="small"
                     sx={{ 
-                      bgcolor: roleStyle.bg, 
+                      bgcolor: alpha(roleStyle.bg, 0.5), 
                       color: roleStyle.text,
-                      fontWeight: 600,
-                      '& .MuiChip-icon': { color: 'inherit' }
+                      fontWeight: 800,
+                      fontSize: '0.65rem',
+                      borderRadius: '7px',
+                      height: 22,
+                      '& .MuiChip-icon': { color: 'inherit', fontSize: 14 }
                     }}
                   />
                 </TableCell>
-                <TableCell sx={{ display: { xs: "none", md: "table-cell" } }}>
-                  <Typography variant="body2" color="text.secondary">
+                <TableCell sx={{ display: { xs: "none", md: "table-cell" }, py: 1.5 }}>
+                  <Typography variant="body2" sx={{ color: 'text.secondary', fontWeight: 500, fontSize: '0.8rem' }}>
                     {user.email || '—'}
                   </Typography>
                 </TableCell>
-                <TableCell>
+                <TableCell sx={{ py: 1.5 }}>
                   <Chip
-                      label={user.is_active ? "Active" : "Disabled"}
+                      label={user.is_active ? "ACTIVE" : "DISABLED"}
                       size="small"
-                      color={user.is_active ? "success" : "default"}
                       sx={{ 
-                          fontWeight: 600, 
-                          height: 24,
-                          fontSize: '0.75rem',
-                          borderRadius: 1
+                          fontWeight: 800, 
+                          height: 20,
+                          fontSize: '0.6rem',
+                          borderRadius: '7px',
+                          bgcolor: user.is_active ? alpha('#2e7d32', 0.1) : alpha('#757575', 0.1),
+                          color: user.is_active ? '#2e7d32' : '#757575',
+                          border: `1px solid ${user.is_active ? alpha('#2e7d32', 0.2) : alpha('#757575', 0.2)}`
                       }}
                   />
                 </TableCell>
-                <TableCell align="right">
+                <TableCell align="right" sx={{ py: 1.5 }}>
                   <Box 
-                      sx={{ display: { xs: "none", lg: "flex" }, justifyContent: "flex-end", gap: 1 }}
+                      sx={{ display: { xs: "none", lg: "flex" }, justifyContent: "flex-end", gap: 0.5 }}
                   >
-                    <Tooltip title={user.is_active ? "Disable" : "Enable"}>
+                    <Tooltip title={user.is_active ? "Disable User" : "Enable User"}>
                       <IconButton
                         size="small"
                         onClick={() => onToggleStatus(user)}
                         sx={{ 
                           color: user.is_active ? 'warning.main' : 'success.main',
-                          bgcolor: user.is_active ? 'rgba(237, 108, 2, 0.04)' : 'rgba(46, 125, 50, 0.04)', 
-                          '&:hover': { bgcolor: user.is_active ? 'rgba(237, 108, 2, 0.08)' : 'rgba(46, 125, 50, 0.08)' } 
+                          bgcolor: user.is_active ? alpha('#ed6c02', 0.05) : alpha('#2e7d32', 0.05), 
+                          borderRadius: '7px',
+                          '&:hover': { bgcolor: user.is_active ? alpha('#ed6c02', 0.1) : alpha('#2e7d32', 0.1) } 
                         }}
                       >
                         {user.is_active ? <ToggleOffIcon fontSize="small" /> : <ToggleOnIcon fontSize="small" />}
                       </IconButton>
                     </Tooltip>
-                    <Tooltip title="Edit">
+                    <Tooltip title="Edit User">
                       <IconButton
-                        color="primary"
                         size="small"
                         onClick={() => onEdit(user)}
-                        sx={{ bgcolor: 'rgba(0, 0, 0, 0.04)', '&:hover': { bgcolor: 'rgba(0, 0, 0, 0.08)' }, color: '#000' }}
+                        sx={{ 
+                          bgcolor: alpha('#000', 0.03), 
+                          borderRadius: '7px',
+                          '&:hover': { bgcolor: alpha('#000', 0.08) }, 
+                          color: 'text.primary' 
+                        }}
                       >
                         <EditIcon fontSize="small" />
                       </IconButton>
                     </Tooltip>
-                    <Tooltip title="Delete">
+                    <Tooltip title="Delete User">
                       <IconButton
-                        color="error"
                         size="small"
                         onClick={() => onDelete(user)}
-                        sx={{ bgcolor: 'rgba(211, 47, 47, 0.04)', '&:hover': { bgcolor: 'rgba(211, 47, 47, 0.08)' } }}
+                        sx={{ 
+                          color: 'error.main',
+                          bgcolor: alpha('#d32f2f', 0.05), 
+                          borderRadius: '7px',
+                          '&:hover': { bgcolor: alpha('#d32f2f', 0.1) } 
+                        }}
                       >
                         <DeleteIcon fontSize="small" />
                       </IconButton>
@@ -235,7 +250,7 @@ export default function UserTable({
         anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
         transformOrigin={{ vertical: 'top', horizontal: 'right' }}
         slotProps={{
-          paper: { sx: { boxShadow: '0 4px 20px rgba(0,0,0,0.1)', borderRadius: 2, minWidth: 150 } }
+          paper: { sx: { boxShadow: '0 4px 20px rgba(0,0,0,0.1)', borderRadius: '12px', minWidth: 150 } }
         }}
       >
         <MenuItem onClick={() => {
@@ -245,7 +260,9 @@ export default function UserTable({
           <ListItemIcon sx={{ color: activeUser?.is_active ? 'warning.main' : 'success.main' }}>
             {activeUser?.is_active ? <ToggleOffIcon fontSize="small" /> : <ToggleOnIcon fontSize="small" />}
           </ListItemIcon>
-          <ListItemText>{activeUser?.is_active ? 'Disable' : 'Enable'}</ListItemText>
+          <ListItemText sx={{ '& .MuiTypography-root': { fontWeight: 600, fontSize: '0.85rem' } }}>
+            {activeUser?.is_active ? 'Disable' : 'Enable'}
+          </ListItemText>
         </MenuItem>
         <MenuItem onClick={() => {
           if (activeUser) onEdit(activeUser);
@@ -254,7 +271,7 @@ export default function UserTable({
           <ListItemIcon sx={{ color: 'primary.main' }}>
             <EditIcon fontSize="small" />
           </ListItemIcon>
-          <ListItemText>Edit</ListItemText>
+          <ListItemText sx={{ '& .MuiTypography-root': { fontWeight: 600, fontSize: '0.85rem' } }}>Edit</ListItemText>
         </MenuItem>
         <MenuItem onClick={() => {
           if (activeUser) onDelete(activeUser);
@@ -263,7 +280,7 @@ export default function UserTable({
           <ListItemIcon sx={{ color: 'error.main' }}>
             <DeleteIcon fontSize="small" />
           </ListItemIcon>
-          <ListItemText>Delete</ListItemText>
+          <ListItemText sx={{ '& .MuiTypography-root': { fontWeight: 600, fontSize: '0.85rem' } }}>Delete</ListItemText>
         </MenuItem>
       </Menu>
     </TableContainer>

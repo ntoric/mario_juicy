@@ -111,54 +111,58 @@ export default function ReportsPage() {
   };
 
   return (
-    <Box sx={{ p: { xs: 2, md: 3 } }}>
-      {/* Header & Filters */}
+    <Box sx={{ p: { xs: 1.5, md: 2 } }}>
+      {/* Optimized Header & Filters Row */}
       <Box sx={{ 
-        mb: 4, 
-        display: { xs: 'none', md: 'flex' }, 
+        mb: 2, 
+        display: 'flex', 
         justifyContent: "space-between", 
-        alignItems: { xs: "flex-start", md: "center" },
-        flexDirection: { xs: "column", md: "row" },
-        gap: 3
+        alignItems: "center",
+        flexDirection: { xs: "column", sm: "row" },
+        gap: 2
       }}>
-        <Box>
-          <Typography variant="h4" sx={{ fontWeight: 500, color: '#e9762b', fontSize: '1.5rem' }}>
-            Reports & Analytics
-          </Typography>
-        </Box>
+        <Typography variant="h4" sx={{ fontWeight: 500, color: '#e9762b', fontSize: '1.25rem', whiteSpace: 'nowrap', display: { xs: 'none', lg: 'block' } }}>
+          Reports
+        </Typography>
         
-        <Paper sx={{ p: 2, borderRadius: 3, display: "flex", alignItems: "center", gap: 2, flexWrap: "wrap" }}>
+        <Stack direction="row" spacing={1} sx={{ alignItems: 'center', flexWrap: 'wrap', justifyContent: 'flex-end', flexGrow: 1 }}>
           <TextField
-            label="Start Date"
             type="date"
             size="small"
             value={startDate}
             onChange={(e) => setStartDate(e.target.value)}
-            slotProps={{ inputLabel: { shrink: true } }}
-            sx={{ width: 150 }}
+            slotProps={{ 
+              inputLabel: { shrink: true },
+              input: { sx: { borderRadius: '7px', height: 40, bgcolor: 'white' } }
+            }}
+            sx={{ width: 140 }}
           />
+          <Typography variant="caption" sx={{ fontWeight: 900, color: 'text.disabled' }}>TO</Typography>
           <TextField
-            label="End Date"
             type="date"
             size="small"
             value={endDate}
             onChange={(e) => setEndDate(e.target.value)}
-            slotProps={{ inputLabel: { shrink: true } }}
-            sx={{ width: 150 }}
+            slotProps={{ 
+              inputLabel: { shrink: true },
+              input: { sx: { borderRadius: '7px', height: 40, bgcolor: 'white' } }
+            }}
+            sx={{ width: 140 }}
           />
-          <Button 
-            variant="contained" 
-            onClick={handleFilter} 
-            disabled={loading}
-            sx={{ height: 40, px: 3, borderRadius: 2 }}
-          >
-            Update
-          </Button>
-          <IconButton onClick={fetchReports} disabled={loading} color="primary">
-            <RefreshIcon />
-          </IconButton>
-        </Paper>
+          
+          <Tooltip title="Update Data">
+            <Button 
+              variant="contained" 
+              onClick={handleFilter} 
+              disabled={loading}
+              sx={{ height: 40, minWidth: 40, px: 1, borderRadius: '7px' }}
+            >
+              <RefreshIcon fontSize="small" />
+            </Button>
+          </Tooltip>
+        </Stack>
       </Box>
+
 
       {error && <Alert severity="error" sx={{ mb: 4, borderRadius: 3 }}>{error}</Alert>}
 

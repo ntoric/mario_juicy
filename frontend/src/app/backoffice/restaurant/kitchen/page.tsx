@@ -19,6 +19,12 @@ import {
   useTheme,
   useMediaQuery,
   keyframes,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  TextField,
+  alpha
 } from '@mui/material';
 import {
   Kitchen as KitchenIcon,
@@ -28,25 +34,15 @@ import {
   AccessTime as TimeIcon,
   Restaurant as DishIcon,
   NotificationsActive as AlertIcon,
-} from '@mui/icons-material';
-import { restaurantService, OrderItem } from '@/services/restaurantService';
-import { ItemStatusChip } from '@/components/backoffice/restaurant/StatusChips';
-import { useAuth } from '@/hooks/useAuth';
-import { 
-  Dialog, 
-  DialogTitle, 
-  DialogContent, 
-  DialogActions, 
-  TextField 
-} from '@mui/material';
-import {
   Cancel as CancelIcon,
 } from '@mui/icons-material';
+import { restaurantService, OrderItem } from '@/services/restaurantService';
+import { useAuth } from '@/hooks/useAuth';
 
 // ── Animations ──────────────────────────────────────────────────────────────
 const pulse = keyframes`
   0% { transform: scale(1); opacity: 1; }
-  50% { transform: scale(1.02); opacity: 0.8; }
+  50% { transform: scale(1.01); opacity: 0.9; }
   100% { transform: scale(1); opacity: 1; }
 `;
 
@@ -87,10 +83,10 @@ function ElapsedChip({ iso }: { iso: string }) {
         fontWeight: 800, 
         fontSize: '0.65rem', 
         height: 22,
-        borderColor: s > 600 ? 'error.main' : s > 300 ? 'warning.main' : 'divider',
+        borderColor: s > 600 ? 'error.main' : s > 300 ? 'warning.main' : '#e8e4d8',
         color: s > 600 ? 'error.main' : s > 300 ? 'warning.main' : 'text.secondary',
         bgcolor: 'white',
-        borderRadius: '4px'
+        borderRadius: '7px'
       }}
     />
   );
@@ -114,11 +110,12 @@ function OrderTicket({ group, onAttend, onReady, onReject, canManage }: {
         height: '100%',
         display: 'flex',
         flexDirection: 'column',
-        borderRadius: '0px',
+        borderRadius: '7px',
         border: '1px solid #e8e4d8',
         bgcolor: 'white',
         position: 'relative',
         animation: hasNew ? `${pulse} 2s infinite ease-in-out` : 'none',
+        boxShadow: hasNew ? `0 0 20px ${alpha(theme.palette.error.main, 0.1)}` : '0 2px 8px rgba(0,0,0,0.03)',
         '&::before': {
           content: '""',
           position: 'absolute',
@@ -144,17 +141,17 @@ function OrderTicket({ group, onAttend, onReady, onReject, canManage }: {
       </Box>
 
       {/* Ticket Items */}
-      <CardContent sx={{ flexGrow: 1, p: 2, bgcolor: '#fdfcf4' }}>
-        <Stack spacing={1.5}>
+      <CardContent sx={{ flexGrow: 1, p: 1.5, bgcolor: '#fdfcf4' }}>
+        <Stack spacing={1}>
           {group.items.map(item => (
             <Box
               key={item.id}
               sx={{
                 display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between',
-                p: 1.5, borderRadius: '4px',
+                p: 1, borderRadius: '7px',
                 bgcolor: item.status === 'READY' ? '#FCF9EA' : 'white',
                 border: '1px solid',
-                borderColor: item.status === 'READY' ? '#e8e4d8' : '#D4C4A8',
+                borderColor: item.status === 'READY' ? '#e8e4d8' : alpha('#D4C4A8', 0.3),
                 opacity: (item.status === 'READY' || item.status === 'REJECTED' || item.status === 'CANCELLED') ? 0.6 : 1,
               }}
             >
@@ -162,9 +159,9 @@ function OrderTicket({ group, onAttend, onReady, onReject, canManage }: {
                 <Typography
                   variant="body1"
                   sx={{
-                    fontWeight: 900, 
+                    fontWeight: 800, 
                     fontFamily: 'monospace',
-                    fontSize: '1.1rem',
+                    fontSize: '0.9rem',
                     color: item.status === 'REJECTED' ? 'error.main' : 'text.primary',
                     textDecoration: (item.status === 'REJECTED' || item.status === 'CANCELLED') ? 'line-through' : 'none',
                   }}
@@ -172,14 +169,14 @@ function OrderTicket({ group, onAttend, onReady, onReject, canManage }: {
                   {item.quantity}× {item.item_details.name.toUpperCase()}
                 </Typography>
                 {item.notes && (
-                  <Box sx={{ mt: 0.5, p: 0.5, bgcolor: '#fef2f2', border: '1px solid #fee2e2', borderRadius: '2px' }}>
-                    <Typography variant="caption" color="error.dark" sx={{ fontWeight: 800, fontFamily: 'monospace' }}>
+                  <Box sx={{ mt: 0.5, p: 0.5, bgcolor: alpha(theme.palette.error.main, 0.05), border: `1px solid ${alpha(theme.palette.error.main, 0.1)}`, borderRadius: '4px' }}>
+                    <Typography variant="caption" color="error.dark" sx={{ fontWeight: 800, fontFamily: 'monospace', fontSize: '0.65rem' }}>
                       {item.notes.toUpperCase()}
                     </Typography>
                   </Box>
                 )}
                 {item.rejection_note && (
-                  <Typography variant="caption" color="error" sx={{ fontWeight: 700, mt: 0.5, display: 'block' }}>
+                  <Typography variant="caption" color="error" sx={{ fontWeight: 700, mt: 0.5, display: 'block', fontSize: '0.65rem' }}>
                     Reason: {item.rejection_note}
                   </Typography>
                 )}
@@ -187,14 +184,31 @@ function OrderTicket({ group, onAttend, onReady, onReject, canManage }: {
               <Stack direction="row" spacing={0.5} sx={{ flexShrink: 0 }}>
                 {canManage && (item.status === 'AWAITING' || item.status === 'ORDERED') && (
                   <>
-                    <Tooltip title="Attend">
-                      <IconButton size="small" color="primary" onClick={() => onAttend(item.id)} sx={{ bgcolor: 'primary.light', '&:hover': { bgcolor: 'primary.main', color: 'white' } }}>
-                        <StartIcon sx={{ fontSize: 18 }} />
+                    <Tooltip title="Attend Item">
+                      <IconButton 
+                        size="small" 
+                        color="primary" 
+                        onClick={() => onAttend(item.id)} 
+                        sx={{ 
+                          bgcolor: alpha(theme.palette.primary.main, 0.1), 
+                          borderRadius: '7px',
+                          '&:hover': { bgcolor: 'primary.main', color: 'white' } 
+                        }}
+                      >
+                        <StartIcon sx={{ fontSize: 16 }} />
                       </IconButton>
                     </Tooltip>
-                    <Tooltip title="Reject">
-                      <IconButton size="small" color="error" onClick={() => onReject(item.id)} sx={{ bgcolor: '#fee2e2' }}>
-                        <CancelIcon sx={{ fontSize: 18 }} />
+                    <Tooltip title="Reject Item">
+                      <IconButton 
+                        size="small" 
+                        color="error" 
+                        onClick={() => onReject(item.id)} 
+                        sx={{ 
+                          bgcolor: alpha(theme.palette.error.main, 0.1),
+                          borderRadius: '7px' 
+                        }}
+                      >
+                        <CancelIcon sx={{ fontSize: 16 }} />
                       </IconButton>
                     </Tooltip>
                   </>
@@ -205,35 +219,35 @@ function OrderTicket({ group, onAttend, onReady, onReject, canManage }: {
                     variant="contained" 
                     color="success" 
                     onClick={() => onReady(item.id)}
-                    sx={{ minWidth: 0, p: '4px 8px', borderRadius: '4px', fontWeight: 800, fontSize: '0.7rem' }}
+                    sx={{ minWidth: 0, p: '2px 8px', borderRadius: '7px', fontWeight: 800, fontSize: '0.65rem' }}
                   >
                     READY
                   </Button>
                 )}
-                {item.status === 'READY' && <DoneIcon color="success" sx={{ fontSize: 20 }} />}
-                {(item.status === 'REJECTED' || item.status === 'CANCELLED') && <CancelIcon color="error" sx={{ fontSize: 20 }} />}
+                {item.status === 'READY' && <DoneIcon color="success" sx={{ fontSize: 18 }} />}
+                {(item.status === 'REJECTED' || item.status === 'CANCELLED') && <CancelIcon color="error" sx={{ fontSize: 18 }} />}
               </Stack>
             </Box>
           ))}
         </Stack>
       </CardContent>
 
-      <Divider sx={{ borderStyle: 'dashed' }} />
+      <Divider sx={{ borderStyle: 'dashed', borderColor: '#e8e4d8' }} />
 
-      <CardActions sx={{ p: 2, bgcolor: 'white' }}>
+      <CardActions sx={{ p: 1.5, bgcolor: 'white' }}>
         {allReady ? (
-          <Box sx={{ width: '100%', textAlign: 'center', py: 1, bgcolor: '#f0fdf4', borderRadius: '4px', border: '1px solid #bbf7d0' }}>
-            <Typography variant="body2" sx={{ fontWeight: 800, color: 'success.main' }}>✓ COMPLETED</Typography>
+          <Box sx={{ width: '100%', textAlign: 'center', py: 0.75, bgcolor: alpha(theme.palette.success.main, 0.1), borderRadius: '7px', border: `1px solid ${alpha(theme.palette.success.main, 0.2)}` }}>
+            <Typography variant="body2" sx={{ fontWeight: 800, color: 'success.main', fontSize: '0.75rem' }}>✓ COMPLETED</Typography>
           </Box>
         ) : (
-          <Typography variant="caption" sx={{ fontWeight: 700, color: 'text.secondary', width: '100%', textAlign: 'center' }}>
+          <Typography variant="caption" sx={{ fontWeight: 800, color: 'text.secondary', width: '100%', textAlign: 'center' }}>
             {group.items.filter(i => i.status === 'PREPARING').length} Items in Preparation
           </Typography>
         )}
       </CardActions>
       
-      {/* Zig-zag bottom effect */}
-      <Box sx={{ height: 6, backgroundImage: 'linear-gradient(135deg, #e8e4d8 25%, transparent 25%), linear-gradient(225deg, #e8e4d8 25%, transparent 25%)', backgroundSize: '12px 12px', backgroundPosition: '0 0' }} />
+      {/* Zig-zag bottom effect with 7px radius */}
+      <Box sx={{ height: 6, backgroundImage: 'linear-gradient(135deg, #e8e4d8 25%, transparent 25%), linear-gradient(225deg, #e8e4d8 25%, transparent 25%)', backgroundSize: '12px 12px', backgroundPosition: '0 0', borderBottomLeftRadius: '7px', borderBottomRightRadius: '7px' }} />
     </Card>
   );
 }
@@ -317,7 +331,7 @@ export default function KitchenDisplayPage() {
   if (!canViewKDS && !loading) {
     return (
       <Box sx={{ p: 5, textAlign: 'center' }}>
-        <Alert severity="error" sx={{ mx: 'auto', maxWidth: 500 }}>
+        <Alert severity="error" sx={{ mx: 'auto', maxWidth: 500, borderRadius: '7px' }}>
           You do not have permission to view the Kitchen Display.
         </Alert>
       </Box>
@@ -345,45 +359,48 @@ export default function KitchenDisplayPage() {
   const orderedCount = items.filter(i => i.status === 'AWAITING' || i.status === 'ORDERED').length;
 
   return (
-    <Box sx={{ height: { xs: 'auto', md: '100%' }, display: "flex", flexDirection: "column", p: { xs: 2, md: 4 }, bgcolor: '#FCF9EA', overflow: { xs: 'visible', md: 'hidden' } }}>
+    <Box sx={{ height: { xs: 'auto', md: '100%' }, display: "flex", flexDirection: "column", p: { xs: 1.5, md: 2 }, bgcolor: '#FCF9EA', overflow: { xs: 'visible', md: 'hidden' } }}>
       <Box sx={{ 
-        mb: 4, 
+        mb: 2, 
         display: { xs: 'none', md: 'flex' }, 
         justifyContent: "space-between", 
         alignItems: 'center', 
-        flexWrap: "wrap", 
         gap: 2 
       }}>
-        <Box>
-          <Typography variant="h4" sx={{ fontWeight: 500, color: '#e9762b', fontSize: '1.5rem', display: 'flex', alignItems: 'center', gap: 2 }}>
-            <KitchenIcon sx={{ fontSize: 32 }} /> KITCHEN DISPLAY
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+          <KitchenIcon sx={{ color: '#e9762b', fontSize: 28 }} />
+          <Typography variant="h4" sx={{ fontWeight: 500, color: '#e9762b', fontSize: '1.25rem' }}>
+            KITCHEN DISPLAY
           </Typography>
+          <Chip 
+            label={`LAST UPDATED: ${lastRefresh.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })}`}
+            size="small"
+            sx={{ fontWeight: 800, fontSize: '0.65rem', borderRadius: '7px', bgcolor: 'white', border: '1px solid #e8e4d8' }}
+          />
         </Box>
-        <Stack direction="row" spacing={2} sx={{ alignItems: 'center' }}>
-          <Box sx={{ textAlign: 'right' }}>
-            <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 800, display: 'block' }}>REAL-TIME UPDATES</Typography>
-            <Typography variant="body2" sx={{ fontWeight: 900 }}>{lastRefresh.toLocaleTimeString()}</Typography>
-          </Box>
-          <Button 
-            variant="contained" 
-            startIcon={<RefreshIcon />} 
-            onClick={fetchItems} 
-            sx={{ borderRadius: '4px', height: 48, fontWeight: 800, px: 3 }}
-          >
-            REFRESH
-          </Button>
+        <Stack direction="row" spacing={1} sx={{ alignItems: 'center' }}>
+          <Tooltip title="Refresh Kitchen Orders">
+            <Button 
+              variant="outlined" 
+              size="small"
+              onClick={fetchItems} 
+              sx={{ borderRadius: '7px', height: 40, minWidth: 40, p: 0 }}
+            >
+              <RefreshIcon />
+            </Button>
+          </Tooltip>
         </Stack>
       </Box>
 
-      {error && <Alert severity="error" sx={{ mb: 3, borderRadius: '4px' }}>{error}</Alert>}
+      {error && <Alert severity="error" sx={{ mb: 2, borderRadius: '7px' }}>{error}</Alert>}
 
       {(preparingCount > 0 || orderedCount > 0) && (
-        <Grid container spacing={2} sx={{ mb: 4 }}>
+        <Grid container spacing={1.5} sx={{ mb: 2 }}>
           {orderedCount > 0 && (
             <Grid size={{ xs: 12, sm: 6 }}>
-              <Box sx={{ p: 2, bgcolor: '#fef2f2', border: '1px solid #fee2e2', borderRadius: '4px', display: 'flex', alignItems: 'center', gap: 2 }}>
-                <AlertIcon sx={{ color: 'error.main' }} />
-                <Typography sx={{ fontWeight: 900, color: 'error.main' }}>
+              <Box sx={{ p: 1.5, bgcolor: alpha(theme.palette.error.main, 0.05), border: `1px solid ${alpha(theme.palette.error.main, 0.1)}`, borderRadius: '7px', display: 'flex', alignItems: 'center', gap: 1.5 }}>
+                <AlertIcon sx={{ color: 'error.main', fontSize: 20 }} />
+                <Typography sx={{ fontWeight: 800, color: 'error.main', fontSize: '0.8rem' }}>
                   {orderedCount} NEW ORDERS AWAITING ATTENTION
                 </Typography>
               </Box>
@@ -391,9 +408,9 @@ export default function KitchenDisplayPage() {
           )}
           {preparingCount > 0 && (
             <Grid size={{ xs: 12, sm: 6 }}>
-              <Box sx={{ p: 2, bgcolor: '#fff7ed', border: '1px solid #fed7aa', borderRadius: '4px', display: 'flex', alignItems: 'center', gap: 2 }}>
-                <StartIcon sx={{ color: 'warning.main' }} />
-                <Typography sx={{ fontWeight: 900, color: 'warning.dark' }}>
+              <Box sx={{ p: 1.5, bgcolor: alpha(theme.palette.warning.main, 0.05), border: `1px solid ${alpha(theme.palette.warning.main, 0.1)}`, borderRadius: '7px', display: 'flex', alignItems: 'center', gap: 1.5 }}>
+                <StartIcon sx={{ color: 'warning.main', fontSize: 20 }} />
+                <Typography sx={{ fontWeight: 800, color: 'warning.dark', fontSize: '0.8rem' }}>
                   {preparingCount} ITEMS CURRENTLY IN PREPARATION
                 </Typography>
               </Box>
@@ -402,17 +419,17 @@ export default function KitchenDisplayPage() {
         </Grid>
       )}
 
-      <Box sx={{ flexGrow: { xs: 0, md: 1 }, overflowY: { xs: 'visible', md: 'auto' }, minHeight: 0 }}>
+      <Box sx={{ flexGrow: { xs: 0, md: 1 }, overflowY: { xs: 'visible', md: 'auto' }, minHeight: 0, pr: 0.5 }}>
       {loading && items.length === 0 ? (
         <Box sx={{ textAlign: 'center', py: 10 }}><CircularProgress /></Box>
       ) : grouped.length === 0 ? (
-        <Box sx={{ textAlign: 'center', py: 15, bgcolor: 'white', borderRadius: '8px', border: '2px dashed #e8e4d8' }}>
-          <DoneIcon sx={{ fontSize: 80, color: '#FCF9EA', mb: 2 }} />
-          <Typography variant="h5" sx={{ color: 'text.secondary', fontWeight: 800 }}>KITCHEN IS CLEAR</Typography>
-          <Typography color="text.secondary">Waiting for new orders...</Typography>
+        <Box sx={{ textAlign: 'center', py: 15, bgcolor: 'white', borderRadius: '7px', border: '2px dashed #e8e4d8' }}>
+          <DoneIcon sx={{ fontSize: 60, color: '#FCF9EA', mb: 2 }} />
+          <Typography variant="h5" sx={{ color: 'text.secondary', fontWeight: 900, fontSize: '1.25rem' }}>KITCHEN IS CLEAR</Typography>
+          <Typography variant="body2" color="text.secondary">Waiting for new orders...</Typography>
         </Box>
       ) : (
-        <Grid container spacing={4}>
+        <Grid container spacing={2}>
           {grouped.map(group => (
             <Grid size={{ xs: 12, sm: 6, md: 4, lg: 3 }} key={group.orderId}>
               <OrderTicket 
@@ -429,10 +446,14 @@ export default function KitchenDisplayPage() {
       </Box>
 
       {/* Reject Reason Dialog */}
-      <Dialog open={rejectOpen} onClose={() => setRejectOpen(false)}>
-        <DialogTitle sx={{ fontWeight: 800 }}>Reject Item</DialogTitle>
-        <DialogContent>
-          <Typography variant="body2" sx={{ mb: 2 }}>Please provide a reason for rejecting this item.</Typography>
+      <Dialog 
+        open={rejectOpen} 
+        onClose={() => setRejectOpen(false)}
+        slotProps={{ paper: { sx: { borderRadius: '12px' } } }}
+      >
+        <DialogTitle sx={{ fontWeight: 800, fontSize: '1.1rem' }}>Reject Item</DialogTitle>
+        <DialogContent sx={{ py: 1 }}>
+          <Typography variant="body2" sx={{ mb: 2, fontWeight: 600 }}>Please provide a reason for rejecting this item.</Typography>
           <TextField
             autoFocus
             fullWidth
@@ -442,11 +463,14 @@ export default function KitchenDisplayPage() {
             onChange={(e) => setRejectNote(e.target.value)}
             multiline
             rows={2}
+            slotProps={{
+              input: { sx: { borderRadius: '7px' } }
+            }}
           />
         </DialogContent>
         <DialogActions sx={{ p: 2 }}>
-          <Button onClick={() => setRejectOpen(false)}>Cancel</Button>
-          <Button variant="contained" color="error" onClick={handleConfirmReject} disabled={!rejectNote.trim()}>
+          <Button onClick={() => setRejectOpen(false)} color="inherit" sx={{ fontWeight: 700 }}>Cancel</Button>
+          <Button variant="contained" color="error" onClick={handleConfirmReject} disabled={!rejectNote.trim()} sx={{ borderRadius: '7px', fontWeight: 800 }}>
             Confirm Rejection
           </Button>
         </DialogActions>

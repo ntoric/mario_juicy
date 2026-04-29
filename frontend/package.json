@@ -15,6 +15,7 @@
     "electron:build": "npm run build && electron-builder",
     "electron:build:mac": "npm run build && electron-builder --mac",
     "electron:build:win": "npm run build && electron-builder --win",
+    "printer:build": "cd ../mario-printer && go build -o mario-printer main.go",
     "mobile:sync": "npm run build && cap sync",
     "mobile:open": "cap open android"
   },
@@ -24,6 +25,15 @@
     "directories": {
       "output": "dist"
     },
+    "extraResources": [
+      {
+        "from": "../mario-printer/mario-printer",
+        "to": "bin/mario-printer",
+        "filter": [
+          "**/*"
+        ]
+      }
+    ],
     "files": [
       "main.js",
       "preload.js",

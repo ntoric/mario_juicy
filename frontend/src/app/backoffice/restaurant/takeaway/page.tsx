@@ -19,6 +19,9 @@ import {
   useMediaQuery,
   Fab,
   Zoom,
+  Tooltip,
+  IconButton,
+  alpha,
 } from '@mui/material';
 import {
   Refresh as RefreshIcon,
@@ -148,101 +151,165 @@ export default function TakeAwayPage() {
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
 
   return (
-    <Box sx={{ p: { xs: 2, md: 3 } }}>
+    <Box sx={{ height: { xs: 'auto', md: '100%' }, display: "flex", flexDirection: "column", p: { xs: 1.5, md: 2 }, overflow: { xs: 'visible', md: 'hidden' } }}>
+      {/* Optimized Header Row */}
+      {/* Optimized Header Row */}
       <Box sx={{ 
-        mb: { xs: 2, md: 4 }, 
+        mb: 2, 
         display: 'flex', 
-        justifyContent: "space-between", 
-        alignItems: "center", 
-        flexWrap: "wrap", 
+        justifyContent: 'space-between', 
+        alignItems: 'center', 
         gap: 2 
       }}>
-        <Box>
-          <Typography variant="h4" sx={{ fontWeight: 500, color: '#e9762b', fontSize: '1.5rem' }}>Parcel Orders</Typography>
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+          <Typography variant="h4" sx={{ fontWeight: 500, color: '#e9762b', fontSize: '1.25rem', whiteSpace: 'nowrap' }}>
+            Parcel Orders
+          </Typography>
+          
+          <Tabs 
+            value={activeTab} 
+            onChange={(_, val) => setActiveTab(val)} 
+            sx={{ 
+              display: { xs: 'none', md: 'flex' },
+              minHeight: 40,
+              '& .MuiTabs-indicator': { height: 3, borderRadius: '7px 7px 0 0' },
+              '& .MuiTab-root': { 
+                fontWeight: 700, 
+                fontSize: '0.85rem', 
+                minHeight: 40, 
+                px: 2,
+                color: 'text.secondary',
+                '&.Mui-selected': { color: 'primary.main' }
+              }
+            }}
+          >
+            <Tab label={`Active (${activeOrders.length})`} />
+            <Tab label="History" />
+          </Tabs>
         </Box>
-        <Stack direction="row" spacing={1.5} sx={{ display: { xs: 'none', md: 'flex' } }}>
-          <Button 
-            variant="outlined" 
-            startIcon={<RefreshIcon />} 
-            onClick={fetchOrders} 
-            sx={{ borderRadius: '4px', height: 44, fontWeight: 700 }}
-          >
-            Refresh
-          </Button>
-          <Button 
-            variant="contained" 
-            startIcon={<AddIcon />} 
+
+        <Stack direction="row" spacing={1} sx={{ alignItems: 'center' }}>
+          {isMobile ? (
+            <IconButton onClick={fetchOrders} size="small" sx={{ color: 'primary.main', border: '1px solid', borderColor: 'divider', borderRadius: '7px' }}>
+              <RefreshIcon fontSize="small" />
+            </IconButton>
+          ) : (
+            <Tooltip title="Refresh Orders">
+              <Button 
+                variant="outlined" 
+                size="small"
+                onClick={fetchOrders} 
+                sx={{ borderRadius: '7px', height: 40, minWidth: 40, p: 0 }}
+              >
+                <RefreshIcon />
+              </Button>
+            </Tooltip>
+          )}
+          
+          <Button
+            variant="contained"
+            size="small"
             onClick={() => { setSelectedOrder(null); setDialogOpen(true); }}
-            sx={{ borderRadius: '4px', height: 44, fontWeight: 800 }}
+            sx={{ borderRadius: '7px', height: 40, px: 2, fontWeight: 800 }}
+            startIcon={<AddIcon />}
           >
-            NEW PARCEL
+            {isMobile ? "New" : "New Order"}
           </Button>
         </Stack>
       </Box>
 
-      <Box sx={{ borderBottom: 1, borderColor: 'divider', mb: 3 }}>
-        <Tabs 
-          value={activeTab} 
-          onChange={(_, val) => setActiveTab(val)} 
-          sx={{
-            '& .MuiTab-root': { fontWeight: 700, fontSize: '0.9rem' }
-          }}
-        >
-          <Tab label={`Active (${activeOrders.length})`} />
-          <Tab label="History" />
-        </Tabs>
-      </Box>
-
-      {loading ? (
-        <Box sx={{ display: 'flex', justifyContent: 'center', py: 10 }}><CircularProgress /></Box>
-      ) : (
-        <>
-          {activeTab === 0 ? (
-            activeOrders.length === 0 ? (
-              <Box sx={{ display: 'flex', justifyContent: 'center', py: 8 }}>
-                <Card variant="outlined" sx={{ maxWidth: 400, width: '100%', textAlign: 'center', p: 4, borderRadius: 3, bgcolor: '#fbfaf8', borderStyle: 'dashed', borderWidth: 2 }}>
-                  <ShoppingBagIcon sx={{ fontSize: 48, color: 'text.disabled', mb: 2, opacity: 0.5 }} />
-                  <Typography variant="h6" sx={{ fontWeight: 800, color: 'text.secondary' }}>No Active Parcels</Typography>
-                  <Typography variant="body2" color="text.secondary" sx={{ mt: 1, mb: 3 }}>
-                    Current active take-away orders will appear here. Click the button above to start a new one.
-                  </Typography>
-                  <Button variant="contained" startIcon={<AddIcon />} onClick={() => setDialogOpen(true)} sx={{ borderRadius: 2 }}>
-                    New Parcel Order
-                  </Button>
-                </Card>
-              </Box>
-            ) : (
-              <Grid container spacing={2}>
-                {activeOrders.map(order => (
-                  <Grid size={{ xs: 12, sm: 6, md: 4, lg: 3 }} key={order.id}>
-                    <TakeAwayCard order={order} onClick={() => { setSelectedOrder(order); setDialogOpen(true); }} />
-                  </Grid>
-                ))}
-              </Grid>
-            )
-          ) : (
-            historyOrders.length === 0 ? (
-              <Box sx={{ display: 'flex', justifyContent: 'center', py: 8 }}>
-                <Card variant="outlined" sx={{ maxWidth: 400, width: '100%', textAlign: 'center', p: 4, borderRadius: 3, bgcolor: '#fbfaf8', borderStyle: 'dashed', borderWidth: 2 }}>
-                  <HistoryIcon sx={{ fontSize: 48, color: 'text.disabled', mb: 2, opacity: 0.5 }} />
-                  <Typography variant="h6" sx={{ fontWeight: 800, color: 'text.secondary' }}>History is Empty</Typography>
-                  <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
-                    All completed or cancelled parcel orders will be listed here for audit.
-                  </Typography>
-                </Card>
-              </Box>
-            ) : (
-              <Grid container spacing={2}>
-                {historyOrders.map(order => (
-                  <Grid size={{ xs: 12, sm: 6, md: 4, lg: 3 }} key={order.id}>
-                    <TakeAwayCard order={order} onClick={() => { setSelectedOrder(order); setDialogOpen(true); }} />
-                  </Grid>
-                ))}
-              </Grid>
-            )
-          )}
-        </>
+      {/* Mobile Only Tabs */}
+      {isMobile && (
+        <Box sx={{ mb: 2 }}>
+          <Tabs 
+            value={activeTab} 
+            onChange={(_, val) => setActiveTab(val)} 
+            variant="fullWidth"
+            sx={{ 
+              bgcolor: alpha(theme.palette.primary.main, 0.03),
+              borderRadius: '7px',
+              '& .MuiTabs-indicator': { height: 3, borderRadius: '7px' },
+              '& .MuiTab-root': { fontWeight: 800, fontSize: '0.8rem', minHeight: 44 }
+            }}
+          >
+            <Tab label={`Active (${activeOrders.length})`} />
+            <Tab label="History" />
+          </Tabs>
+        </Box>
       )}
+
+      {/* Mobile Only Tabs */}
+      {isMobile && (
+        <Box sx={{ borderBottom: 1, borderColor: 'divider', mb: 2 }}>
+          <Tabs 
+            value={activeTab} 
+            onChange={(_, val) => setActiveTab(val)} 
+            variant="fullWidth"
+            sx={{
+              '& .MuiTabs-indicator': { height: 3, borderRadius: '7px 7px 0 0' },
+              '& .MuiTab-root': { fontWeight: 700, fontSize: '0.85rem' }
+            }}
+          >
+            <Tab label={`Active (${activeOrders.length})`} />
+            <Tab label="History" />
+          </Tabs>
+        </Box>
+      )}
+
+      {error && <Alert severity="error" sx={{ mb: 2, borderRadius: '7px' }}>{error}</Alert>}
+
+      <Box sx={{ flexGrow: 1, overflowY: 'auto', px: 0.5 }}>
+        {loading ? (
+          <Box sx={{ display: 'flex', justifyContent: 'center', py: 10 }}><CircularProgress /></Box>
+        ) : (
+          <>
+            {activeTab === 0 ? (
+              activeOrders.length === 0 ? (
+                <Box sx={{ display: 'flex', justifyContent: 'center', py: 8 }}>
+                  <Card variant="outlined" sx={{ maxWidth: 400, width: '100%', textAlign: 'center', p: 4, borderRadius: '7px', bgcolor: '#fbfaf8', borderStyle: 'dashed', borderWidth: 2 }}>
+                    <ShoppingBagIcon sx={{ fontSize: 48, color: 'text.disabled', mb: 2, opacity: 0.5 }} />
+                    <Typography variant="h6" sx={{ fontWeight: 800, color: 'text.secondary' }}>No Active Parcels</Typography>
+                    <Typography variant="body2" color="text.secondary" sx={{ mt: 1, mb: 3 }}>
+                      Current active take-away orders will appear here. Click the button above to start a new one.
+                    </Typography>
+                    <Button variant="contained" startIcon={<AddIcon />} onClick={() => setDialogOpen(true)} sx={{ borderRadius: '7px' }}>
+                      New Parcel Order
+                    </Button>
+                  </Card>
+                </Box>
+              ) : (
+                <Grid container spacing={2}>
+                  {activeOrders.map(order => (
+                    <Grid size={{ xs: 12, sm: 6, md: 4, lg: 3 }} key={order.id}>
+                      <TakeAwayCard order={order} onClick={() => { setSelectedOrder(order); setDialogOpen(true); }} />
+                    </Grid>
+                  ))}
+                </Grid>
+              )
+            ) : (
+              historyOrders.length === 0 ? (
+                <Box sx={{ display: 'flex', justifyContent: 'center', py: 8 }}>
+                  <Card variant="outlined" sx={{ maxWidth: 400, width: '100%', textAlign: 'center', p: 4, borderRadius: '7px', bgcolor: '#fbfaf8', borderStyle: 'dashed', borderWidth: 2 }}>
+                    <HistoryIcon sx={{ fontSize: 48, color: 'text.disabled', mb: 2, opacity: 0.5 }} />
+                    <Typography variant="h6" sx={{ fontWeight: 800, color: 'text.secondary' }}>History is Empty</Typography>
+                    <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
+                      All completed or cancelled parcel orders will be listed here for audit.
+                    </Typography>
+                  </Card>
+                </Box>
+              ) : (
+                <Grid container spacing={2}>
+                  {historyOrders.map(order => (
+                    <Grid size={{ xs: 12, sm: 6, md: 4, lg: 3 }} key={order.id}>
+                      <TakeAwayCard order={order} onClick={() => { setSelectedOrder(order); setDialogOpen(true); }} />
+                    </Grid>
+                  ))}
+                </Grid>
+              )
+            )}
+          </>
+        )}
+      </Box>
 
       <OrderDialog
         open={dialogOpen}

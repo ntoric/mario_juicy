@@ -2,19 +2,17 @@
 
 import React from 'react';
 import {
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
   Button,
   Box,
   Typography,
   IconButton,
+  Stack,
 } from '@mui/material';
 import {
   Close as CloseIcon,
   Download as DownloadIcon,
   Print as PrintIcon,
+  ChevronLeft as ChevronLeftIcon,
 } from '@mui/icons-material';
 import InvoicePrint from './InvoicePrint';
 
@@ -37,50 +35,76 @@ const InvoicePreviewDialog: React.FC<InvoicePreviewDialogProps> = ({
   onDownload,
   onPrint,
 }) => {
-  if (!invoice) return null;
+  if (!open || !invoice) return null;
 
   return (
-    <Dialog
-      open={open}
-      onClose={onClose}
-      maxWidth="sm"
-      fullWidth
-      slotProps={{
-        paper: {
-          sx: { 
-            borderRadius: '12px', 
-            overflow: 'hidden',
-            bgcolor: '#FCF9EA'
-          }
-        }
-      }}
-    >
-      <DialogTitle sx={{ 
-        m: 0, 
+    <Box sx={{ 
+      position: 'absolute',
+      inset: 0,
+      bgcolor: '#fdfdfd',
+      zIndex: 300,
+      display: 'flex', 
+      flexDirection: 'column',
+      animation: 'slideInRight 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+      '@keyframes slideInRight': {
+        from: { transform: 'translateX(100%)' },
+        to: { transform: 'translateX(0)' }
+      }
+    }}>
+      {/* Header */}
+      <Box sx={{ 
         p: 2, 
+        borderBottom: '1px solid #e8e4d8', 
         display: 'flex', 
-        justifyContent: 'space-between', 
-        alignItems: 'center',
-        bgcolor: 'white',
-        borderBottom: '1px solid #e8e4d8'
+        alignItems: 'center', 
+        justifyContent: 'space-between',
+        bgcolor: 'white'
       }}>
-        <Typography variant="h6" component="span" sx={{ fontWeight: 800 }}>Invoice Preview</Typography>
-        <IconButton
-          aria-label="close"
-          onClick={onClose}
-          sx={{ color: 'text.secondary' }}
-        >
-          <CloseIcon />
-        </IconButton>
-      </DialogTitle>
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+          <IconButton onClick={onClose} sx={{ color: 'text.secondary' }}>
+            <ChevronLeftIcon />
+          </IconButton>
+          <Typography variant="h6" sx={{ fontWeight: 900 }}>Invoice Preview</Typography>
+        </Box>
+        <Stack direction="row" spacing={2}>
+          <Button 
+            variant="outlined" 
+            size="small"
+            startIcon={<DownloadIcon />} 
+            onClick={onDownload}
+            sx={{ borderRadius: '8px', fontWeight: 800 }}
+          >
+            Download
+          </Button>
+          <Button 
+            variant="contained" 
+            size="small"
+            startIcon={<PrintIcon />} 
+            onClick={onPrint}
+            sx={{ borderRadius: '8px', fontWeight: 800 }}
+          >
+            Print
+          </Button>
+        </Stack>
+      </Box>
 
-      <DialogContent dividers sx={{ p: 0, bgcolor: 'white' }}>
+      {/* Content */}
+      <Box sx={{ 
+        flexGrow: 1, 
+        overflowY: 'auto', 
+        bgcolor: '#f5f5f5',
+        p: { xs: 2, md: 4 },
+        display: 'flex',
+        justifyContent: 'center'
+      }}>
         <Box sx={{ 
           width: '100%',
-          bgcolor: 'white', 
-          overflowY: 'auto',
-          display: 'flex',
-          justifyContent: 'center'
+          maxWidth: '500px',
+          bgcolor: 'white',
+          p: 4,
+          borderRadius: '16px',
+          boxShadow: '0 8px 32px rgba(0,0,0,0.05)',
+          height: 'fit-content'
         }}>
           <InvoicePrint 
             invoice={invoice}
@@ -88,27 +112,8 @@ const InvoicePreviewDialog: React.FC<InvoicePreviewDialogProps> = ({
             tableNumber={tableNumber}
           />
         </Box>
-      </DialogContent>
-
-      <DialogActions sx={{ p: 3, bgcolor: 'white', borderTop: '1px solid #e8e4d8', gap: 2 }}>
-        <Button 
-          variant="outlined" 
-          startIcon={<DownloadIcon />} 
-          onClick={onDownload}
-          sx={{ borderRadius: '8px', fontWeight: 700, px: 3 }}
-        >
-          Download
-        </Button>
-        <Button 
-          variant="contained" 
-          startIcon={<PrintIcon />} 
-          onClick={onPrint}
-          sx={{ borderRadius: '8px', fontWeight: 700, px: 3 }}
-        >
-          Print
-        </Button>
-      </DialogActions>
-    </Dialog>
+      </Box>
+    </Box>
   );
 };
 

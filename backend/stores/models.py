@@ -25,6 +25,9 @@ class Store(models.Model):
         default='3_INCH',
         help_text="Size of the thermal printer used for invoices (2 inch or 3 inch)."
     )
+    thermal_printer_name = models.CharField(max_length=255, blank=True, null=True, help_text="Name of the thermal printer (e.g. system name)")
+    thermal_printer_vendor_id = models.CharField(max_length=20, blank=True, null=True, help_text="USB Vendor ID of the printer")
+    thermal_printer_product_id = models.CharField(max_length=20, blank=True, null=True, help_text="USB Product ID of the printer")
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 

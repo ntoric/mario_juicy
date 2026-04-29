@@ -1,16 +1,18 @@
 import React, { useState } from 'react';
 import {
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
+  Box,
+  Typography,
   Button,
   Grid,
   TextField,
   MenuItem,
   Stack,
-  CircularProgress
+  CircularProgress,
+  IconButton,
+  Paper,
+  Divider,
 } from '@mui/material';
+import { ChevronLeft as ChevronLeftIcon, Save as SaveIcon } from '@mui/icons-material';
 import { restaurantService, Reservation, Table } from '@/services/restaurantService';
 
 interface ReservationFormProps {
@@ -44,7 +46,7 @@ const ReservationForm: React.FC<ReservationFormProps> = ({
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+    if (e) e.preventDefault();
     setLoading(true);
     try {
       if (initialData) {
@@ -61,103 +63,111 @@ const ReservationForm: React.FC<ReservationFormProps> = ({
     }
   };
 
+  if (!open) return null;
+
   return (
-    <Dialog open={open} onClose={onClose} maxWidth="sm" fullWidth>
-      <form onSubmit={handleSubmit}>
-        <DialogTitle sx={{ bgcolor: 'primary.main', color: 'white' }}>
-          {initialData ? 'Edit Reservation' : 'New Reservation'}
-        </DialogTitle>
-        <DialogContent sx={{ pt: 3 }}>
-          <Stack spacing={3} sx={{ mt: 1 }} component="div">
-            <Grid container spacing={2}>
-              <Grid size={{ xs: 12, sm: 6 }}>
-                <TextField
-                  fullWidth
-                  label="Customer Name"
-                  name="customer_name"
-                  value={formData.customer_name}
-                  onChange={handleChange}
-                  required
-                />
-              </Grid>
-              <Grid size={{ xs: 12, sm: 6 }}>
-                <TextField
-                  fullWidth
-                  label="Customer Phone"
-                  name="customer_phone"
-                  value={formData.customer_phone}
-                  onChange={handleChange}
-                  required
-                />
-              </Grid>
-              <Grid size={{ xs: 12, sm: 6 }}>
-                <TextField
-                  fullWidth
-                  select
-                  label="Table"
-                  name="table"
-                  value={formData.table}
-                  onChange={handleChange}
-                  required
-                >
-                  {tables.map((table) => (
-                    <MenuItem key={table.id} value={table.id}>
-                      Table {table.number} (Cap: {table.capacity})
-                    </MenuItem>
-                  ))}
-                </TextField>
-              </Grid>
-              <Grid size={{ xs: 12, sm: 6 }}>
-                <TextField
-                  fullWidth
-                  label="Number of Guests"
-                  name="number_of_guests"
-                  type="number"
-                  value={formData.number_of_guests}
-                  onChange={handleChange}
-                  required
-                />
-              </Grid>
-              <Grid size={{ xs: 12 }}>
-                <TextField
-                  fullWidth
-                  label="Reservation Time"
-                  name="reservation_time"
-                  type="datetime-local"
-                  value={formData.reservation_time}
-                  onChange={handleChange}
-                  slotProps={{ inputLabel: { shrink: true } }}
-                  required
-                />
-              </Grid>
-              <Grid size={{ xs: 12 }}>
-                <TextField
-                  fullWidth
-                  label="Notes"
-                  name="notes"
-                  multiline
-                  rows={3}
-                  value={formData.notes}
-                  onChange={handleChange}
-                />
-              </Grid>
-            </Grid>
-          </Stack>
-        </DialogContent>
-        <DialogActions sx={{ p: 3 }}>
-          <Button onClick={onClose} disabled={loading}>Cancel</Button>
-          <Button 
-            variant="contained" 
-            type="submit" 
-            disabled={loading}
-            startIcon={loading && <CircularProgress size={20} color="inherit" />}
-          >
-            {initialData ? 'Update Reservation' : 'Create Reservation'}
-          </Button>
-        </DialogActions>
-      </form>
-    </Dialog>
+    <Box sx={{ 
+      position: 'absolute', inset: 0, bgcolor: '#fdfdfd', zIndex: 100, display: 'flex', flexDirection: 'column',
+      animation: 'slideInRight 0.2s ease-out',
+      '@keyframes slideInRight': { from: { transform: 'translateX(100%)' }, to: { transform: 'translateX(0)' } }
+    }}>
+      <Box sx={{ p: 2, borderBottom: '1px solid #e8e4d8', display: 'flex', alignItems: 'center', justifyContent: 'space-between', bgcolor: 'white' }}>
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+          <IconButton onClick={onClose} sx={{ color: 'text.secondary' }}>
+            <ChevronLeftIcon />
+          </IconButton>
+          <Typography variant="h6" sx={{ fontWeight: 900 }}>
+            {initialData ? 'Edit Reservation' : 'New Reservation'}
+          </Typography>
+        </Box>
+        <Button 
+          variant="contained" 
+          onClick={handleSubmit}
+          startIcon={loading ? <CircularProgress size={20} color="inherit" /> : <SaveIcon />}
+          disabled={loading}
+          sx={{ borderRadius: '12px', fontWeight: 800, px: 3 }}
+        >
+          {initialData ? 'UPDATE' : 'CREATE'}
+        </Button>
+      </Box>
+
+      <Box sx={{ flexGrow: 1, overflowY: 'auto', p: { xs: 2, md: 4 }, bgcolor: '#f9f9f9' }}>
+        <Grid container spacing={4} sx={{ justifyContent: 'center' }}>
+          <Grid size={{ xs: 12, md: 8, lg: 6 }}>
+            <Paper sx={{ p: 4, borderRadius: '24px', border: '1px solid #e8e4d8', boxShadow: '0 8px 32px rgba(0,0,0,0.03)' }}>
+              <Stack spacing={4}>
+                <Box>
+                  <Typography variant="overline" sx={{ fontWeight: 900, color: 'primary.main', mb: 2, display: 'block' }}>GUEST INFORMATION</Typography>
+                  <Grid container spacing={2}>
+                    <Grid size={{ xs: 12, sm: 6 }}>
+                      <TextField
+                        fullWidth label="Customer Name" name="customer_name"
+                        value={formData.customer_name} onChange={handleChange} required
+                        slotProps={{ input: { sx: { borderRadius: '12px', bgcolor: 'white' } } }}
+                      />
+                    </Grid>
+                    <Grid size={{ xs: 12, sm: 6 }}>
+                      <TextField
+                        fullWidth label="Customer Phone" name="customer_phone"
+                        value={formData.customer_phone} onChange={handleChange} required
+                        slotProps={{ input: { sx: { borderRadius: '12px', bgcolor: 'white' } } }}
+                      />
+                    </Grid>
+                  </Grid>
+                </Box>
+
+                <Divider />
+
+                <Box>
+                  <Typography variant="overline" sx={{ fontWeight: 900, color: 'primary.main', mb: 2, display: 'block' }}>RESERVATION DETAILS</Typography>
+                  <Grid container spacing={2}>
+                    <Grid size={{ xs: 12, sm: 6 }}>
+                      <TextField
+                        fullWidth select label="Table" name="table"
+                        value={formData.table} onChange={handleChange} required
+                        slotProps={{ input: { sx: { borderRadius: '12px', bgcolor: 'white' } } }}
+                      >
+                        {tables.map((table) => (
+                          <MenuItem key={table.id} value={table.id}>
+                            Table {table.number} (Cap: {table.capacity})
+                          </MenuItem>
+                        ))}
+                      </TextField>
+                    </Grid>
+                    <Grid size={{ xs: 12, sm: 6 }}>
+                      <TextField
+                        fullWidth label="Number of Guests" name="number_of_guests" type="number"
+                        value={formData.number_of_guests} onChange={handleChange} required
+                        slotProps={{ input: { sx: { borderRadius: '12px', bgcolor: 'white' } } }}
+                      />
+                    </Grid>
+                    <Grid size={{ xs: 12 }}>
+                      <TextField
+                        fullWidth label="Reservation Time" name="reservation_time" type="datetime-local"
+                        value={formData.reservation_time} onChange={handleChange} required
+                        slotProps={{ 
+                          inputLabel: { shrink: true },
+                          input: { sx: { borderRadius: '12px', bgcolor: 'white' } } 
+                        }}
+                      />
+                    </Grid>
+                    <Grid size={{ xs: 12 }}>
+                      <TextField
+                        fullWidth label="Special Notes" name="notes" multiline rows={3}
+                        value={formData.notes} onChange={handleChange}
+                        slotProps={{ input: { sx: { borderRadius: '12px', bgcolor: 'white' } } }}
+                      />
+                    </Grid>
+                  </Grid>
+                </Box>
+              </Stack>
+            </Paper>
+          </Grid>
+        </Grid>
+      </Box>
+    </Box>
   );
 };
+
 
 export default ReservationForm;

@@ -17,6 +17,9 @@ export interface Store {
   is_reservations_enabled: boolean;
   is_active: boolean;
   thermal_printer_size: '2_INCH' | '3_INCH';
+  thermal_printer_name?: string;
+  thermal_printer_vendor_id?: string;
+  thermal_printer_product_id?: string;
 }
 
 export interface StoreFormData {
@@ -34,6 +37,9 @@ export interface StoreFormData {
   is_take_away_enabled?: boolean;
   is_reservations_enabled?: boolean;
   thermal_printer_size?: '2_INCH' | '3_INCH';
+  thermal_printer_name?: string;
+  thermal_printer_vendor_id?: string;
+  thermal_printer_product_id?: string;
 }
 
 export const storeService = {

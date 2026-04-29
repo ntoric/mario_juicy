@@ -11,6 +11,10 @@ import {
   CircularProgress,
   Alert,
   InputAdornment,
+  Tooltip,
+  Chip,
+  Avatar,
+  Stack,
 } from "@mui/material";
 import { toast } from 'sonner';
 import {
@@ -20,8 +24,9 @@ import {
 } from "@mui/icons-material";
 import { userService, User, UserFormData } from "@/services/userService";
 import UserTable from "@/components/backoffice/users/UserTable";
-import UserModal from "@/components/backoffice/users/UserModal";
+import UserForm from "@/components/backoffice/users/UserForm";
 import ConfirmActionDialog from "@/components/backoffice/users/ConfirmActionDialog";
+import { alpha } from "@mui/material/styles";
 
 export default function UsersPage() {
   const [users, setUsers] = useState<User[]>([]);
@@ -29,9 +34,8 @@ export default function UsersPage() {
   const [error, setError] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
 
-  // Modal states
-  const [openModal, setOpenModal] = useState(false);
-  const [modalMode, setModalMode] = useState<"create" | "edit">("create");
+  // View states
+  const [view, setView] = useState<'list' | 'create' | 'edit'>('list');
   const [currentUser, setCurrentUser] = useState<User | null>(null);
 
   // Disable/Enable confirmation states
@@ -41,8 +45,6 @@ export default function UsersPage() {
   // Delete confirmation states
   const [openDeleteDialog, setOpenDeleteDialog] = useState(false);
   const [userToDelete, setUserToDelete] = useState<User | null>(null);
-
-
 
   const fetchUsers = useCallback(async () => {
     setLoading(true);
@@ -61,12 +63,6 @@ export default function UsersPage() {
     fetchUsers();
   }, [fetchUsers]);
 
-  useEffect(() => {
-    const handleRefresh = () => fetchUsers();
-    window.addEventListener('app-refresh', handleRefresh);
-    return () => window.removeEventListener('app-refresh', handleRefresh);
-  }, [fetchUsers]);
-
   const filteredUsers = useMemo(() => {
     return users.filter((u) =>
       u.username.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -76,25 +72,13 @@ export default function UsersPage() {
   }, [users, searchQuery]);
 
   const handleOpenCreate = () => {
-    setModalMode("create");
     setCurrentUser(null);
-    setOpenModal(true);
+    setView('create');
   };
 
   const handleOpenEdit = (user: User) => {
-    setModalMode("edit");
     setCurrentUser(user);
-    setOpenModal(true);
-  };
-
-  const handleOpenDelete = (user: User) => {
-    setUserToDelete(user);
-    setOpenDeleteDialog(true);
-  };
-
-  const handleOpenStatusToggle = (user: User) => {
-    setUserForStatusChange(user);
-    setOpenStatusDialog(true);
+    setView('edit');
   };
 
   const handleStatusConfirm = async () => {
@@ -127,15 +111,16 @@ export default function UsersPage() {
     }
   };
 
-  const handleModalSubmit = async (userData: UserFormData) => {
+  const handleFormSubmit = async (userData: UserFormData) => {
     try {
-      if (modalMode === "create") {
+      if (view === "create") {
         await userService.createUser(userData);
         toast.success("User created successfully");
       } else if (currentUser) {
         await userService.updateUser(currentUser.id, userData);
         toast.success("User updated successfully");
       }
+      setView('list');
       fetchUsers();
     } catch (err: any) {
       toast.error(err.message || "Operation failed");
@@ -143,70 +128,76 @@ export default function UsersPage() {
     }
   };
 
-
+  if (view === 'create' || view === 'edit') {
+    return (
+      <UserForm 
+        open={true}
+        mode={view === 'create' ? 'create' : 'edit'}
+        user={currentUser}
+        onClose={() => setView('list')}
+        onSubmit={handleFormSubmit}
+      />
+    );
+  }
 
   return (
-    <Box sx={{ p: { xs: 2, md: 3 }, maxWidth: 1200, mx: 'auto' }}>
+    <Box sx={{ p: { xs: 1.5, md: 2 }, height: '100%', display: 'flex', flexDirection: 'column' }}>
+      {/* Optimized Compact Header */}
       <Box sx={{ 
-        mb: 4, 
-        display: { xs: 'none', md: 'flex' }, 
+        mb: 2, 
+        display: 'flex', 
         justifyContent: "space-between", 
-        alignItems: { xs: "flex-start", sm: "center" }, 
-        gap: 2, 
-        flexDirection: { xs: "column", sm: "row" } 
+        alignItems: "center", 
+        gap: 2 
       }}>
-        <Box>
-          <Typography variant="h4" sx={{ fontWeight: 500, color: '#e9762b', fontSize: '1.5rem' }}>
-            User Management
-          </Typography>
-        </Box>
-        <Button
-          variant="contained"
-          startIcon={<AddIcon />}
-          onClick={handleOpenCreate}
-          sx={{ 
-            height: 48, 
-            borderRadius: 2, 
-            px: 3, 
-            width: { xs: '100%', sm: 'auto' },
-            bgcolor: '#000',
-            color: '#fff',
-            '&:hover': { bgcolor: '#333' },
-            boxShadow: 'none',
-            fontWeight: 600
-          }}
-        >
-          Add New User
-        </Button>
-      </Box>
+        <Typography variant="h4" sx={{ fontWeight: 900, color: '#e9762b', fontSize: '1.5rem', whiteSpace: 'nowrap', display: { xs: 'none', sm: 'block' } }}>
+          Users
+        </Typography>
 
-      <Card sx={{ mb: 4, p: 2, borderRadius: 2, boxShadow: 'none', border: '1px solid #eee' }}>
-        <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
+        <Box sx={{ flexGrow: 1, maxWidth: { xs: '100%', sm: 400 } }}>
           <TextField
             fullWidth
-            placeholder="Search users by name, email, or role..."
+            placeholder="Search users..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
+            size="small"
+            autoComplete="off"
             slotProps={{
               input: {
                 startAdornment: (
                   <InputAdornment position="start">
-                    <SearchIcon sx={{ color: "text.secondary" }} />
+                    <SearchIcon sx={{ color: "text.secondary", fontSize: 20 }} />
                   </InputAdornment>
                 ),
-              },
+                sx: { borderRadius: '12px', height: 44, bgcolor: 'white' }
+              }
             }}
-            size="small"
-            sx={{ '& .MuiOutlinedInput-root': { borderRadius: 2 } }}
           />
-          <IconButton onClick={fetchUsers} title="Refresh users" sx={{ p: 1, border: '1px solid #eee', borderRadius: 2 }}>
-            <RefreshIcon />
-          </IconButton>
         </Box>
-      </Card>
+
+        <Stack direction="row" spacing={1.5} sx={{ alignItems: 'center' }}>
+          <Tooltip title="Refresh List">
+            <IconButton 
+              onClick={fetchUsers} 
+              sx={{ bgcolor: 'white', border: '1px solid #e8e4d8', borderRadius: '12px', width: 44, height: 44 }}
+            >
+              <RefreshIcon />
+            </IconButton>
+          </Tooltip>
+
+          <Button
+            variant="contained"
+            startIcon={<AddIcon />}
+            onClick={handleOpenCreate}
+            sx={{ borderRadius: '12px', height: 44, px: 3, fontWeight: 800 }}
+          >
+            ADD USER
+          </Button>
+        </Stack>
+      </Box>
 
       {error && (
-        <Alert severity="error" sx={{ mb: 3, borderRadius: 2 }} onClose={() => setError(null)}>
+        <Alert severity="error" sx={{ mb: 3, borderRadius: '12px' }} onClose={() => setError(null)}>
           {error}
         </Alert>
       )}
@@ -219,18 +210,16 @@ export default function UsersPage() {
         <UserTable 
           users={filteredUsers} 
           onEdit={handleOpenEdit} 
-          onDelete={handleOpenDelete} 
-          onToggleStatus={handleOpenStatusToggle} 
+          onDelete={(user) => {
+            setUserToDelete(user);
+            setOpenDeleteDialog(true);
+          }} 
+          onToggleStatus={(user) => {
+            setUserForStatusChange(user);
+            setOpenStatusDialog(true);
+          }} 
         />
       )}
-
-      <UserModal
-        open={openModal}
-        mode={modalMode}
-        user={currentUser}
-        onClose={() => setOpenModal(false)}
-        onSubmit={handleModalSubmit}
-      />
 
       <ConfirmActionDialog
         open={openDeleteDialog}

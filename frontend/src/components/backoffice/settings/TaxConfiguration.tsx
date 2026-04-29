@@ -107,11 +107,11 @@ export default function TaxConfiguration() {
 
   return (
     <Box sx={{ maxWidth: 800 }}>
-      {error && <Alert severity="error" sx={{ mb: 3, borderRadius: 0 }}>{error}</Alert>}
+      {error && <Alert severity="error" sx={{ mb: 3, borderRadius: '7px' }}>{error}</Alert>}
       
       <form onSubmit={handleSubmit}>
-        <Paper elevation={0} sx={{ border: '1px solid #e8e4d8', p: 4, borderRadius: '5px', bgcolor: '#FCF9EA' }}>
-          <Typography variant="h6" sx={{ mb: 3, fontWeight: 700, letterSpacing: '-0.02em' }}>
+        <Paper elevation={0} sx={{ border: '1px solid #e8e4d8', p: 4, borderRadius: '7px', bgcolor: 'white' }}>
+          <Typography variant="h6" sx={{ mb: 3, fontWeight: 800, fontSize: '1rem', color: '#e9762b', textTransform: 'uppercase' }}>
             Tax Policy
           </Typography>
           
@@ -124,7 +124,7 @@ export default function TaxConfiguration() {
                 name="tax_type"
                 value={formData.tax_type}
                 onChange={handleInputChange}
-                variant="outlined"
+                slotProps={{ select: { sx: { borderRadius: '7px' } }, input: { sx: { borderRadius: '7px' } } }}
               >
                 {TAX_TYPES.map((option) => (
                   <MenuItem key={option.value} value={option.value}>
@@ -163,7 +163,7 @@ export default function TaxConfiguration() {
                     value={formData.cgst_rate}
                     onChange={handleInputChange}
                     type="number"
-                    variant="outlined"
+                    slotProps={{ input: { sx: { borderRadius: '7px' } } }}
                   />
                 </Grid>
                 <Grid size={{ xs: 12, md: 4 }}>
@@ -174,7 +174,7 @@ export default function TaxConfiguration() {
                     value={formData.sgst_rate}
                     onChange={handleInputChange}
                     type="number"
-                    variant="outlined"
+                    slotProps={{ input: { sx: { borderRadius: '7px' } } }}
                   />
                 </Grid>
                 <Grid size={{ xs: 12, md: 4 }}>
@@ -185,7 +185,7 @@ export default function TaxConfiguration() {
                     value={formData.igst_rate}
                     onChange={handleInputChange}
                     type="number"
-                    variant="outlined"
+                    slotProps={{ input: { sx: { borderRadius: '7px' } } }}
                   />
                 </Grid>
               </>
@@ -219,7 +219,7 @@ export default function TaxConfiguration() {
                   value={formData.cess_rate}
                   onChange={handleInputChange}
                   type="number"
-                  variant="outlined"
+                  slotProps={{ input: { sx: { borderRadius: '7px' } } }}
                 />
               </Grid>
             )}
@@ -231,20 +231,14 @@ export default function TaxConfiguration() {
               variant="contained"
               disableElevation
               disabled={saving}
-              startIcon={saving ? <CircularProgress size={20} color="inherit" /> : <SaveIcon />}
               sx={{
-                bgcolor: 'primary.main',
-                color: 'white',
                 px: 4,
-                py: 1.5,
-                borderRadius: '5px',
-                fontWeight: 600,
-                '&:hover': {
-                  bgcolor: 'primary.dark',
-                }
+                py: 1,
+                borderRadius: '7px',
+                fontWeight: 800,
               }}
             >
-              {saving ? "Saving..." : "Save Configuration"}
+              {saving ? "Saving..." : "Save Changes"}
             </Button>
           </Box>
         </Paper>

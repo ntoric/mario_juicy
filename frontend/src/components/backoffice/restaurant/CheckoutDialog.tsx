@@ -2,26 +2,18 @@
 
 import React, { useState } from 'react';
 import {
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
   Button,
   Box,
   Typography,
   Grid,
   Divider,
   Stack,
-  FormControl,
-  FormLabel,
-  RadioGroup,
-  FormControlLabel,
-  Radio,
   CircularProgress,
   Paper,
   Alert,
   ToggleButtonGroup,
   ToggleButton,
+  IconButton,
 } from '@mui/material';
 import {
   Payments as CashIcon,
@@ -29,9 +21,10 @@ import {
   QrCode as UpiIcon,
   Receipt as BillIcon,
   CheckCircle as SuccessIcon,
-  Room as LocationIcon,
+  ChevronLeft as ChevronLeftIcon,
 } from '@mui/icons-material';
-import { Order, restaurantService } from '@/services/restaurantService';
+import { restaurantService } from '@/services/restaurantService';
+import { Order } from '@/types/restaurant';
 import { useAuth } from '@/hooks/useAuth';
 import { fetcher } from '@/lib/api';
 
@@ -40,6 +33,11 @@ interface CheckoutDialogProps {
   onClose: () => void;
   order: Order;
   onCheckoutSuccess: (invoice: any) => void;
+}
+
+interface TaxDetail {
+  label: string;
+  amount: number;
 }
 
 const CheckoutDialog: React.FC<CheckoutDialogProps> = ({ open, onClose, order, onCheckoutSuccess }) => {
@@ -93,7 +91,6 @@ const CheckoutDialog: React.FC<CheckoutDialogProps> = ({ open, onClose, order, o
         if (cess > 0) details.push({ label: 'CESS', amount: cess });
       }
     } else if (taxConfig.tax_type === 'INCLUSIVE') {
-      // Logic mirrors backend: subtotal is already total, we extract tax
       let totalRate = 0;
       if (taxConfig.is_gst_enabled) {
         totalRate += gstType === 'INTER_STATE' ? parseFloat(taxConfig.igst_rate) : (parseFloat(taxConfig.cgst_rate) + parseFloat(taxConfig.sgst_rate));
@@ -144,77 +141,104 @@ const CheckoutDialog: React.FC<CheckoutDialogProps> = ({ open, onClose, order, o
     }
   };
 
+  if (!open) return null;
+
   return (
-    <Dialog open={open} onClose={onClose} maxWidth="xs" fullWidth>
-      <DialogTitle component="div" sx={{ textAlign: 'center', pb: 0 }}>
-        <BillIcon sx={{ fontSize: 40, color: 'primary.main', mb: 1 }} />
-        <Typography variant="h5" sx={{ fontWeight: 800 }}>Generate Billing</Typography>
-        <Typography variant="body2" color="text.secondary">Order #{order.id} • Table {order.table_number}</Typography>
-      </DialogTitle>
+    <Box sx={{ 
+      position: 'absolute',
+      inset: 0,
+      bgcolor: '#fdfdfd',
+      zIndex: 200,
+      display: 'flex', 
+      flexDirection: 'column',
+      animation: 'slideInUp 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+      '@keyframes slideInUp': {
+        from: { transform: 'translateY(100%)' },
+        to: { transform: 'translateY(0)' }
+      }
+    }}>
+      {/* Header */}
+      <Box sx={{ p: 2, borderBottom: '1px solid #e8e4d8', display: 'flex', alignItems: 'center', gap: 2 }}>
+        <IconButton onClick={onClose} sx={{ color: 'text.secondary' }}>
+          <ChevronLeftIcon />
+        </IconButton>
+        <Typography variant="h6" sx={{ fontWeight: 900 }}>Checkout & Billing</Typography>
+      </Box>
 
-      <DialogContent sx={{ mt: 2 }}>
-        {taxConfig?.is_gst_enabled && parseFloat(taxConfig.igst_rate) > 0 && (
-          <Box sx={{ mb: 3 }}>
-            <Typography variant="caption" sx={{ fontWeight: 700, mb: 1, display: 'block', color: 'text.secondary', textTransform: 'uppercase' }}>
-              GST Type
-            </Typography>
-            <ToggleButtonGroup
-              value={gstType}
-              exclusive
-              onChange={(_, val) => val && setGstType(val)}
-              fullWidth
-              size="small"
-              sx={{ '& .MuiToggleButton-root': { borderRadius: 1, fontWeight: 700 } }}
-            >
-              <ToggleButton value="INTRA_STATE">INTRA-STATE (CGST+SGST)</ToggleButton>
-              <ToggleButton value="INTER_STATE">INTER-STATE (IGST)</ToggleButton>
-            </ToggleButtonGroup>
-          </Box>
-        )}
+      <Box sx={{ flexGrow: 1, overflowY: 'auto', p: { xs: 2, md: 4 } }}>
+        <Grid container spacing={4} sx={{ justifyContent: 'center' }}>
+          <Grid size={{ xs: 12, md: 8, lg: 6 }}>
+            <Paper sx={{ p: 4, borderRadius: '24px', border: '1px solid #e8e4d8', boxShadow: '0 12px 40px rgba(0,0,0,0.04)' }}>
+              <Stack spacing={4}>
+                <Box sx={{ textAlign: 'center' }}>
+                  <BillIcon sx={{ fontSize: 48, color: 'primary.main', mb: 1 }} />
+                  <Typography variant="h4" sx={{ fontWeight: 900 }}>₹{finalTotal.toFixed(2)}</Typography>
+                  <Typography variant="body2" color="text.secondary" sx={{ fontWeight: 700 }}>
+                    Order #{order.id} • Table {order.table_number}
+                  </Typography>
+                </Box>
 
-        <Box sx={{ bgcolor: '#FCF9EA', p: 2, borderRadius: 2, mb: 1, border: '1px solid #e8e4d8' }}>
-          <Stack spacing={1}>
-            <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
-              <Typography variant="body2" color="text.secondary">Subtotal</Typography>
-              <Typography variant="body2" sx={{ fontWeight: 600 }}>₹{order.total_amount}</Typography>
-            </Box>
-            
-            {details.map((tax: any) => (
-              <Box key={tax.label} sx={{ display: 'flex', justifyContent: 'space-between' }}>
-                <Typography variant="body2" color="text.secondary">{tax.label}</Typography>
-                <Typography variant="body2" sx={{ fontWeight: 600 }}>₹{tax.amount.toFixed(2)}</Typography>
-              </Box>
-            ))}
+                {taxConfig?.is_gst_enabled && parseFloat(taxConfig.igst_rate) > 0 && (
+                  <Box>
+                    <Typography variant="overline" sx={{ fontWeight: 900, mb: 1, display: 'block', color: 'primary.main' }}>GST TYPE</Typography>
+                    <ToggleButtonGroup
+                      value={gstType}
+                      exclusive
+                      onChange={(_, val) => val && setGstType(val)}
+                      fullWidth
+                      size="large"
+                      sx={{ '& .MuiToggleButton-root': { borderRadius: '12px', fontWeight: 800, py: 1.5 } }}
+                    >
+                      <ToggleButton value="INTRA_STATE">INTRA-STATE</ToggleButton>
+                      <ToggleButton value="INTER_STATE">INTER-STATE</ToggleButton>
+                    </ToggleButtonGroup>
+                  </Box>
+                )}
 
-            <Divider sx={{ my: 0.5 }} />
-            <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
-              <Typography variant="subtitle1" sx={{ fontWeight: 800 }}>Final Total</Typography>
-              <Typography variant="h6" sx={{ fontWeight: 900, color: 'primary.main' }}>₹{finalTotal.toFixed(2)}</Typography>
-            </Box>
-          </Stack>
-        </Box>
+                <Box sx={{ bgcolor: '#FCF9EA', p: 3, borderRadius: '16px', border: '1px solid #e8e4d8' }}>
+                  <Stack spacing={1.5}>
+                    <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
+                      <Typography variant="body1" color="text.secondary" sx={{ fontWeight: 600 }}>Subtotal</Typography>
+                      <Typography variant="body1" sx={{ fontWeight: 800 }}>₹{order.total_amount}</Typography>
+                    </Box>
+                    
+                    {details.map((tax: TaxDetail) => (
+                      <Box key={tax.label} sx={{ display: 'flex', justifyContent: 'space-between' }}>
+                        <Typography variant="body1" color="text.secondary" sx={{ fontWeight: 600 }}>{tax.label}</Typography>
+                        <Typography variant="body1" sx={{ fontWeight: 800 }}>₹{tax.amount.toFixed(2)}</Typography>
+                      </Box>
+                    ))}
 
-        {error && (
-          <Typography color="error" variant="caption" sx={{ mt: 2, display: 'block', textAlign: 'center', fontWeight: 700 }}>
-            {error}
-          </Typography>
-        )}
-      </DialogContent>
+                    <Divider sx={{ my: 1, borderStyle: 'dashed' }} />
+                    <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline' }}>
+                      <Typography variant="h6" sx={{ fontWeight: 900 }}>Final Total</Typography>
+                      <Typography variant="h4" sx={{ fontWeight: 900, color: 'primary.main' }}>₹{finalTotal.toFixed(2)}</Typography>
+                    </Box>
+                  </Stack>
+                </Box>
 
-      <DialogActions sx={{ p: 3, pt: 0 }}>
-        <Button onClick={onClose} disabled={loading} sx={{ fontWeight: 700 }}>Cancel</Button>
-        <Button
-          variant="contained"
-          fullWidth
-          onClick={handleCheckout}
-          disabled={loading || !canManagePayment}
-          startIcon={loading ? <CircularProgress size={20} color="inherit" /> : <SuccessIcon />}
-          sx={{ py: 1.2, fontWeight: 800, borderRadius: 2 }}
-        >
-          {loading ? 'Processing...' : 'COMPLETE & GENERATE BILL'}
-        </Button>
-      </DialogActions>
-    </Dialog>
+                {error && (
+                  <Alert severity="error" sx={{ borderRadius: '12px', fontWeight: 700 }}>
+                    {error}
+                  </Alert>
+                )}
+
+                <Button
+                  variant="contained"
+                  fullWidth
+                  onClick={handleCheckout}
+                  disabled={loading || !canManagePayment}
+                  startIcon={loading ? <CircularProgress size={24} color="inherit" /> : <SuccessIcon sx={{ fontSize: 28 }} />}
+                  sx={{ py: 2, fontWeight: 900, borderRadius: '16px', fontSize: '1.2rem', boxShadow: '0 8px 24px rgba(233,118,43,0.2)' }}
+                >
+                  {loading ? 'PROCESSING...' : 'COMPLETE & PRINT BILL'}
+                </Button>
+              </Stack>
+            </Paper>
+          </Grid>
+        </Grid>
+      </Box>
+    </Box>
   );
 };
 
