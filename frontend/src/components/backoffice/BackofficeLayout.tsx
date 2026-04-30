@@ -312,23 +312,41 @@ export default function BackofficeLayout({ children }: { children: React.ReactNo
     }
   }, [user, loading, pathname, router]);
 
+  if (loading) {
+    return <Preloader message="Verifying session..." />;
+  }
+
   if (error) {
     return (
       <Box sx={{ p: 4, display: 'flex', height: '100vh', alignItems: 'center', justifyContent: 'center', bgcolor: '#fcf9f2' }}>
-        <Paper sx={{ p: 4, maxWidth: 450, borderRadius: '7px', textAlign: 'center', boxShadow: '0 20px 80px rgba(44,24,16,0.08)' }}>
-          <Typography variant="h5" sx={{ fontWeight: 800, mb: 2 }}>Session Error</Typography>
-          <Typography variant="body1" color="text.secondary" sx={{ mb: 3 }}>
-            {error}
-          </Typography>
-          <Box sx={{ p: 2, bgcolor: '#2c1810', borderRadius: 3, mb: 3 }}>
-            <Typography variant="caption" sx={{ fontWeight: 700, color: 'white', display: 'block', mb: 1 }}>REQUIRED ACTION:</Typography>
-            <Typography variant="body2" sx={{ fontFamily: 'monospace', color: '#ffb344', p: 1 }}>
-              python manage.py migrate
-            </Typography>
+        <Paper sx={{ p: 6, maxWidth: 500, borderRadius: '12px', textAlign: 'center', boxShadow: '0 20px 80px rgba(44,24,16,0.08)', border: '1px solid rgba(44,24,16,0.05)' }}>
+          <Box sx={{ mb: 3, display: 'flex', justifyContent: 'center' }}>
+            <Box sx={{ p: 2, bgcolor: alpha(theme.palette.error.main, 0.1), borderRadius: '50%' }}>
+              <LogoutIcon color="error" sx={{ fontSize: 40 }} />
+            </Box>
           </Box>
-          <Button variant="contained" onClick={() => window.location.reload()}>
-            Retry Login
-          </Button>
+          <Typography variant="h5" sx={{ fontWeight: 800, mb: 2, color: theme.palette.text.primary }}>Connection Issue</Typography>
+          <Typography variant="body1" color="text.secondary" sx={{ mb: 4, lineHeight: 1.6 }}>
+            {error.includes('Failed to fetch') 
+              ? "We're having trouble connecting to the server. Please check your internet connection or try again in a few moments." 
+              : error}
+          </Typography>
+          <Stack direction="row" spacing={2} sx={{ justifyContent: 'center' }}>
+            <Button 
+              variant="outlined" 
+              onClick={() => logout()}
+              sx={{ borderRadius: '7px', px: 4 }}
+            >
+              Back to Login
+            </Button>
+            <Button 
+              variant="contained" 
+              onClick={() => window.location.reload()}
+              sx={{ borderRadius: '7px', px: 4, boxShadow: `0 8px 20px ${alpha(theme.palette.primary.main, 0.3)}` }}
+            >
+              Retry Connection
+            </Button>
+          </Stack>
         </Paper>
       </Box>
     );

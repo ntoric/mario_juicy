@@ -105,14 +105,14 @@ export default function TableMapPage() {
   const [editOpen, setEditOpen] = useState(false);
 
   const fetchTables = useCallback(async () => {
-    if (tables.length === 0) setLoading(true);
+    if (!tables || tables.length === 0) setLoading(true);
     try {
       const data = await restaurantService.getTables();
-      setTables(data);
+      setTables(data || []);
       setError(null);
     } catch (e: any) { setError(e.message || 'Failed to load tables'); }
     finally { setLoading(false); }
-  }, [tables.length]);
+  }, [tables?.length]);
   
   const handleSyncAll = async () => {
     setSyncing(true);
@@ -178,8 +178,8 @@ export default function TableMapPage() {
     finally { setSaving(false); }
   };
 
-  const counts = tables.reduce((acc, t) => { acc[t.status] = (acc[t.status] || 0) + 1; return acc; }, {} as Record<string,number>);
-  const visible = filterStatus ? tables.filter(t => t.status === filterStatus) : tables;
+  const counts = (tables || []).reduce((acc, t) => { acc[t.status] = (acc[t.status] || 0) + 1; return acc; }, {} as Record<string,number>);
+  const visible = filterStatus ? (tables || []).filter(t => t.status === filterStatus) : (tables || []);
 
   return (
     <Box sx={{ 
@@ -237,7 +237,7 @@ export default function TableMapPage() {
                   <MenuItem onClick={() => { setFilterStatus(null); setFilterAnchor(null); }} sx={{ gap: 1.5, py: 1 }}>
                     <Box sx={{ width: 10, height: 10, borderRadius: '50%', bgcolor: '#94a3b8' }} />
                     <Typography sx={{ fontWeight: 700, fontSize: '0.85rem', flexGrow: 1 }}>All Tables</Typography>
-                    <Typography variant="caption" sx={{ color: 'text.disabled', fontWeight: 800 }}>{tables.length}</Typography>
+                    <Typography variant="caption" sx={{ color: 'text.disabled', fontWeight: 800 }}>{tables?.length || 0}</Typography>
                   </MenuItem>
                   <Divider sx={{ my: 0.5, opacity: 0.5 }} />
                   {Object.entries(STATUS_CONFIG).map(([status, cfg]) => (
@@ -364,7 +364,7 @@ export default function TableMapPage() {
               </Box>
             )}
 
-            {!loading && tables.length === 0 && (
+            {!loading && (!tables || tables.length === 0) && (
               <Box sx={{ position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 1.5 }}>
                 <TableBarIcon sx={{ fontSize: 56, color: 'text.disabled' }} />
                 <Typography color="text.secondary">No tables yet</Typography>

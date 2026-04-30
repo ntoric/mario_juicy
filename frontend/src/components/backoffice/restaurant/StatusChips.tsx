@@ -30,7 +30,7 @@ export const OrderStatusChip: React.FC<{ status: string; orderType?: string } & 
       case 'SERVED': 
         return { 
           color: 'success', 
-          label: orderType === 'TAKE_AWAY' ? 'Ready for Pickup' : 'Served' 
+          label: orderType === 'TAKE_AWAY' ? 'Picked Up' : 'Served' 
         };
       case 'PAID': return { color: 'default', label: 'Paid' };
       case 'COMPLETED': return { color: 'success', label: 'Completed' };

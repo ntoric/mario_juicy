@@ -101,64 +101,23 @@ export default function BillingPage() {
         return;
       }
 
-      // TRY 1: Local Go Service (Port 8085) - Direct Fetch (Primary for Browser/Electron)
-      try {
-        const { mapToPrinterServiceData } = await import('@/utils/printerService');
-        const printData = mapToPrinterServiceData(invoice, invoice.items || []);
-        
-        const response = await fetch('http://localhost:8085/print', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(printData)
-        });
-
-        if (response.ok) {
-          setPrintingInvoice(null);
-          return;
-        }
-      } catch (e: any) {
-        console.warn("Direct fetch to printer service failed (service likely not running):", e);
-      }
-
-      // TRY 2: Electron API (Fallback)
-      if (typeof window !== 'undefined' && (window as any).api) {
-        const api = (window as any).api;
-
-        // Try local service via bridge
-        if (api.printToService) {
-          try {
-            const { mapToPrinterServiceData } = await import('@/utils/printerService');
-            const printData = mapToPrinterServiceData(invoice, invoice.items || []);
-            await api.printToService(printData);
-            setPrintingInvoice(null);
-            return;
-          } catch (e: any) {
-            console.error("Local service print via bridge failed:", e);
-          }
-        }
-
-        // Fallback to system print via bridge
-        if (api.print) {
+      const { printInvoice } = await import('@/utils/printerService');
+      const success = await printInvoice(invoice, invoice.items || [], user?.store);
+      
+      if (!success) {
+        // Final fallback to system print
+        if (typeof window !== 'undefined' && (window as any).api?.print) {
           const store = invoice?.store_details || user?.store;
-          const printerName = store?.thermal_printer_name;
-          const paperSize = store?.thermal_printer_size || '3_INCH';
-
-          try {
-            await api.print({ 
-              html: invoiceEl.innerHTML, 
-              printerName: printerName || undefined,
-              paperSize
-            });
-            setPrintingInvoice(null);
-            return;
-          } catch (e: any) {
-            console.error("Direct system print failed:", e);
-          }
+          await (window as any).api.print({ 
+            html: invoiceEl.innerHTML, 
+            printerName: store?.thermal_printer_name || undefined,
+            paperSize: store?.thermal_printer_size || '3_INCH'
+          });
+        } else {
+          fallbackPrint(invoiceEl.innerHTML);
         }
       }
 
-      // TRY 3: Browser Fallback (Standard Dialog)
-      fallbackPrint(invoiceEl.innerHTML);
       setPrintingInvoice(null);
     }, 100);
   };
@@ -214,7 +173,7 @@ export default function BillingPage() {
   const cancelledOrders = filteredOrders.filter(o => o.status === 'CANCELLED');
 
   return (
-    <Box sx={{ height: { xs: 'auto', md: '100%' }, display: "flex", flexDirection: "column", p: { xs: 1.5, md: 2 }, overflow: { xs: 'visible', md: 'hidden' } }}>
+    <Box sx={{ position: 'relative', height: { xs: 'auto', md: '100%' }, display: "flex", flexDirection: "column", p: { xs: 1.5, md: 2 }, overflow: { xs: 'visible', md: 'hidden' } }}>
       {/* Optimized Header Row */}
       <Box sx={{ 
         mb: 2, 
@@ -435,14 +394,14 @@ export default function BillingPage() {
                           </Typography>
                         </TableCell>
                         <TableCell align="right">
-                          <Tooltip title="Settle Order">
+                          <Tooltip title="Checkout Order">
                             <Button
                               variant="contained"
                               size="small"
                               onClick={() => setSelectedOrder(order)}
-                              sx={{ fontWeight: 800, borderRadius: '7px', minWidth: 40, height: 32, p: 0 }}
+                              sx={{ fontWeight: 800, borderRadius: '7px', px: 2, height: 32 }}
                             >
-                              <SettlementIcon fontSize="small" />
+                              CHECKOUT
                             </Button>
                           </Tooltip>
                         </TableCell>
@@ -492,15 +451,15 @@ export default function BillingPage() {
                           </Typography>
                         </TableCell>
                         <TableCell align="right">
-                          <Tooltip title="Settle Parcel">
+                          <Tooltip title="Checkout Parcel">
                             <Button
                               variant="contained"
                               size="small"
                               color="secondary"
                               onClick={() => setSelectedOrder(order)}
-                              sx={{ fontWeight: 800, borderRadius: '7px', minWidth: 40, height: 32, p: 0 }}
+                              sx={{ fontWeight: 800, borderRadius: '7px', px: 2, height: 32 }}
                             >
-                              <SettlementIcon fontSize="small" />
+                              CHECKOUT
                             </Button>
                           </Tooltip>
                         </TableCell>

@@ -23,6 +23,7 @@ import {
   Grid,
   Paper,
   Button,
+  TextField,
 } from '@mui/material';
 import {
   Close as CloseIcon,
@@ -49,13 +50,15 @@ export default function SettlementDialog({ open, onClose, order, onSuccess }: Se
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [paymentMethod, setPaymentMethod] = useState('UPI');
+  const [paymentNote, setPaymentNote] = useState('');
   const [invoice, setInvoice] = useState<any>(order?.invoice || null);
+  const [isBillGenerated, setIsBillGenerated] = useState(!!order?.invoice);
   const [previewOpen, setPreviewOpen] = useState(false);
   const [downloading, setDownloading] = useState(false);
 
   if (!order) return null;
 
-  const handleGenerateBill = async () => {
+  const handleCheckout = async () => {
     setLoading(true);
     setError(null);
     try {
@@ -66,9 +69,19 @@ export default function SettlementDialog({ open, onClose, order, onSuccess }: Se
       setInvoice(data);
       onSuccess(); // Refresh list to show invoice ref
     } catch (e: any) {
-      setError(e.message || 'Failed to generate bill');
+      setError(e.message || 'Failed to checkout');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleGenerateBill = async () => {
+    setIsBillGenerated(true);
+    // Silent auto-print
+    try {
+      handlePrint(invoice);
+    } catch (e) {
+      console.warn('Printer not connected or failed:', e);
     }
   };
 
@@ -78,7 +91,8 @@ export default function SettlementDialog({ open, onClose, order, onSuccess }: Se
     try {
       await restaurantService.checkout(order.id, { 
         payment_method: paymentMethod, 
-        mark_as_paid: true 
+        mark_as_paid: true,
+        notes: paymentNote // Assuming backend accepts notes
       });
       onSuccess();
       onClose();
@@ -108,45 +122,20 @@ export default function SettlementDialog({ open, onClose, order, onSuccess }: Se
     }
   };
 
-  const handlePrint = async () => {
+  const handlePrint = async (invoiceToPrint?: any) => {
+    const activeInvoice = invoiceToPrint || invoice;
+    if (!activeInvoice) return;
+
     const invoiceEl = document.getElementById('thermal-invoice-container-settle');
     if (!invoiceEl) return;
 
-    const store = invoice?.store_details;
-    const printerName = store?.thermal_printer_name;
-    const paperSize = store?.thermal_printer_size || '3_INCH';
+    const { printInvoice } = await import('@/utils/printerService');
+    const success = await printInvoice(activeInvoice, order.items || [], activeInvoice?.store_details || activeInvoice?.store);
 
-    // TRY 1: Electron Bridge (Primary for Desktop App)
-    if (typeof window !== 'undefined' && (window as any).api) {
-      const api = (window as any).api;
-      if (api.printToService) {
-        try {
-          const { mapToPrinterServiceData } = await import('@/utils/printerService');
-          const printData = mapToPrinterServiceData(invoice, order.items);
-          await api.printToService(printData);
-          return;
-        } catch (e: any) {
-          console.error("Local printer service unreachable via bridge:", e);
-        }
-      }
+    if (!success) {
+      // FALLBACK: Standard Browser Print
+      fallbackPrint(invoiceEl.innerHTML);
     }
-
-    // TRY 2: Direct Fetch (Primary for Web Browser)
-    try {
-      const { mapToPrinterServiceData } = await import('@/utils/printerService');
-      const printData = mapToPrinterServiceData(invoice, order.items);
-      const response = await fetch('http://localhost:8085/print', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(printData)
-      });
-      if (response.ok) return; // Success!
-    } catch (e) {
-      console.warn("Direct fetch to printer service failed (likely service not running or CORS):", e);
-    }
-
-    // FALLBACK: Standard Browser Print
-    fallbackPrint(invoiceEl.innerHTML);
   };
 
   const fallbackPrint = (html: string) => {
@@ -191,10 +180,11 @@ export default function SettlementDialog({ open, onClose, order, onSuccess }: Se
         <Typography variant="h6" sx={{ fontWeight: 900 }}>Settle Order #{order.id}</Typography>
       </Box>
 
-      <Box sx={{ flexGrow: 1, overflowY: 'auto', p: { xs: 2, md: 4 }, bgcolor: '#f9f9f9' }}>
-        <Grid container spacing={4} sx={{ justifyContent: 'center' }}>
-          <Grid size={{ xs: 12, md: 9, lg: 8 }}>
-            <Paper sx={{ p: { xs: 3, md: 4 }, borderRadius: '24px', border: '1px solid #e8e4d8', boxShadow: '0 8px 32px rgba(0,0,0,0.03)' }}>
+      <Box sx={{ flexGrow: 1, overflowY: 'auto', p: { xs: 2, md: 3 }, bgcolor: '#f9f9f9' }}>
+        <Grid container spacing={3}>
+          {/* Left Column: Order Details */}
+          <Grid size={{ xs: 12, lg: 7, xl: 8 }}>
+            <Paper sx={{ p: { xs: 2, md: 3 }, borderRadius: '24px', border: '1px solid #e8e4d8', boxShadow: '0 8px 32px rgba(0,0,0,0.03)', height: '100%' }}>
               {error && <Alert severity="error" sx={{ mb: 3, borderRadius: '12px' }}>{error}</Alert>}
 
               <Box sx={{ mb: 4, display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
@@ -211,7 +201,7 @@ export default function SettlementDialog({ open, onClose, order, onSuccess }: Se
               </Box>
 
               <Typography variant="overline" sx={{ fontWeight: 900, color: 'primary.main', mb: 2, display: 'block' }}>ORDER ITEMS</Typography>
-              <TableContainer sx={{ mb: 4, borderRadius: '16px', border: '1px solid #e8e4d8', overflow: 'hidden' }}>
+              <TableContainer sx={{ borderRadius: '16px', border: '1px solid #e8e4d8', overflow: 'hidden' }}>
                 <Table size="small">
                   <TableHead sx={{ bgcolor: '#FCF9EA' }}>
                     <TableRow>
@@ -233,117 +223,143 @@ export default function SettlementDialog({ open, onClose, order, onSuccess }: Se
                   </TableBody>
                 </Table>
               </TableContainer>
-
-              <Divider sx={{ my: 4, borderStyle: 'dashed' }} />
-
-              <Grid container spacing={4}>
-                <Grid size={{ xs: 12, md: 6 }}>
-                  <Typography variant="overline" sx={{ fontWeight: 900, color: 'primary.main', mb: 2, display: 'block' }}>PAYMENT SETTINGS</Typography>
-                  <FormControl fullWidth variant="outlined">
-                    <InputLabel sx={{ fontWeight: 700 }}>Payment Method</InputLabel>
-                    <Select
-                      value={paymentMethod}
-                      label="Payment Method"
-                      onChange={(e) => setPaymentMethod(e.target.value as string)}
-                      disabled={loading}
-                      sx={{ borderRadius: '12px', bgcolor: 'white', fontWeight: 700 }}
-                    >
-                      <MenuItem value="UPI" sx={{ fontWeight: 700 }}>UPI Payment</MenuItem>
-                      <MenuItem value="CASH" sx={{ fontWeight: 700 }}>Cash Payment</MenuItem>
-                      <MenuItem value="CARD" sx={{ fontWeight: 700 }}>Card Payment</MenuItem>
-                      <MenuItem value="NET_BANKING" sx={{ fontWeight: 700 }}>Net Banking</MenuItem>
-                    </Select>
-                  </FormControl>
-
-                  {hasInvoice ? (
-                    <Box sx={{ mt: 3, p: 2.5, bgcolor: '#FFF9E6', borderRadius: '16px', border: '1.5px solid #E9762B' }}>
-                      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
-                        <Typography variant="body2" sx={{ fontWeight: 900, color: '#E9762B' }}>
-                          BILL: {invoice.invoice_number}
-                        </Typography>
-                        <Stack direction="row" spacing={1}>
-                          <Tooltip title="Preview">
-                            <IconButton size="small" onClick={() => setPreviewOpen(true)} sx={{ color: '#E9762B', bgcolor: 'white', borderRadius: '8px' }}>
-                              <PreviewIcon fontSize="small" />
-                            </IconButton>
-                          </Tooltip>
-                          <Tooltip title="Print">
-                            <IconButton size="small" onClick={handlePrint} sx={{ color: '#E9762B', bgcolor: 'white', borderRadius: '8px' }}>
-                              <PrintIcon fontSize="small" />
-                            </IconButton>
-                          </Tooltip>
-                          <Tooltip title="Download">
-                            <IconButton size="small" onClick={handleDownload} disabled={downloading} sx={{ color: '#E9762B', bgcolor: 'white', borderRadius: '8px' }}>
-                              {downloading ? <CircularProgress size={16} color="inherit" /> : <DownloadIcon fontSize="small" />}
-                            </IconButton>
-                          </Tooltip>
-                        </Stack>
-                      </Box>
-                      <Typography variant="caption" sx={{ fontWeight: 700, color: 'text.secondary', display: 'block' }}>
-                        The bill has been generated. You can now mark the order as paid.
-                      </Typography>
-                    </Box>
-                  ) : (
-                    <Alert severity="info" sx={{ mt: 3, borderRadius: '12px', fontWeight: 600 }}>
-                      Generate a bill to finalize taxes and total amount.
-                    </Alert>
-                  )}
-                </Grid>
-
-                <Grid size={{ xs: 12, md: 6 }}>
-                  <Box sx={{ p: 3, bgcolor: '#fcfcfc', borderRadius: '20px', border: '1px solid #e8e4d8' }}>
-                    <Typography variant="overline" sx={{ fontWeight: 900, color: 'text.disabled', mb: 2, display: 'block' }}>SUMMARY</Typography>
-                    <Stack spacing={2}>
-                      <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
-                        <Typography variant="body2" sx={{ fontWeight: 600, color: 'text.secondary' }}>Subtotal</Typography>
-                        <Typography variant="body2" sx={{ fontWeight: 800 }}>₹{subtotal.toFixed(2)}</Typography>
-                      </Box>
-
-                      {hasInvoice && invoice.tax_details && Object.entries(invoice.tax_details).map(([key, val]: [string, any]) => (
-                        <Box key={key} sx={{ display: 'flex', justifyContent: 'space-between' }}>
-                          <Typography variant="body2" sx={{ fontWeight: 600, color: 'text.secondary' }}>{key}</Typography>
-                          <Typography variant="body2" sx={{ fontWeight: 800 }}>₹{parseFloat(val).toFixed(2)}</Typography>
-                        </Box>
-                      ))}
-
-                      <Divider sx={{ my: 1, borderStyle: 'dashed' }} />
-                      
-                      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                        <Typography variant="h6" sx={{ fontWeight: 900 }}>Total Payable</Typography>
-                        <Typography variant="h4" sx={{ fontWeight: 900, color: 'primary.main' }}>
-                          ₹{hasInvoice ? parseFloat(invoice.total_amount).toFixed(2) : subtotal.toFixed(2)}
-                        </Typography>
-                      </Box>
-                    </Stack>
-
-                    <Box sx={{ mt: 4 }}>
-                      {!hasInvoice ? (
-                        <Button 
-                          variant="contained" 
-                          fullWidth
-                          onClick={handleGenerateBill}
-                          disabled={loading}
-                          sx={{ py: 2, fontWeight: 900, borderRadius: '12px', fontSize: '1rem', boxShadow: '0 8px 24px rgba(233,118,43,0.1)' }}
-                        >
-                          {loading ? 'GENERATING...' : 'GENERATE BILL'}
-                        </Button>
-                      ) : (
-                        <Button 
-                          variant="contained" 
-                          fullWidth
-                          color="success"
-                          onClick={handleMarkAsPaid}
-                          disabled={loading}
-                          sx={{ py: 2, fontWeight: 900, borderRadius: '12px', fontSize: '1rem', boxShadow: '0 8px 24px rgba(16,185,129,0.1)' }}
-                        >
-                          {loading ? 'PROCESSING...' : 'PAID'}
-                        </Button>
-                      )}
-                    </Box>
-                  </Box>
-                </Grid>
-              </Grid>
             </Paper>
+          </Grid>
+
+          {/* Right Column: Payment & Summary */}
+          <Grid size={{ xs: 12, lg: 5, xl: 4 }}>
+            <Stack spacing={3} sx={{ position: { lg: 'sticky' }, top: 0 }}>
+              {/* Payment Settings */}
+              <Paper sx={{ p: 3, borderRadius: '24px', border: '1px solid #e8e4d8', boxShadow: '0 8px 32px rgba(0,0,0,0.03)' }}>
+                <Typography variant="overline" sx={{ fontWeight: 900, color: 'primary.main', mb: 2, display: 'block' }}>PAYMENT SETTINGS</Typography>
+                <FormControl fullWidth variant="outlined">
+                  <InputLabel sx={{ fontWeight: 700 }}>Payment Method</InputLabel>
+                  <Select
+                    value={paymentMethod}
+                    label="Payment Method"
+                    onChange={(e) => setPaymentMethod(e.target.value as string)}
+                    disabled={loading}
+                    sx={{ borderRadius: '12px', bgcolor: 'white', fontWeight: 700 }}
+                  >
+                    <MenuItem value="UPI" sx={{ fontWeight: 700 }}>UPI Payment</MenuItem>
+                    <MenuItem value="CASH" sx={{ fontWeight: 700 }}>Cash Payment</MenuItem>
+                    <MenuItem value="CARD" sx={{ fontWeight: 700 }}>Card Payment</MenuItem>
+                    <MenuItem value="NET_BANKING" sx={{ fontWeight: 700 }}>Net Banking</MenuItem>
+                  </Select>
+                </FormControl>
+
+                {invoice ? (
+                  <Box sx={{ mt: 3, p: 2.5, bgcolor: '#FFF9E6', borderRadius: '16px', border: '1.5px solid #E9762B' }}>
+                    <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+                      <Typography variant="body2" sx={{ fontWeight: 900, color: '#E9762B' }}>
+                        BILL: {invoice.invoice_number}
+                      </Typography>
+                      <Stack direction="row" spacing={1}>
+                        <Tooltip title="Preview">
+                          <IconButton size="small" onClick={() => setPreviewOpen(true)} sx={{ color: '#E9762B', bgcolor: 'white', borderRadius: '8px' }}>
+                            <PreviewIcon fontSize="small" />
+                          </IconButton>
+                        </Tooltip>
+                        <Tooltip title="Print">
+                          <IconButton size="small" onClick={handlePrint} sx={{ color: '#E9762B', bgcolor: 'white', borderRadius: '8px' }}>
+                            <PrintIcon fontSize="small" />
+                          </IconButton>
+                        </Tooltip>
+                        <Tooltip title="Download">
+                          <IconButton size="small" onClick={handleDownload} disabled={downloading} sx={{ color: '#E9762B', bgcolor: 'white', borderRadius: '8px' }}>
+                            {downloading ? <CircularProgress size={16} color="inherit" /> : <DownloadIcon fontSize="small" />}
+                          </IconButton>
+                        </Tooltip>
+                      </Stack>
+                    </Box>
+                    <Typography variant="caption" sx={{ fontWeight: 700, color: 'text.secondary', display: 'block' }}>
+                      {isBillGenerated ? "The bill has been generated and printed." : "Invoice created. Proceed to generate and print bill."}
+                    </Typography>
+                  </Box>
+                ) : (
+                  <Alert severity="info" sx={{ mt: 3, borderRadius: '12px', fontWeight: 600 }}>
+                    Click Checkout to see taxes and charges.
+                  </Alert>
+                )}
+              </Paper>
+
+              {/* Summary */}
+              <Paper sx={{ p: 3, borderRadius: '24px', border: '1px solid #e8e4d8', boxShadow: '0 8px 32px rgba(0,0,0,0.03)', bgcolor: '#fcfcfc' }}>
+                <Typography variant="overline" sx={{ fontWeight: 900, color: 'text.disabled', mb: 2, display: 'block' }}>SUMMARY</Typography>
+                <Stack spacing={2}>
+                  <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
+                    <Typography variant="body2" sx={{ fontWeight: 600, color: 'text.secondary' }}>Subtotal</Typography>
+                    <Typography variant="body2" sx={{ fontWeight: 800 }}>₹{subtotal.toFixed(2)}</Typography>
+                  </Box>
+
+                  {hasInvoice && invoice.tax_details && Object.entries(invoice.tax_details)
+                    .filter(([_, val]) => {
+                      const num = parseFloat(val as string);
+                      return !isNaN(num) && num > 0;
+                    })
+                    .map(([key, val]: [string, any]) => (
+                    <Box key={key} sx={{ display: 'flex', justifyContent: 'space-between' }}>
+                      <Typography variant="body2" sx={{ fontWeight: 600, color: 'text.secondary' }}>{key}</Typography>
+                      <Typography variant="body2" sx={{ fontWeight: 800 }}>₹{parseFloat(val).toFixed(2)}</Typography>
+                    </Box>
+                  ))}
+
+                  <Divider sx={{ my: 1, borderStyle: 'dashed' }} />
+                  
+                  <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <Typography variant="h6" sx={{ fontWeight: 900 }}>Total Payable</Typography>
+                    <Typography variant="h4" sx={{ fontWeight: 900, color: 'primary.main' }}>
+                      ₹{hasInvoice ? parseFloat(invoice.total_amount).toFixed(2) : subtotal.toFixed(2)}
+                    </Typography>
+                  </Box>
+                </Stack>
+
+                <Box sx={{ mt: 4 }}>
+                  {!invoice ? (
+                    <Button 
+                      variant="contained" 
+                      fullWidth
+                      onClick={handleCheckout}
+                      disabled={loading}
+                      sx={{ py: 2, fontWeight: 900, borderRadius: '12px', fontSize: '1rem', boxShadow: '0 8px 24px rgba(233,118,43,0.1)' }}
+                    >
+                      {loading ? 'CHECKING OUT...' : 'CHECKOUT'}
+                    </Button>
+                  ) : !isBillGenerated ? (
+                    <Button 
+                      variant="contained" 
+                      fullWidth
+                      onClick={handleGenerateBill}
+                      disabled={loading}
+                      sx={{ py: 2, fontWeight: 900, borderRadius: '12px', fontSize: '1rem', boxShadow: '0 8px 24px rgba(233,118,43,0.1)' }}
+                    >
+                      GENERATE & PRINT BILL
+                    </Button>
+                  ) : (
+                    <Stack spacing={2}>
+                      <TextField
+                        fullWidth
+                        size="small"
+                        placeholder="Payment Note (Optional)"
+                        value={paymentNote}
+                        onChange={(e: React.ChangeEvent<HTMLInputElement>) => setPaymentNote(e.target.value)}
+                        sx={{ bgcolor: 'white' }}
+                      />
+                      <Button 
+                        variant="contained" 
+                        fullWidth
+                        color="success"
+                        onClick={handleMarkAsPaid}
+                        disabled={loading}
+                        sx={{ py: 2, fontWeight: 900, borderRadius: '12px', fontSize: '1rem', boxShadow: '0 8px 24px rgba(16,185,129,0.1)' }}
+                      >
+                        {loading ? 'PROCESSING...' : 'MARK AS PAID'}
+                      </Button>
+                    </Stack>
+                  )}
+                </Box>
+              </Paper>
+            </Stack>
           </Grid>
         </Grid>
       </Box>

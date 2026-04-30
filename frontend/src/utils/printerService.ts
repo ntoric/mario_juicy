@@ -21,6 +21,7 @@ export interface PrinterServiceData {
     date: string;
     payment_mode: string;
     dr_ref: string;
+    invoice_ref: string | number;
     items: Array<{
       name: string;
       hsn: string;
@@ -53,22 +54,32 @@ export interface PrinterServiceData {
   };
 }
 
-export const mapToPrinterServiceData = (invoice: any, orderItems: any[]): PrinterServiceData => {
-  const store = invoice.store_details;
+export const mapToPrinterServiceData = (invoice: any, orderItems: any[], storeOverride?: any): PrinterServiceData => {
+  const store = storeOverride || invoice.store_details || invoice.store;
   const taxDetails = invoice.tax_details || {};
+  
+  // Handle case where taxDetails is a string (JSON string from raw model)
+  let parsedTaxDetails = taxDetails;
+  if (typeof taxDetails === 'string') {
+    try {
+      parsedTaxDetails = JSON.parse(taxDetails);
+    } catch (e) {
+      parsedTaxDetails = {};
+    }
+  }
 
   // Try to find CGST and SGST
-  const cgst = parseFloat(taxDetails['CGST'] || '0');
-  const sgst = parseFloat(taxDetails['SGST'] || '0');
+  const cgst = parseFloat(parsedTaxDetails['CGST'] || parsedTaxDetails['cgst'] || '0');
+  const sgst = parseFloat(parsedTaxDetails['SGST'] || parsedTaxDetails['sgst'] || '0');
 
-  const formattedItems = orderItems.map(item => ({
-    name: item.item_details.name,
-    hsn: item.item_details.hsn_code || "",
-    qty: item.quantity,
+  const formattedItems = (orderItems || []).map(item => ({
+    name: item?.item_details?.name || "Unknown Item",
+    hsn: item?.item_details?.hsn_code || "",
+    qty: item?.quantity || 1,
     unit: "PCS",
-    rate: parseFloat(item.price),
+    rate: parseFloat(item?.price || '0'),
     tax_percent: 5, // Default
-    amount: parseFloat(item.price) * item.quantity
+    amount: parseFloat(item?.price || '0') * (item?.quantity || 1)
   }));
 
   const data: PrinterServiceData = {
@@ -80,18 +91,18 @@ export const mapToPrinterServiceData = (invoice: any, orderItems: any[]): Printe
     },
     invoice: {
       store: {
-        name: store?.name || "Mario Juicy",
-        branch: store?.location || "Main Branch",
-        gstin: store?.gst_number || "",
-        fssai: store?.fssai_lic_no || "",
-        phone: store?.phone || store?.mobile || ""
+        name: store?.name || store?.Name || "Mario Juicy",
+        branch: store?.location || store?.Location || store?.branch_name || "Main Branch",
+        gstin: store?.gst_number || store?.GSTNumber || store?.gstin || "",
+        fssai: store?.fssai_lic_no || store?.FSSAILicNo || store?.fssai || "",
+        phone: store?.phone || store?.Phone || store?.mobile || store?.Mobile || store?.contact || ""
       },
       customer: {
-        name: invoice.customer_name || "Guest"
+        name: invoice.customer_name || invoice.CustomerName || "Guest"
       },
-      invoice_no: invoice.invoice_number,
-      bill_no: invoice.invoice_number.split('-').pop() || invoice.invoice_number,
-      date: new Date(invoice.created_at).toLocaleString('en-IN', {
+      invoice_no: invoice.invoice_number || invoice.InvoiceNumber || "",
+      bill_no: (invoice.invoice_number || invoice.InvoiceNumber || "").split('-').pop() || invoice.invoice_number || invoice.InvoiceNumber || "",
+      date: new Date(invoice.created_at || invoice.CreatedAt || new Date()).toLocaleString('en-IN', {
         day: '2-digit',
         month: '2-digit',
         year: 'numeric',
@@ -99,21 +110,22 @@ export const mapToPrinterServiceData = (invoice: any, orderItems: any[]): Printe
         minute: '2-digit',
         hour12: true
       }),
-      payment_mode: invoice.payment_method || "CASH",
-      dr_ref: invoice.reference_number || "",
+      payment_mode: invoice.payment_method || invoice.PaymentMethod || "CASH",
+      dr_ref: invoice.reference_number || invoice.ReferenceNumber || "",
+      invoice_ref: invoice.order_id || invoice.OrderID || invoice.order || "",
       items: formattedItems,
       summary: {
-        sub_total: parseFloat(invoice.subtotal),
-        discount: parseFloat(invoice.discount_amount || '0'),
-        taxable: parseFloat(invoice.subtotal) - parseFloat(invoice.discount_amount || '0'),
+        sub_total: parseFloat(invoice.subtotal || invoice.Subtotal || invoice.sub_total || invoice.total || invoice.Total || '0'),
+        discount: parseFloat(invoice.discount_amount || invoice.DiscountAmount || '0'),
+        taxable: parseFloat(invoice.subtotal || invoice.Subtotal || invoice.sub_total || '0') - parseFloat(invoice.discount_amount || invoice.DiscountAmount || '0'),
         cgst: cgst,
         sgst: sgst,
-        grand_total: parseFloat(invoice.total_amount)
+        grand_total: parseFloat(invoice.total_amount || invoice.TotalAmount || invoice.grand_total || invoice.GrandTotal || invoice.total || invoice.Total || '0')
       },
       payment: {
-        cash: invoice.payment_method === 'CASH' ? parseFloat(invoice.total_amount) : 0,
-        card: invoice.payment_method === 'CARD' ? parseFloat(invoice.total_amount) : 0,
-        upi: invoice.payment_method === 'UPI' ? parseFloat(invoice.total_amount) : 0,
+        cash: (invoice.payment_method || invoice.PaymentMethod) === 'CASH' ? parseFloat(invoice.total_amount || invoice.TotalAmount || invoice.grand_total || invoice.GrandTotal || invoice.total || invoice.Total || '0') : 0,
+        card: (invoice.payment_method || invoice.PaymentMethod) === 'CARD' ? parseFloat(invoice.total_amount || invoice.TotalAmount || invoice.grand_total || invoice.GrandTotal || invoice.total || invoice.Total || '0') : 0,
+        upi: (invoice.payment_method || invoice.PaymentMethod) === 'UPI' ? parseFloat(invoice.total_amount || invoice.TotalAmount || invoice.grand_total || invoice.GrandTotal || invoice.total || invoice.Total || '0') : 0,
         balance: 0
       },
       footer: [
@@ -133,4 +145,42 @@ export const mapToPrinterServiceData = (invoice: any, orderItems: any[]): Printe
   // }
 
   return data;
+};
+
+export const printInvoice = async (invoice: any, items: any[], storeOverride?: any): Promise<boolean> => {
+  if (!invoice) return false;
+  
+  // Prepare data
+  const { mapToPrinterServiceData } = await import('./printerService');
+  const printData = mapToPrinterServiceData(invoice, items || [], storeOverride);
+  
+  console.log('Printing Invoice Data:', JSON.stringify(printData, null, 2));
+
+  // TRY 1: Direct Fetch to Local Service (Port 8085)
+  // This works in both Browser and Electron if the service is running
+  try {
+    const response = await fetch('http://localhost:8085/print', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(printData)
+    });
+    if (response.ok) return true;
+  } catch (e) {
+    console.warn("Direct fetch to printer service failed:", e);
+  }
+
+  // TRY 2: Electron Bridge (via preload script)
+  if (typeof window !== 'undefined' && (window as any).api) {
+    const api = (window as any).api;
+    if (api.printToService) {
+      try {
+        await api.printToService(printData);
+        return true;
+      } catch (e) {
+        console.error("Local service print via bridge failed:", e);
+      }
+    }
+  }
+
+  return false;
 };

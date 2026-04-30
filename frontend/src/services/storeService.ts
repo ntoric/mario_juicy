@@ -72,6 +72,6 @@ export const storeService = {
   },
   
   getDashboardStats: async (): Promise<any> => {
-    return fetcher("/stores/dashboard/");
+    return fetcher("/reports/dashboard/");
   }
 };

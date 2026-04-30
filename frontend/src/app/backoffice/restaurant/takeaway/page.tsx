@@ -151,7 +151,7 @@ export default function TakeAwayPage() {
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
 
   return (
-    <Box sx={{ height: { xs: 'auto', md: '100%' }, display: "flex", flexDirection: "column", p: { xs: 1.5, md: 2 }, overflow: { xs: 'visible', md: 'hidden' } }}>
+    <Box sx={{ position: 'relative', height: { xs: 'auto', md: '100%' }, display: "flex", flexDirection: "column", p: { xs: 1.5, md: 2 }, overflow: { xs: 'visible', md: 'hidden' } }}>
       {/* Optimized Header Row */}
       {/* Optimized Header Row */}
       <Box sx={{ 

@@ -136,7 +136,7 @@ export const restaurantService = {
       method: "POST",
       body: JSON.stringify({ status }),
     }),
-  checkout: (orderId: number, data: { payment_method: string; mark_as_paid?: boolean; gst_type?: string }) => 
+  checkout: (orderId: number, data: { payment_method: string; mark_as_paid?: boolean; gst_type?: string; notes?: string }) => 
     fetcher(`/restaurants/orders/${orderId}/checkout/`, {
       method: "POST",
       body: JSON.stringify(data),

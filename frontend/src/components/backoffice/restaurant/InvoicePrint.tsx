@@ -141,7 +141,12 @@ interface InvoicePrintProps {
             <Typography sx={{ fontSize: '0.75rem', minWidth: '45px', textAlign: 'right' }}>0.00</Typography>
           </Box>
 
-          {Object.entries(invoice.tax_details).map(([name, amount]) => (
+          {Object.entries(invoice.tax_details)
+            .filter(([_, amount]) => {
+              const num = parseFloat(amount as string);
+              return !isNaN(num) && num > 0;
+            })
+            .map(([name, amount]) => (
             <Box sx={{ display: 'flex', gap: 4 }} key={name}>
               <Typography sx={{ fontSize: '0.7rem', fontWeight: 700 }}>{name}</Typography>
               <Typography sx={{ fontSize: '0.7rem', minWidth: '45px', textAlign: 'right' }}>{parseFloat(amount).toFixed(2)}</Typography>

@@ -44,7 +44,7 @@ const TABS = [
 function OrderCard({ order, onClick, onDelete, showDelete }: { order: Order; onClick: () => void; onDelete: () => void; showDelete: boolean }) {
   const theme = useTheme();
   const mins = Math.floor((Date.now() - new Date(order.created_at).getTime()) / 60000);
-  const readyCount = order.items.filter(i => i.status === 'READY').length;
+  const readyCount = (order.items || []).filter(i => i.status === 'READY').length;
 
   return (
     <Card
@@ -125,7 +125,7 @@ function OrderCard({ order, onClick, onDelete, showDelete }: { order: Order; onC
               <>
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, color: 'text.secondary' }}>
                   <BasketIcon sx={{ fontSize: 14 }} />
-                  <Typography variant="caption" sx={{ fontWeight: 700 }}>{order.items.length} ITEMS</Typography>
+                  <Typography variant="caption" sx={{ fontWeight: 700 }}>{(order.items || []).length} ITEMS</Typography>
                 </Box>
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, color: 'text.secondary' }}>
                   <TimeIcon sx={{ fontSize: 14 }} />
@@ -194,7 +194,7 @@ export default function LiveOrdersPage() {
   const filtered = orders.filter(TABS[tab].filter);
 
   return (
-    <Box sx={{ p: { xs: 1.5, md: 2 } }}>
+    <Box sx={{ position: 'relative', p: { xs: 1.5, md: 2 } }}>
       <Box sx={{ 
         mb: 2, 
         display: 'flex', 

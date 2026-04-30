@@ -56,6 +56,15 @@ export function useAuth() {
         }
       } catch (err: any) {
         console.error('useAuth: Failed to fetch user profile:', err);
+        
+        // If it's a 401 Unauthorized, the token is likely expired or invalid
+        // We should redirect to login instead of showing a scary session error
+        if (err.status === 401) {
+          const { logout } = require('@/lib/auth');
+          logout();
+          return;
+        }
+
         setError(`Verification failed: ${err.message || 'Unknown error'}`);
       } finally {
         setLoading(false);
