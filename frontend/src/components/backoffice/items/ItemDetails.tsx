@@ -42,12 +42,11 @@ export default function ItemDetails({
 }: ItemDetailsProps) {
   return (
     <Box sx={{ 
-      position: 'absolute',
-      inset: 0,
+      flexGrow: 1,
       bgcolor: '#fdfdfd',
-      zIndex: 100,
       display: 'flex', 
       flexDirection: 'column',
+      minHeight: '100%',
       animation: 'slideInRight 0.2s ease-out',
       '@keyframes slideInRight': {
         from: { transform: 'translateX(100%)' },

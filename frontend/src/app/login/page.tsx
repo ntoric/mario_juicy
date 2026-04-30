@@ -7,7 +7,7 @@ import { LogIn, User, Lock, Loader2, Store } from "lucide-react";
 import { fetcher } from "@/lib/api";
 import { setTokens, isAuthenticated } from "@/lib/auth";
 import { Pacifico } from "next/font/google";
-import Preloader from "@/components/ui/Preloader";
+// import Preloader from "@/components/ui/Preloader";
 import "./login.css";
 
 const pacifico = Pacifico({
@@ -18,7 +18,7 @@ const pacifico = Pacifico({
 
 export default function LoginPage() {
   const router = useRouter();
-  const [isAuthenticating, setIsAuthenticating] = useState(true);
+  const [isAuthenticating, setIsAuthenticating] = useState(false);
   const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState({
     username: "",
@@ -26,11 +26,19 @@ export default function LoginPage() {
   });
 
   useEffect(() => {
+    // Safety timeout to prevent getting stuck on "Checking session"
+    const timeout = setTimeout(() => {
+      setIsAuthenticating(false);
+    }, 2000);
+
     if (isAuthenticated()) {
       router.push("/backoffice");
     } else {
       setIsAuthenticating(false);
+      clearTimeout(timeout);
     }
+
+    return () => clearTimeout(timeout);
   }, [router]);
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -61,9 +69,9 @@ export default function LoginPage() {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
-  if (isAuthenticating) {
-    return <Preloader fullScreen message="Checking session..." />;
-  }
+  // if (isAuthenticating) {
+  //   return <Preloader fullScreen message="Checking session..." />;
+  // }
 
   return (
     <div className={`login-container animate-fade-in`}>
@@ -71,7 +79,7 @@ export default function LoginPage() {
       <div className="login-brand-section">
         <div className="brand-icon-wrapper" style={{ overflow: 'hidden', padding: 0, backgroundColor: 'white', borderRadius: '22px', border: '2px solid #E9762B' }}>
           <img 
-            src="/logo.png" 
+            src="/mario_juicy_logo.png" 
             alt="Mario Logo" 
             style={{ width: '100%', height: '100%', objectFit: 'contain', animation: 'pulse-float 4s ease-in-out infinite' }} 
           />

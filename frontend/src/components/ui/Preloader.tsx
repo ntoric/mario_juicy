@@ -1,7 +1,7 @@
 "use client";
 
 import React from 'react';
-import { Box, Typography } from '@mui/material';
+import { Box, Typography, CircularProgress } from '@mui/material';
 
 interface PreloaderProps {
   fullScreen?: boolean;
@@ -16,8 +16,17 @@ const Preloader: React.FC<PreloaderProps> = ({
   message = "Loading...",
   blur = true
 }) => {
+  const [mounted, setMounted] = React.useState(false);
+
+  React.useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  if (!mounted) return null;
+
   return (
     <Box
+      suppressHydrationWarning
       sx={{
         display: 'flex',
         flexDirection: 'column',
@@ -59,24 +68,13 @@ const Preloader: React.FC<PreloaderProps> = ({
 
       <Box
         sx={{
-          width: size,
-          height: size,
+          mb: 3,
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
-          animation: 'pulse-float 3s ease-in-out infinite',
-          mb: 3,
         }}
       >
-        <img 
-          src="/logo.png" 
-          alt="Mario POS" 
-          style={{ 
-            width: '100%', 
-            height: '100%', 
-            objectFit: 'contain' 
-          }} 
-        />
+        <CircularProgress size={size / 2} sx={{ color: '#E9762B' }} />
       </Box>
 
       {message && (

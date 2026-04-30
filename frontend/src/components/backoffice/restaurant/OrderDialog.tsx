@@ -2,8 +2,9 @@
 
 import React, { useState, useEffect } from 'react';
 import {
-  Dialog, DialogTitle, DialogContent, DialogActions, Button, alpha, Box, Typography, Grid, TextField, IconButton, Paper, Autocomplete, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, CircularProgress, useTheme, useMediaQuery, Stack, Tooltip, Select, MenuItem, FormControl, InputLabel, Divider, Alert, Chip, Card, CardContent, Container, Tabs, Tab
+  Dialog, DialogTitle, DialogContent, DialogActions, Button, alpha, Box, Typography, Grid, TextField, IconButton, Paper, Autocomplete, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, CircularProgress, useTheme, useMediaQuery, Stack, Tooltip, Select, MenuItem, FormControl, InputLabel, Divider, Alert, Chip, Card, CardContent, Container, Tabs, Tab, Drawer, Fab, Badge
 } from '@mui/material';
+import { toast } from 'sonner';
 import { useRouter } from 'next/navigation';
 import {
   Add as AddIcon,
@@ -38,8 +39,8 @@ import { getImageUrl } from '@/utils/image';
 
 const DINE_IN_STATUS_FLOW: Order['status'][] = ['ORDER_TAKEN', 'PREPARING', 'SERVED', 'COMPLETED', 'PAID'];
 const DINE_IN_STATUS_FLOW_NO_KITCHEN: Order['status'][] = ['ORDER_TAKEN', 'SERVED', 'COMPLETED', 'PAID'];
-const TAKE_AWAY_STATUS_FLOW: Order['status'][] = ['ORDER_TAKEN', 'PREPARING', 'READY', 'COMPLETED', 'PAID'];
-const TAKE_AWAY_STATUS_FLOW_NO_KITCHEN: Order['status'][] = ['ORDER_TAKEN', 'PREPARING', 'READY', 'PAID'];
+const TAKE_AWAY_STATUS_FLOW: Order['status'][] = ['ORDER_TAKEN', 'READY'];
+const TAKE_AWAY_STATUS_FLOW_NO_KITCHEN: Order['status'][] = ['ORDER_TAKEN', 'READY'];
 
 interface OrderDialogProps {
   open: boolean;
@@ -59,7 +60,6 @@ const OrderDialog: React.FC<OrderDialogProps> = ({ open, onClose, table, initial
   const canManagePayment = hasPermission('access_to_payment_management');
 
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
   const [order, setOrder] = useState<Order | null>(null);
   const [orderType, setOrderType] = useState<'DINE_IN' | 'TAKE_AWAY'>('DINE_IN');
   const [menuItems, setMenuItems] = useState<Item[]>([]);
@@ -90,6 +90,8 @@ const OrderDialog: React.FC<OrderDialogProps> = ({ open, onClose, table, initial
   // Cancellation
   const [cancelDialogOpen, setCancelDialogOpen] = useState(false);
   const [cancelReason, setCancelReason] = useState('');
+  const [mobileSummaryOpen, setMobileSummaryOpen] = useState(false);
+  const [selectedItemForDetail, setSelectedItemForDetail] = useState<Item | null>(null);
 
   const isKitchenStepEnabled = activeStore?.is_kitchen_step_enabled !== false;
 
@@ -102,6 +104,7 @@ const OrderDialog: React.FC<OrderDialogProps> = ({ open, onClose, table, initial
     if (idx >= 0 && idx < activeFlow.length - 1) return activeFlow[idx + 1];
     if (order.status === 'READY' && activeFlow.includes('SERVED')) return 'SERVED';
     if (order.status === 'PREPARING' && !activeFlow.includes('PREPARING') && activeFlow.includes('SERVED')) return 'SERVED';
+    if (order.status === 'PREPARING' && order.order_type === 'TAKE_AWAY' && activeFlow.includes('READY')) return 'READY';
     return null;
   })();
 
@@ -117,7 +120,7 @@ const OrderDialog: React.FC<OrderDialogProps> = ({ open, onClose, table, initial
 
   const fetchData = async () => {
     setLoading(true);
-    setError(null);
+
     try {
       const [items, cats, tablesData] = await Promise.all([
         itemService.getItems(),
@@ -133,14 +136,23 @@ const OrderDialog: React.FC<OrderDialogProps> = ({ open, onClose, table, initial
       const activeOrds = currentTable?.active_orders || [];
       setActiveOrders(activeOrds);
 
+      // Initialize states from initialOrder ONLY when opening or when initialOrder changes
+      // But don't overwrite if we've already started editing a new order
       if (initialOrder) {
         setOrder(initialOrder);
         setOrderType(initialOrder.order_type);
         setCustomerName(initialOrder.customer_name || '');
         setCustomerMobile(initialOrder.customer_mobile || '');
-        setDialogStage('ORDER_DETAILS');
         setSelectedOrderId(initialOrder.id);
+        setDialogStage('ORDER_DETAILS');
       } else if (currentTable) {
+        setOrder(null);
+        setSelectedOrderId(null);
+        // Don't reset customerName/Mobile if we're already in the process of creating one
+        if (!customerMobile && !customerName) {
+           setCustomerName('');
+           setCustomerMobile('');
+        }
         if (activeOrds.length > 0) {
           // If we already have a selected order, try to refresh it
           const ordToSelect = selectedOrderId 
@@ -166,7 +178,7 @@ const OrderDialog: React.FC<OrderDialogProps> = ({ open, onClose, table, initial
       }
     } catch (e: any) {
       console.error('Failed to load data:', e);
-      setError('Failed to load data');
+      toast.error('Failed to load data');
     } finally {
       setLoading(false);
     }
@@ -175,15 +187,23 @@ const OrderDialog: React.FC<OrderDialogProps> = ({ open, onClose, table, initial
   const handleCreateOrder = async (type: 'DINE_IN' | 'TAKE_AWAY' = 'DINE_IN') => {
     if (!table && type === 'DINE_IN') return;
     if (!canTakeOrder) {
-      setError('You do not have permission to take orders.');
+      toast.error('You do not have permission to take orders.');
       return;
     }
     setLoading(true);
-    setError(null);
+
+    if (type === 'TAKE_AWAY' && !customerMobile) {
+      toast.error('Customer mobile number is mandatory for Parcel orders.');
+      setLoading(false);
+      return;
+    }
     try {
       const totalPersons = (table?.current_occupancy || 0) + (type === 'DINE_IN' ? numberOfPersons : 1);
       if (type === 'DINE_IN' && table && totalPersons > table.capacity) {
-          setError(`Table capacity (${table.capacity}) exceeded. Total guests would be ${totalPersons}.`);
+          toast.info(`Table Capacity Limit`, {
+            description: `Table ${table.number} capacity is ${table.capacity}. Total guests (${totalPersons}) exceeds limit.`,
+            duration: 5000,
+          });
           setLoading(false);
           return;
       }
@@ -204,7 +224,7 @@ const OrderDialog: React.FC<OrderDialogProps> = ({ open, onClose, table, initial
       // Refresh local state
       await fetchData();
     } catch (e: any) {
-      setError('Failed to create order');
+      toast.error('Failed to create order');
     } finally {
       setLoading(false);
     }
@@ -227,7 +247,7 @@ const OrderDialog: React.FC<OrderDialogProps> = ({ open, onClose, table, initial
       setOrderType(orderData.order_type);
       setDialogStage('ORDER_DETAILS');
     } catch (e) {
-      setError('Failed to load order');
+      toast.error('Failed to load order');
     } finally {
       setLoading(false);
     }
@@ -241,33 +261,69 @@ const OrderDialog: React.FC<OrderDialogProps> = ({ open, onClose, table, initial
 
   const handleAddItem = async (item: Item) => {
     if (order?.invoice) return;
+    if (!canTakeOrder) {
+      toast.error('You do not have permission to take orders.');
+      return;
+    }
+    
+    // Prevent double clicks
+    if (loading) return;
+    
     setLoading(true);
-    setError(null);
+
     try {
-      let currentOrder = order;
-      if (!currentOrder) {
-        // Create order first
-        currentOrder = await restaurantService.createOrder({
-          table: orderType === 'DINE_IN' ? table?.id : undefined,
-          order_type: orderType,
+      let activeOrder = order;
+      
+      // If no active order, create one first
+      if (!activeOrder) {
+        const currentOrderType = orderType; // Capture current type
+        
+        // Mobile number is now optional at item add stage, required at KOT stage
+        // But if provided, we validate it
+        if (customerMobile && !/^\d{10}$/.test(customerMobile)) {
+           toast.error("Invalid mobile number", { description: "Please enter a valid 10-digit mobile number" });
+           setLoading(false);
+           return;
+        }
+
+        // Create the order on the backend
+        const createdOrder = await restaurantService.createOrder({
+          table: currentOrderType === 'DINE_IN' ? table?.id : undefined,
+          order_type: currentOrderType,
           customer_name: customerName || undefined,
           customer_mobile: customerMobile || undefined,
-          number_of_persons: orderType === 'DINE_IN' ? numberOfPersons : 1,
+          number_of_persons: currentOrderType === 'DINE_IN' ? numberOfPersons : 1,
         });
-        setOrder(currentOrder);
+        
+        if (!createdOrder || !createdOrder.id) {
+          throw new Error('Failed to create order on server');
+        }
+
+        activeOrder = createdOrder;
+        setOrder(createdOrder);
+        setSelectedOrderId(createdOrder.id);
       }
       
-      await restaurantService.addItemToOrder(currentOrder!.id, {
+      if (!activeOrder || !activeOrder.id) {
+        throw new Error('No active order found to add items to.');
+      }
+
+      // Add the item to the order
+      await restaurantService.addItemToOrder(activeOrder.id, {
         item: item.id,
         quantity: 1,
-        notes: ['READY', 'SERVED', 'COMPLETED'].includes(currentOrder!.status) ? 'ADD-ON' : '',
+        notes: (activeOrder.status && ['READY', 'SERVED', 'COMPLETED'].includes(activeOrder.status)) ? 'ADD-ON' : '',
       });
-      const orderData = await restaurantService.getOrder(currentOrder!.id);
-      setOrder(orderData);
+      
+      // Refresh the order data to show the new item
+      const updatedOrder = await restaurantService.getOrder(activeOrder.id);
+      setOrder(updatedOrder);
+      
+      // Notify parent that something changed
       onOrderUpdated();
     } catch (e: any) {
-      console.error('Failed to add item:', e);
-      setError('Failed to add item');
+      console.error('Add Item Error:', e);
+      toast.error(e.message || 'Failed to add item to order');
     } finally {
       setLoading(false);
     }
@@ -285,7 +341,7 @@ const OrderDialog: React.FC<OrderDialogProps> = ({ open, onClose, table, initial
       const orderData = await restaurantService.getOrder(orderItem.order);
       setOrder(orderData);
       onOrderUpdated();
-    } catch (e) { setError('Failed to update quantity'); }
+    } catch (e) { toast.error('Failed to update quantity'); }
     finally { setLoading(false); }
   };
 
@@ -308,8 +364,9 @@ const OrderDialog: React.FC<OrderDialogProps> = ({ open, onClose, table, initial
       const updatedOrder = await restaurantService.getOrder(order.id);
       setOrder(updatedOrder);
       onOrderUpdated();
-    } catch (e) {
-      setError('Failed to update order details');
+      toast.success("Order updated");
+    } catch (e: any) {
+      toast.error(e.message || 'Failed to update order details');
     } finally {
       setLoading(false);
     }
@@ -317,13 +374,29 @@ const OrderDialog: React.FC<OrderDialogProps> = ({ open, onClose, table, initial
 
   const handleSendToKitchen = async () => {
     if (!order) return;
+
+    // Validation for Parcel - Mandatory Mobile Number at KOT stage
+    if (order.order_type === 'TAKE_AWAY' && !order.customer_mobile) {
+      toast.info('Mobile Number Required', { 
+        description: 'Please provide Customer Mobile number for Parcel orders.',
+        duration: 5000 
+      });
+      if (isMobile) {
+        setMobileSummaryOpen(true);
+      }
+      return;
+    }
+
     setLoading(true);
     try {
       await restaurantService.sendToKitchen(order.id);
       const orderData = await restaurantService.getOrder(order.id);
       setOrder(orderData);
       onOrderUpdated();
-    } catch (e) { setError('Failed to send to kitchen'); }
+      toast.success("Sent to Kitchen (KOT)");
+    } catch (e: any) { 
+      toast.error(e.message || 'Failed to send to kitchen'); 
+    }
     finally { setLoading(false); }
   };
 
@@ -335,7 +408,8 @@ const OrderDialog: React.FC<OrderDialogProps> = ({ open, onClose, table, initial
       const orderData = await restaurantService.getOrder(order.id);
       setOrder(orderData);
       onOrderUpdated();
-    } catch (e) { setError('Failed to serve items'); }
+      toast.success("Items served");
+    } catch (e) { toast.error('Failed to serve items'); }
     finally { setLoading(false); }
   };
 
@@ -347,7 +421,13 @@ const OrderDialog: React.FC<OrderDialogProps> = ({ open, onClose, table, initial
       const orderData = await restaurantService.getOrder(order.id);
       setOrder(orderData);
       onOrderUpdated();
-    } catch (e) { setError('Failed to update order status'); }
+      
+      // Auto close if completed - user requested removal from tables/details
+      if (newStatus === 'COMPLETED') {
+        onClose();
+      }
+      toast.success(`Order ${newStatus.toLowerCase()}`);
+    } catch (e) { toast.error('Failed to update order status'); }
     finally { setLoading(false); }
   };
 
@@ -359,7 +439,8 @@ const OrderDialog: React.FC<OrderDialogProps> = ({ open, onClose, table, initial
       const orderData = await restaurantService.getOrder(order.id);
       setOrder(orderData);
       onOrderUpdated();
-    } catch (e) { setError('Failed to generate bill'); }
+      toast.success("Bill generated successfully");
+    } catch (e) { toast.error('Failed to generate bill'); }
     finally { setLoading(false); }
   };
 
@@ -371,7 +452,8 @@ const OrderDialog: React.FC<OrderDialogProps> = ({ open, onClose, table, initial
       await restaurantService.releaseTable(table.id);
       onOrderUpdated();
       onClose();
-    } catch (e) { setError('Failed to release table'); }
+      toast.success("Table cleared");
+    } catch (e) { toast.error('Failed to release table'); }
     finally { setLoading(false); }
   };
 
@@ -384,7 +466,7 @@ const OrderDialog: React.FC<OrderDialogProps> = ({ open, onClose, table, initial
       setOrder(orderData);
       onOrderUpdated();
       setCancelDialogOpen(false);
-    } catch (e) { setError('Failed to cancel order'); }
+    } catch (e) { toast.error('Failed to cancel order'); }
     finally { setLoading(false); }
   };
 
@@ -396,7 +478,7 @@ const OrderDialog: React.FC<OrderDialogProps> = ({ open, onClose, table, initial
       setMoveTableOpen(false);
       onOrderUpdated();
       onClose();
-    } catch (e) { setError('Failed to move table'); }
+    } catch (e) { toast.error('Failed to move table'); }
     finally { setMoving(false); }
   };
 
@@ -449,17 +531,225 @@ const OrderDialog: React.FC<OrderDialogProps> = ({ open, onClose, table, initial
       document.body.appendChild(link);
       link.click();
       link.remove();
-    } catch (e) { setError('Failed to download PDF'); }
+    } catch (e) { toast.error('Failed to download PDF'); }
     finally { setDownloading(false); }
   };
 
-  const renderContent = () => {
-    const errorAlert = error && (
-      <Box sx={{ p: 2, bgcolor: '#fff5f5' }}>
-        <Alert severity="error" onClose={() => setError(null)}>{error}</Alert>
+  const renderQuickActions = () => {
+    if (dialogStage !== 'ORDER_DETAILS' || !isMobile) return null;
+    
+    const actions = [];
+    if (!order) {
+      // If no order yet, no actions possible, but we show the bar for the basket
+    } else {
+    if (hasNewItems) {
+      actions.push(
+        <Button key="kot" variant="contained" color="warning" size="small" onClick={handleSendToKitchen} sx={{ fontWeight: 900, borderRadius: '12px', flexGrow: 1, py: 1 }}>KOT</Button>
+      );
+    }
+    if (hasReadyItems && order?.order_type !== 'TAKE_AWAY') {
+      actions.push(
+        <Button key="serve" variant="contained" color="success" size="small" onClick={handleServeAllReady} sx={{ fontWeight: 900, borderRadius: '12px', flexGrow: 1, py: 1 }}>SERVE</Button>
+      );
+    }
+    if (nextStatus && order?.status !== 'COMPLETED' && (order?.items || []).length > 0 && 
+        !(order?.order_type === 'DINE_IN' && nextStatus === 'SERVED') &&
+        !(order?.order_type === 'TAKE_AWAY' && hasNewItems)) {
+      actions.push(
+        <Button key="status" variant="contained" size="small" onClick={() => handleUpdateOrderStatus(nextStatus)} sx={{ fontWeight: 900, borderRadius: '12px', flexGrow: 1, py: 1 }}>
+          {nextStatus === 'READY' ? 'READY' : (nextStatus === 'SERVED' ? 'SERVE' : nextStatus.split('_')[0])}
+        </Button>
+      );
+    }
+    if (order?.status === 'COMPLETED' && !order.invoice) {
+      actions.push(
+        <Button key="checkout" variant="contained" color="success" size="small" onClick={handleGenerateBill} sx={{ fontWeight: 900, borderRadius: '12px', flexGrow: 1, py: 1 }}>BILL</Button>
+      );
+    }
+    if (order?.order_type !== 'TAKE_AWAY' && order?.invoice && order?.status !== 'COMPLETED') {
+      actions.push(
+        <Button key="payment" variant="contained" color="secondary" size="small" onClick={() => setCheckoutOpen(true)} sx={{ fontWeight: 900, borderRadius: '12px', flexGrow: 1, py: 1 }}>PAY</Button>
+      );
+    }
+    }
+
+    return (
+      <Box sx={{ 
+        p: 1.5, 
+        bgcolor: 'white', 
+        borderTop: '1px solid #e8e4d8', 
+        display: 'flex', 
+        gap: 1.5, 
+        alignItems: 'center', 
+        position: 'absolute', 
+        bottom: 0,
+        left: 0,
+        right: 0,
+        zIndex: 2500, 
+      }}>
+        <Box sx={{ width: '80%', display: 'flex', gap: 1 }}>
+          {actions.length > 0 ? actions : (
+            <Box sx={{ flexGrow: 1, display: 'flex', alignItems: 'center' }}>
+               <Typography variant="caption" sx={{ fontWeight: 800, color: 'text.secondary' }}>NO ACTIONS AVAILABLE</Typography>
+            </Box>
+          )}
+        </Box>
+        
+        <Box sx={{ width: '20%', display: 'flex', justifyContent: 'center' }}>
+          <Badge 
+            badgeContent={order ? (order.items || []).length : 0} 
+            overlap="circular"
+            sx={{
+              '& .MuiBadge-badge': {
+                bgcolor: '#FFEB3B',
+                color: '#E65100',
+                fontWeight: 900,
+                fontSize: '0.65rem',
+                height: 18,
+                minWidth: 18,
+              }
+            }}
+          >
+            <IconButton 
+              size="small"
+              onClick={() => setMobileSummaryOpen(!mobileSummaryOpen)}
+              sx={{ 
+                bgcolor: 'primary.main', 
+                color: 'white', 
+                width: 44, 
+                height: 44,
+                boxShadow: '0 4px 12px rgba(239, 108, 0, 0.2)',
+                '&:hover': { bgcolor: 'primary.dark' } 
+              }}
+            >
+              <BasketIcon fontSize="small" />
+            </IconButton>
+          </Badge>
+        </Box>
       </Box>
     );
+  };
 
+  const renderSummaryContent = () => (
+    <>
+      <Box sx={{ p: 2, borderBottom: '1px solid #e8e4d8', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <Typography sx={{ fontWeight: 900 }}>SUMMARY</Typography>
+        
+          {orderType === 'DINE_IN' && (
+          <Stack direction="row" spacing={0.5} sx={{ alignItems: 'center', border: '1px solid #e8e4d8', borderRadius: '20px', px: 1 }}>
+            <PersonIcon sx={{ fontSize: 14, color: 'text.secondary' }} />
+            <IconButton size="small" onClick={() => order ? handleUpdateOrderDetails({ number_of_persons: Math.max(1, order.number_of_persons - 1) }) : setNumberOfPersons(p => Math.max(1, p-1))} disabled={Boolean(order?.invoice)}>
+              <RemoveIcon sx={{ fontSize: 12 }} />
+            </IconButton>
+            <Tooltip title="Guest Count">
+              <Typography sx={{ fontWeight: 800, fontSize: '0.875rem', minWidth: 16, textAlign: 'center' }}>{order ? order.number_of_persons : numberOfPersons}</Typography>
+            </Tooltip>
+            <IconButton 
+              size="small" 
+              onClick={() => order ? handleUpdateOrderDetails({ number_of_persons: order.number_of_persons + 1 }) : setNumberOfPersons(p => p+1)} 
+              disabled={Boolean(order?.invoice) || (table ? ((table.current_occupancy || 0) + (order ? 0 : numberOfPersons)) >= table.capacity : false)}
+            >
+              <AddIcon sx={{ fontSize: 12 }} />
+            </IconButton>
+          </Stack>
+        )}
+
+        <Chip label={`${(order?.items || []).length} Items`} size="small" />
+      </Box>
+      
+      {orderType === 'TAKE_AWAY' && (
+        <Box sx={{ p: 2, borderBottom: '1px solid #e8e4d8', bgcolor: alpha(theme.palette.primary.main, 0.02) }}>
+            <Stack spacing={1}>
+              <TextField 
+                size="small" label="Customer Name" value={order ? (order.customer_name || '') : customerName} 
+                onChange={(e) => {
+                  if (order) handleUpdateOrderDetails({ customer_name: e.target.value });
+                  else setCustomerName(e.target.value);
+                }}
+                disabled={Boolean(order?.invoice)}
+              />
+              <TextField 
+                size="small" 
+                label="Mobile" 
+                required
+                error={orderType === 'TAKE_AWAY' && !customerMobile && !order}
+                value={order ? (order.customer_mobile || '') : customerMobile} 
+                onChange={(e) => {
+                  if (order) handleUpdateOrderDetails({ customer_mobile: e.target.value });
+                  else setCustomerMobile(e.target.value);
+                }}
+                disabled={Boolean(order?.invoice)}
+                helperText={(orderType === 'TAKE_AWAY' && !customerMobile && !order) ? 'Required for Parcel' : ''}
+              />
+            </Stack>
+        </Box>
+      )}
+      <Box sx={{ flexGrow: 1, overflowY: 'auto' }}>
+        {(order?.items || []).length === 0 ? (
+          <Box sx={{ p: 4, textAlign: 'center', opacity: 0.5 }}>
+            <BasketIcon sx={{ fontSize: 40, mb: 1, color: 'text.disabled' }} />
+            <Typography variant="body2" sx={{ fontWeight: 600 }}>Cart is empty</Typography>
+          </Box>
+        ) : (
+          <Table size="small">
+            <TableBody>
+              {[...(order?.items || [])].sort((a, b) => a.id - b.id).map(item => (
+                <TableRow key={item.id}>
+                  <TableCell sx={{ py: 1.5 }}>
+                    <Typography variant="body2" sx={{ fontWeight: 800 }}>{item.item_details.name}</Typography>
+                    <ItemStatusChip status={item.status} orderType={order?.order_type || 'DINE_IN'} sx={{ height: 18 }} />
+                  </TableCell>
+                  <TableCell align="right">
+                    {item.status === 'ORDERED' && !order?.invoice ? (
+                      <Stack direction="row" spacing={1} sx={{ alignItems: 'center', justifyContent: 'flex-end' }}>
+                        <IconButton size="small" onClick={() => handleUpdateItemQuantity(item, -1)}><RemoveIcon sx={{ fontSize: 14 }} /></IconButton>
+                        <Typography sx={{ fontWeight: 800 }}>{item.quantity}</Typography>
+                        <IconButton size="small" onClick={() => handleUpdateItemQuantity(item, 1)}><AddIcon sx={{ fontSize: 14 }} /></IconButton>
+                      </Stack>
+                    ) : (
+                      <Typography sx={{ fontWeight: 800 }}>×{item.quantity}</Typography>
+                    )}
+                  </TableCell>
+                  <TableCell align="right" sx={{ fontWeight: 800 }}>₹{(parseFloat(item.price) * item.quantity).toFixed(2)}</TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        )}
+      </Box>
+      <Box sx={{ p: { xs: 1.5, md: 3 }, borderTop: '2px dashed #e8e4d8', bgcolor: '#fdfdfd' }}>
+        <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: { xs: 0.5, md: 2 } }}>
+          <Typography variant={isMobile ? "body1" : "h6"} sx={{ fontWeight: 900 }}>Total</Typography>
+          <Typography variant={isMobile ? "h6" : "h5"} sx={{ fontWeight: 900, color: 'primary.main' }}>₹{order?.total_amount || '0.00'}</Typography>
+        </Box>
+        {!isMobile && (
+          <Stack spacing={1}>
+            {hasNewItems && (
+              <Button variant="contained" color="warning" fullWidth onClick={handleSendToKitchen} sx={{ fontWeight: 900 }}>KOT</Button>
+            )}
+            {hasReadyItems && order?.order_type !== 'TAKE_AWAY' && (
+              <Button variant="contained" color="success" fullWidth onClick={handleServeAllReady} sx={{ fontWeight: 900 }}>SERVE</Button>
+            )}
+            {nextStatus && order?.status !== 'COMPLETED' && (order?.items || []).length > 0 && 
+              !(order?.order_type === 'DINE_IN' && nextStatus === 'SERVED') &&
+              !(order?.order_type === 'TAKE_AWAY' && hasNewItems) && (
+              <Button variant="contained" fullWidth onClick={() => handleUpdateOrderStatus(nextStatus)} sx={{ fontWeight: 900 }}>
+                {nextStatus === 'READY' ? 'MARK AS READY' : (nextStatus === 'SERVED' ? 'MARK AS SERVED' : nextStatus.replace('_', ' '))}
+              </Button>
+            )}
+            {order?.status === 'COMPLETED' && !order.invoice && (
+              <Button variant="contained" color="success" fullWidth onClick={handleGenerateBill} sx={{ fontWeight: 900 }}>CHECKOUT</Button>
+            )}
+            {order?.order_type !== 'TAKE_AWAY' && order?.invoice && order?.status !== 'COMPLETED' && (
+              <Button variant="contained" color="secondary" fullWidth onClick={() => setCheckoutOpen(true)} sx={{ fontWeight: 900 }}>PAYMENT</Button>
+            )}
+          </Stack>
+        )}
+      </Box>
+    </>
+  );
+
+  const renderContent = () => {
     if (loading && !order && menuItems.length === 0) {
       return (
         <Box sx={{ flexGrow: 1, display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: 400 }}>
@@ -471,29 +761,32 @@ const OrderDialog: React.FC<OrderDialogProps> = ({ open, onClose, table, initial
     if (dialogStage === 'CHOICE') {
       return (
         <Box sx={{ flexGrow: 1, display: 'flex', flexDirection: 'column', bgcolor: '#f8fafc' }}>
-          {errorAlert}
           <Container maxWidth="md" sx={{ py: { xs: 4, md: 8 }, flexGrow: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
             <Grid container spacing={4} sx={{ justifyContent: 'center' }}>
-              <Grid size={{ xs: 12, md: 6 }}>
-                <Typography variant="overline" sx={{ fontWeight: 900, color: 'text.disabled', mb: 2, display: 'block', letterSpacing: '0.1em' }}>START FRESH</Typography>
-                <Paper
-                  elevation={0}
-                  onClick={() => {
-                    if (table) setDialogStage('NEW_ORDER_SETUP');
-                    else handleCreateOrder('TAKE_AWAY');
-                  }}
-                  sx={{ 
-                    p: 4, height: '100%', minHeight: 180, borderRadius: '24px', border: '2px solid #e8e4d8',
-                    display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 2,
-                    cursor: 'pointer', transition: 'all 0.25s', bgcolor: 'white',
-                    opacity: Boolean(table && table.current_occupancy! >= table.capacity) ? 0.5 : 1,
-                    '&:hover': { borderColor: 'primary.main', transform: 'translateY(-4px)' }
-                  }}
-                >
-                  <AddIcon sx={{ fontSize: 32, color: 'primary.main' }} />
-                  <Typography variant="h5" sx={{ fontWeight: 900 }}>NEW ORDER</Typography>
-                </Paper>
-              </Grid>
+              {(!table || (table.current_occupancy || 0) < (table.capacity || 0)) && (
+                <Grid size={{ xs: 12, md: 6 }}>
+                  <Typography variant="overline" sx={{ fontWeight: 900, color: 'text.disabled', mb: 2, display: 'block', letterSpacing: '0.1em' }}>START FRESH</Typography>
+                  <Paper
+                    elevation={0}
+                    onClick={() => {
+                      if (table) {
+                        setDialogStage('NEW_ORDER_SETUP');
+                      } else {
+                        handleCreateOrder('TAKE_AWAY');
+                      }
+                    }}
+                    sx={{ 
+                      p: 4, height: '100%', minHeight: 180, borderRadius: '24px', border: '2px solid #e8e4d8',
+                      display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 2,
+                      cursor: 'pointer', transition: 'all 0.25s', bgcolor: 'white',
+                      '&:hover': { borderColor: 'primary.main', transform: 'translateY(-4px)', boxShadow: '0 12px 30px rgba(0,0,0,0.08)' }
+                    }}
+                  >
+                    <AddIcon sx={{ fontSize: 32, color: 'primary.main' }} />
+                    <Typography variant="h5" sx={{ fontWeight: 900 }}>NEW ORDER</Typography>
+                  </Paper>
+                </Grid>
+              )}
 
               {table?.active_orders && table.active_orders.length > 0 && (
                 <Grid size={{ xs: 12, md: 6 }}>
@@ -525,7 +818,6 @@ const OrderDialog: React.FC<OrderDialogProps> = ({ open, onClose, table, initial
     if (dialogStage === 'NEW_ORDER_SETUP') {
       return (
         <Box sx={{ flexGrow: 1, display: 'flex', flexDirection: 'column', bgcolor: '#f8fafc' }}>
-          {errorAlert}
           <Container maxWidth="xs" sx={{ py: 4 }}>
             <Box sx={{ mb: 2, display: 'flex', alignItems: 'center', gap: 1.5 }}>
               <IconButton size="small" onClick={() => setDialogStage('CHOICE')} sx={{ border: '1px solid #e8e4d8' }}><ChevronLeftIcon fontSize="small" /></IconButton>
@@ -538,7 +830,7 @@ const OrderDialog: React.FC<OrderDialogProps> = ({ open, onClose, table, initial
                   <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 3, mt: 1 }}>
                     <IconButton size="small" onClick={() => setNumberOfPersons(Math.max(1, numberOfPersons - 1))} sx={{ border: '1px solid #e8e4d8' }}><RemoveIcon fontSize="small" /></IconButton>
                     <Typography variant="h4" sx={{ fontWeight: 900 }}>{numberOfPersons}</Typography>
-                    <IconButton size="small" onClick={() => setNumberOfPersons(numberOfPersons + 1)} sx={{ border: '1px solid #e8e4d8' }}><AddIcon fontSize="small" /></IconButton>
+                    <IconButton size="small" onClick={() => setNumberOfPersons(numberOfPersons + 1)} disabled={table ? ((table.current_occupancy || 0) + numberOfPersons) >= table.capacity : false} sx={{ border: '1px solid #e8e4d8' }}><AddIcon fontSize="small" /></IconButton>
                   </Box>
                 </Box>
                 <Button variant="contained" fullWidth onClick={() => { setOrder(null); setOrderType('DINE_IN'); setDialogStage('ORDER_DETAILS'); }} sx={{ py: 1.5, borderRadius: '12px', fontWeight: 900, fontSize: '0.9rem' }}>START ORDER</Button>
@@ -557,34 +849,69 @@ const OrderDialog: React.FC<OrderDialogProps> = ({ open, onClose, table, initial
             <Box sx={{ flexGrow: 1, display: 'flex', flexDirection: 'column', height: '100%', overflow: 'hidden' }}>
               {order || orderType === 'TAKE_AWAY' ? (
                 <>
-                  <Box sx={{ p: 2, borderBottom: '1px solid #e8e4d8', bgcolor: 'white' }}>
-                    <Grid container spacing={2} sx={{ alignItems: 'center' }}>
-                      <Grid size={{ xs: 12, sm: 'auto' }}>
-                        <Stack direction="row" spacing={1} sx={{ overflowX: 'auto', pb: 0.5 }}>
-                          <Button size="small" variant={activeCategory === 'all' ? 'contained' : 'outlined'} onClick={() => setActiveCategory('all')}>All</Button>
+                  <Box sx={{ p: { xs: 1, md: 2 }, borderBottom: '1px solid #e8e4d8', bgcolor: 'white' }}>
+                    <Grid container spacing={1} sx={{ alignItems: 'center' }}>
+                      <Grid size={{ xs: 12, md: 'auto' }}>
+                        <Stack direction="row" spacing={1} sx={{ overflowX: 'auto', pb: 0.5, '&::-webkit-scrollbar': { display: 'none' } }}>
+                          <Button size="small" variant={activeCategory === 'all' ? 'contained' : 'outlined'} onClick={() => setActiveCategory('all')} sx={{ minWidth: 'fit-content' }}>All</Button>
                           {categories.map(cat => (
-                            <Button key={cat.id} size="small" variant={activeCategory === cat.id ? 'contained' : 'outlined'} onClick={() => setActiveCategory(cat.id)}>{cat.name}</Button>
+                            <Button key={cat.id} size="small" variant={activeCategory === cat.id ? 'contained' : 'outlined'} onClick={() => setActiveCategory(cat.id)} sx={{ minWidth: 'fit-content' }}>{cat.name}</Button>
                           ))}
                         </Stack>
                       </Grid>
-                      <Grid size={{ xs: 12, sm: 'grow' }}>
-                        <TextField fullWidth size="small" placeholder="Search menu..." value={searchQuery} onChange={e => setSearchQuery(e.target.value)} />
+                      <Grid size={{ xs: 12, md: 'grow' }}>
+                        <TextField fullWidth size="small" placeholder="Search menu..." value={searchQuery} onChange={e => setSearchQuery(e.target.value)} sx={{ '& .MuiInputBase-root': { borderRadius: '12px' } }} />
                       </Grid>
                     </Grid>
                   </Box>
-                  <Box sx={{ flexGrow: 1, p: 2, overflowY: 'auto' }}>
-                    <Grid container spacing={1.5}>
+                  <Box sx={{ flexGrow: 1, p: { xs: 0, md: 2 }, pb: { xs: '140px', md: 2 }, overflowY: 'auto', bgcolor: 'white' }}>
+                    <Stack spacing={0}>
                       {filteredItems.map((item: Item) => (
-                        <Grid size={{ xs: 6, sm: 4, lg: 3 }} key={item.id}>
-                          <Card onClick={() => handleAddItem(item)} sx={{ cursor: 'pointer', borderRadius: '12px', border: '1px solid #e8e4d8', '&:hover': { boxShadow: '0 4px 12px rgba(0,0,0,0.05)' } }}>
-                            <CardContent sx={{ p: 1.5 }}>
-                              <Typography variant="body2" sx={{ fontWeight: 800 }}>{item.name}</Typography>
-                              <Typography variant="subtitle2" sx={{ fontWeight: 900, color: 'primary.main' }}>₹{item.price}</Typography>
-                            </CardContent>
-                          </Card>
-                        </Grid>
+                        <Box 
+                          key={item.id}
+                          onClick={() => setSelectedItemForDetail(item)}
+                          sx={{ 
+                            px: 2.5, 
+                            py: 1.75, 
+                            borderBottom: '1px solid #f1f5f9', 
+                            display: 'flex', 
+                            justifyContent: 'space-between', 
+                            alignItems: 'center',
+                            cursor: 'pointer',
+                            transition: 'all 0.2s',
+                            '&:hover': { bgcolor: alpha(theme.palette.primary.main, 0.05) },
+                            '&:active': { bgcolor: alpha(theme.palette.primary.main, 0.1) }
+                          }}
+                        >
+                          <Box>
+                            <Typography variant="body1" sx={{ fontWeight: 700, color: '#334155' }}>{item.name}</Typography>
+                            {/* You could add category or description here if needed */}
+                          </Box>
+                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                            <Typography variant="body1" sx={{ fontWeight: 900, color: 'primary.main' }}>₹{item.price}</Typography>
+                            <IconButton 
+                              size="small" 
+                              onClick={(e) => { e.stopPropagation(); handleAddItem(item); }}
+                              disabled={loading || Boolean(order?.invoice)}
+                              sx={{ 
+                                bgcolor: alpha(theme.palette.primary.main, 0.08), 
+                                color: 'primary.main',
+                                border: `1px solid ${alpha(theme.palette.primary.main, 0.2)}`,
+                                '&:hover': { bgcolor: alpha(theme.palette.primary.main, 0.15) },
+                                '&.Mui-disabled': { bgcolor: 'action.disabledBackground' }
+                              }}
+                            >
+                              {loading ? <CircularProgress size={16} color="inherit" /> : <AddIcon fontSize="small" />}
+                            </IconButton>
+                          </Box>
+                        </Box>
                       ))}
-                    </Grid>
+                      {filteredItems.length === 0 && (
+                        <Box sx={{ p: 4, textAlign: 'center', opacity: 0.5 }}>
+                          <Typography>No items found</Typography>
+                        </Box>
+                      )}
+                    </Stack>
                   </Box>
                 </>
               ) : (
@@ -598,7 +925,7 @@ const OrderDialog: React.FC<OrderDialogProps> = ({ open, onClose, table, initial
                           <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 3, mt: 1 }}>
                             <IconButton size="small" onClick={() => setNumberOfPersons(Math.max(1, numberOfPersons - 1))} sx={{ border: '1px solid #e8e4d8' }}><RemoveIcon fontSize="small" /></IconButton>
                             <Typography variant="h4" sx={{ fontWeight: 900 }}>{numberOfPersons}</Typography>
-                            <IconButton size="small" onClick={() => setNumberOfPersons(numberOfPersons + 1)} sx={{ border: '1px solid #e8e4d8' }}><AddIcon fontSize="small" /></IconButton>
+                            <IconButton size="small" onClick={() => setNumberOfPersons(numberOfPersons + 1)} disabled={table ? ((table.current_occupancy || 0) + numberOfPersons) >= table.capacity : false} sx={{ border: '1px solid #e8e4d8' }}><AddIcon fontSize="small" /></IconButton>
                           </Box>
                         </Box>
                         <Button 
@@ -622,109 +949,9 @@ const OrderDialog: React.FC<OrderDialogProps> = ({ open, onClose, table, initial
             </Box>
           )}
 
-          {/* SUMMARY */}
-          <Box sx={{ width: { xs: '100%', md: '400px' }, borderLeft: '1px solid #e8e4d8', display: 'flex', flexDirection: 'column', bgcolor: 'white' }}>
-            <Box sx={{ p: 2, borderBottom: '1px solid #e8e4d8', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <Typography sx={{ fontWeight: 900 }}>SUMMARY</Typography>
-              
-               {orderType === 'DINE_IN' && (
-                <Stack direction="row" spacing={0.5} sx={{ alignItems: 'center', border: '1px solid #e8e4d8', borderRadius: '20px', px: 1 }}>
-                  <PersonIcon sx={{ fontSize: 14, color: 'text.secondary' }} />
-                  <IconButton size="small" onClick={() => order ? handleUpdateOrderDetails({ number_of_persons: Math.max(1, order.number_of_persons - 1) }) : setNumberOfPersons(p => Math.max(1, p-1))} disabled={Boolean(order?.invoice)}>
-                    <RemoveIcon sx={{ fontSize: 12 }} />
-                  </IconButton>
-                  <Tooltip title="Guest Count">
-                    <Typography sx={{ fontWeight: 800, fontSize: '0.875rem', minWidth: 16, textAlign: 'center' }}>{order ? order.number_of_persons : numberOfPersons}</Typography>
-                  </Tooltip>
-                  <IconButton size="small" onClick={() => order ? handleUpdateOrderDetails({ number_of_persons: order.number_of_persons + 1 }) : setNumberOfPersons(p => p+1)} disabled={Boolean(order?.invoice)}>
-                    <AddIcon sx={{ fontSize: 12 }} />
-                  </IconButton>
-                </Stack>
-              )}
-
-              <Chip label={`${(order?.items || []).length} Items`} size="small" />
-            </Box>
-            
-            {orderType === 'TAKE_AWAY' && (
-              <Box sx={{ p: 2, borderBottom: '1px solid #e8e4d8', bgcolor: alpha(theme.palette.primary.main, 0.02) }}>
-                 <Stack spacing={1}>
-                    <TextField 
-                      size="small" label="Customer Name" value={order ? (order.customer_name || '') : customerName} 
-                      onChange={(e) => {
-                        if (order) handleUpdateOrderDetails({ customer_name: e.target.value });
-                        else setCustomerName(e.target.value);
-                      }}
-                      disabled={Boolean(order?.invoice)}
-                    />
-                    <TextField 
-                      size="small" label="Mobile" value={order ? (order.customer_mobile || '') : customerMobile} 
-                      onChange={(e) => {
-                        if (order) handleUpdateOrderDetails({ customer_mobile: e.target.value });
-                        else setCustomerMobile(e.target.value);
-                      }}
-                      disabled={Boolean(order?.invoice)}
-                    />
-                 </Stack>
-              </Box>
-            )}
-            <Box sx={{ flexGrow: 1, overflowY: 'auto' }}>
-              {(order?.items || []).length === 0 ? (
-                <Box sx={{ p: 4, textAlign: 'center', opacity: 0.5 }}>
-                  <BasketIcon sx={{ fontSize: 40, mb: 1, color: 'text.disabled' }} />
-                  <Typography variant="body2" sx={{ fontWeight: 600 }}>Cart is empty</Typography>
-                </Box>
-              ) : (
-                <Table size="small">
-                  <TableBody>
-                    {(order?.items || []).map(item => (
-                      <TableRow key={item.id}>
-                        <TableCell sx={{ py: 1.5 }}>
-                          <Typography variant="body2" sx={{ fontWeight: 800 }}>{item.item_details.name}</Typography>
-                          <ItemStatusChip status={item.status} orderType={order?.order_type || 'DINE_IN'} sx={{ height: 18 }} />
-                        </TableCell>
-                        <TableCell align="right">
-                          {item.status === 'ORDERED' && !order?.invoice ? (
-                            <Stack direction="row" spacing={1} sx={{ alignItems: 'center', justifyContent: 'flex-end' }}>
-                              <IconButton size="small" onClick={() => handleUpdateItemQuantity(item, -1)}><RemoveIcon sx={{ fontSize: 14 }} /></IconButton>
-                              <Typography sx={{ fontWeight: 800 }}>{item.quantity}</Typography>
-                              <IconButton size="small" onClick={() => handleUpdateItemQuantity(item, 1)}><AddIcon sx={{ fontSize: 14 }} /></IconButton>
-                            </Stack>
-                          ) : (
-                            <Typography sx={{ fontWeight: 800 }}>×{item.quantity}</Typography>
-                          )}
-                        </TableCell>
-                        <TableCell align="right" sx={{ fontWeight: 800 }}>₹{(parseFloat(item.price) * item.quantity).toFixed(2)}</TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              )}
-            </Box>
-            <Box sx={{ p: 3, borderTop: '2px dashed #e8e4d8', bgcolor: '#fdfdfd' }}>
-              <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 2 }}>
-                <Typography variant="h6" sx={{ fontWeight: 900 }}>Total</Typography>
-                <Typography variant="h5" sx={{ fontWeight: 900, color: 'primary.main' }}>₹{order?.total_amount || '0.00'}</Typography>
-              </Box>
-              <Stack spacing={1}>
-                {hasNewItems && (
-                  <Button variant="contained" color="warning" fullWidth onClick={handleSendToKitchen} sx={{ fontWeight: 900 }}>KOT</Button>
-                )}
-                {hasReadyItems && order?.order_type !== 'TAKE_AWAY' && (
-                  <Button variant="contained" color="success" fullWidth onClick={handleServeAllReady} sx={{ fontWeight: 900 }}>SERVE</Button>
-                )}
-                {nextStatus && order?.status !== 'COMPLETED' && (order?.items || []).length > 0 && !(order?.order_type === 'DINE_IN' && nextStatus === 'SERVED') && (
-                  <Button variant="contained" fullWidth onClick={() => handleUpdateOrderStatus(nextStatus)} sx={{ fontWeight: 900 }}>
-                    {nextStatus === 'READY' ? 'MARK AS READY' : (nextStatus === 'SERVED' ? 'MARK AS SERVED' : nextStatus.replace('_', ' '))}
-                  </Button>
-                )}
-                {order?.status === 'COMPLETED' && !order.invoice && (
-                  <Button variant="contained" color="success" fullWidth onClick={handleGenerateBill} sx={{ fontWeight: 900 }}>CHECKOUT</Button>
-                )}
-                {(order?.invoice || (order?.order_type === 'TAKE_AWAY' && ['READY', 'SERVED', 'COMPLETED'].includes(order.status))) && order?.status !== 'COMPLETED' && (
-                  <Button variant="contained" color="secondary" fullWidth onClick={() => setCheckoutOpen(true)} sx={{ fontWeight: 900 }}>PAYMENT</Button>
-                )}
-              </Stack>
-            </Box>
+          {/* SUMMARY SIDEBAR (DESKTOP) */}
+          <Box sx={{ width: { md: '400px' }, borderLeft: '1px solid #e8e4d8', display: { xs: 'none', md: 'flex' }, flexDirection: 'column', bgcolor: 'white' }}>
+            {renderSummaryContent()}
           </Box>
         </Box>
       );
@@ -735,18 +962,24 @@ const OrderDialog: React.FC<OrderDialogProps> = ({ open, onClose, table, initial
   if (!open) return null;
 
   return (
-    <Box sx={{ position: 'absolute', inset: 0, zIndex: 1200, display: 'flex', flexDirection: 'column', bgcolor: 'white', overflow: 'hidden' }}>
-      <Box sx={{ p: 2, borderBottom: '1px solid #e8e4d8', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-          <IconButton onClick={onClose}><ChevronLeftIcon /></IconButton>
+    <Box sx={{ 
+      position: 'absolute', 
+      inset: 0,
+      zIndex: 1200, 
+      display: 'flex', 
+      flexDirection: 'column', 
+      bgcolor: 'white', 
+      overflow: 'hidden' 
+    }}>
+      <Box sx={{ px: { xs: 1.5, md: 2 }, py: { xs: 0.5, md: 1.5 }, borderBottom: '1px solid #e8e4d8', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: { xs: 1, md: 2 } }}>
+          <IconButton onClick={onClose} size="small" sx={{ border: { xs: '1px solid #f1f5f9', md: 'none' }, p: 0.5 }}><ChevronLeftIcon fontSize="small" /></IconButton>
           <Box>
-            <Typography variant="h6" sx={{ fontWeight: 900 }}>{table?.number ? `Table ${table.number}` : 'Order Details'}</Typography>
-            {order && <Typography variant="caption">Order #{order.id}</Typography>}
+            <Typography variant={isMobile ? "body2" : "h6"} sx={{ fontWeight: 900, lineHeight: 1.1 }}>{table?.number ? `Table ${table.number}` : 'Order Details'}</Typography>
+            {order && <Typography variant="caption" sx={{ display: 'block', opacity: 0.7, fontSize: '0.65rem' }}>Order #{order.id}</Typography>}
           </Box>
         </Box>
         <Box sx={{ display: 'flex', gap: 1 }}>
-            {order && <OrderStatusChip status={order.status} orderType={order.order_type} />}
-            {/* Removed Switch button as we have tabs now */}
         </Box>
       </Box>
 
@@ -754,17 +987,22 @@ const OrderDialog: React.FC<OrderDialogProps> = ({ open, onClose, table, initial
       {table && (
         <Box sx={{ borderBottom: '1px solid #e8e4d8', bgcolor: '#fdfdfd' }}>
           <Tabs
-            value={(selectedOrderId !== null && activeOrders.some(o => o.id === selectedOrderId)) ? selectedOrderId : 'new'}
+            value={
+              (selectedOrderId !== null && activeOrders.some(o => o.id === selectedOrderId)) 
+                ? selectedOrderId 
+                : ((table && (table.current_occupancy || 0) < table.capacity) ? 'new' : (activeOrders.length > 0 ? activeOrders[0].id : false))
+            }
             onChange={(_, val) => handleTabChange(val === 'new' ? null : val)}
             variant="scrollable"
             scrollButtons="auto"
             sx={{
-              minHeight: 48,
+              minHeight: isMobile ? 40 : 48,
               '& .MuiTab-root': {
                 fontWeight: 800,
-                fontSize: '0.8rem',
-                minHeight: 48,
+                fontSize: isMobile ? '0.75rem' : '0.8rem',
+                minHeight: isMobile ? 40 : 48,
                 textTransform: 'none',
+                px: isMobile ? 2 : 3
               },
             }}
           >
@@ -773,7 +1011,6 @@ const OrderDialog: React.FC<OrderDialogProps> = ({ open, onClose, table, initial
                 key={ord.id} 
                 value={ord.id} 
                 label={ord.customer_name || `Order #${ord.id}`} 
-                sx={{ px: 3 }}
               />
             ))}
             {(table.current_occupancy || 0) < table.capacity && (
@@ -792,6 +1029,30 @@ const OrderDialog: React.FC<OrderDialogProps> = ({ open, onClose, table, initial
 
       <Box sx={{ flexGrow: 1, overflow: 'hidden' }}>{renderContent()}</Box>
 
+      {/* QUICK ACTIONS (MOBILE) */}
+      {renderQuickActions()}
+
+      {isMobile && (
+        <Drawer
+          anchor="bottom"
+          open={mobileSummaryOpen}
+          onClose={() => setMobileSummaryOpen(false)}
+          slotProps={{
+            paper: {
+              sx: { borderTopLeftRadius: '24px', borderTopRightRadius: '24px', height: '70vh', zIndex: 1400 }
+            }
+          }}
+        >
+          <Box sx={{ display: 'flex', flexDirection: 'column', height: '100%', overflow: 'hidden', pb: '140px' }}>
+            <Box sx={{ p: 1, display: 'flex', justifyContent: 'center', flexShrink: 0 }}>
+              <Box sx={{ width: 40, height: 4, bgcolor: '#e8e4d8', borderRadius: 2 }} />
+            </Box>
+            {renderSummaryContent()}
+            {renderQuickActions()}
+          </Box>
+        </Drawer>
+      )}
+
       <Box sx={{ display: 'none' }}>
         <div id="thermal-invoice-container">
           {order?.invoice && <InvoicePrint invoice={order.invoice} orderItems={order.items || []} tableNumber={table?.number || order.table_number || ''} />}
@@ -805,6 +1066,54 @@ const OrderDialog: React.FC<OrderDialogProps> = ({ open, onClose, table, initial
           onDownload={handleDownloadPDF} onPrint={() => setTimeout(handlePrint, 100)}
         />
       )}
+
+      {/* ITEM DETAIL DIALOG */}
+      <Dialog
+        open={Boolean(selectedItemForDetail)}
+        onClose={() => setSelectedItemForDetail(null)}
+        maxWidth="xs"
+        fullWidth
+        slotProps={{
+          paper: { sx: { borderRadius: '24px', p: 1 } }
+        }}
+      >
+        {selectedItemForDetail && (
+          <>
+            <DialogContent>
+              {selectedItemForDetail.image && (
+                <Box sx={{ width: '100%', height: 200, borderRadius: '16px', overflow: 'hidden', mb: 2 }}>
+                  <img 
+                    src={getImageUrl(selectedItemForDetail.image)} 
+                    alt={selectedItemForDetail.name} 
+                    style={{ width: '100%', height: '100%', objectFit: 'cover' }} 
+                  />
+                </Box>
+              )}
+              <Typography variant="h5" sx={{ fontWeight: 900, mb: 1 }}>{selectedItemForDetail.name}</Typography>
+              <Stack direction="row" spacing={1} sx={{ mb: 2 }}>
+                {selectedItemForDetail.category_name && <Chip label={selectedItemForDetail.category_name} size="small" />}
+                {selectedItemForDetail.code && <Chip label={`#${selectedItemForDetail.code}`} size="small" variant="outlined" />}
+              </Stack>
+              <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
+                {selectedItemForDetail.description || 'No description available for this item.'}
+              </Typography>
+              <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <Typography variant="h5" sx={{ fontWeight: 900, color: 'primary.main' }}>₹{selectedItemForDetail.price}</Typography>
+              </Box>
+            </DialogContent>
+            <DialogActions sx={{ p: 2, pt: 0 }}>
+              <Button 
+                fullWidth 
+                variant="contained" 
+                onClick={() => { handleAddItem(selectedItemForDetail); setSelectedItemForDetail(null); }} 
+                sx={{ py: 1.5, borderRadius: '12px', fontWeight: 900 }}
+              >
+                ADD TO ORDER
+              </Button>
+            </DialogActions>
+          </>
+        )}
+      </Dialog>
     </Box>
   );
 };

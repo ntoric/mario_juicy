@@ -28,6 +28,7 @@ import {
   Card as MuiCard,
   CardContent,
   alpha,
+  Drawer,
 } from "@mui/material";
 import {
   Search as SearchIcon,
@@ -39,8 +40,11 @@ import {
   ShoppingBag as ShoppingBagIcon,
   Room as LocationIcon,
   Delete as DeleteIcon,
+  ChevronRight as ChevronRightIcon,
+  Info as InfoIcon,
 } from '@mui/icons-material';
-import { restaurantService } from '@/services/restaurantService';
+import { restaurantService, Order } from '@/services/restaurantService';
+import { OrderStatusChip } from '@/components/backoffice/restaurant/StatusChips';
 import InvoicePrint from '@/components/backoffice/restaurant/InvoicePrint';
 import InvoicePreviewDialog from '@/components/backoffice/restaurant/InvoicePreviewDialog';
 import SettlementDialog from '@/components/backoffice/restaurant/SettlementDialog';
@@ -57,6 +61,8 @@ export default function BillingPage() {
   const [printingInvoice, setPrintingInvoice] = useState<any>(null);
   const [selectedOrder, setSelectedOrder] = useState<any>(null);
   const [previewInvoice, setPreviewInvoice] = useState<any>(null);
+  const [drawerOpen, setDrawerOpen] = useState(false);
+  const [drawerOrder, setDrawerOrder] = useState<any>(null);
   const [downloading, setDownloading] = useState(false);
   const { user } = useAuth();
   const isMobile = useMediaQuery(theme.breakpoints.down('md'));
@@ -168,12 +174,12 @@ export default function BillingPage() {
     (ord.table_number || '').toString().includes(search)
   );
 
-  const dineInOrders = filteredOrders.filter(o => o.order_type === 'DINE_IN' && o.status !== 'CANCELLED');
-  const takeAwayOrders = filteredOrders.filter(o => o.order_type === 'TAKE_AWAY' && o.status !== 'CANCELLED');
+  const dineInOrders = filteredOrders.filter(o => o.order_type === 'DINE_IN' && (o.status === 'COMPLETED' || o.invoice) && o.status !== 'CANCELLED');
+  const takeAwayOrders = filteredOrders.filter(o => o.order_type === 'TAKE_AWAY' && o.status === 'READY' && o.status !== 'CANCELLED');
   const cancelledOrders = filteredOrders.filter(o => o.status === 'CANCELLED');
 
   return (
-    <Box sx={{ position: 'relative', height: { xs: 'auto', md: '100%' }, display: "flex", flexDirection: "column", p: { xs: 1.5, md: 2 }, overflow: { xs: 'visible', md: 'hidden' } }}>
+    <Box sx={{ position: 'relative', height: '100%', display: "flex", flexDirection: "column", p: { xs: 1.5, md: 2 }, pb: { xs: 15, md: 2 }, overflow: 'hidden' }}>
       {/* Optimized Header Row */}
       <Box sx={{ 
         mb: 2, 
@@ -182,8 +188,8 @@ export default function BillingPage() {
         alignItems: 'center', 
         gap: 2 
       }}>
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-          <Typography variant="h4" sx={{ fontWeight: 500, color: '#e9762b', fontSize: '1.25rem', whiteSpace: 'nowrap' }}>
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+          <Typography variant="h4" sx={{ fontWeight: 600, color: '#e9762b', fontSize: { xs: '1.1rem', md: '1.25rem' }, whiteSpace: 'nowrap' }}>
             Billing
           </Typography>
           
@@ -254,13 +260,13 @@ export default function BillingPage() {
 
       {/* Mobile Only Content (Search + Tabs) */}
       {isMobile && (
-        <Box sx={{ mb: 2 }}>
+        <Box sx={{ mb: 1.5 }}>
           <Tabs 
             value={tab} 
             onChange={(_, v) => setTab(v)}
             variant="fullWidth"
             sx={{ 
-              mb: 2,
+              mb: 1,
               bgcolor: alpha(theme.palette.primary.main, 0.03),
               borderRadius: '7px',
               '& .MuiTabs-indicator': { height: 3, borderRadius: '7px' },
@@ -507,7 +513,7 @@ export default function BillingPage() {
                               variant="outlined"
                               size="small"
                               color="error"
-                              onClick={() => setSelectedOrder(order)}
+                              onClick={() => { setDrawerOrder(order); setDrawerOpen(true); }}
                               sx={{ fontWeight: 800, borderRadius: '7px', minWidth: 40, height: 32, p: 0 }}
                             >
                               <ViewIcon fontSize="small" />
@@ -564,6 +570,15 @@ export default function BillingPage() {
                             <ViewIcon fontSize="small" />
                           </IconButton>
                         </Tooltip>
+                        <Tooltip title="Order Details">
+                          <IconButton 
+                            size="small" 
+                            onClick={() => { setDrawerOrder(invoice); setDrawerOpen(true); }}
+                            sx={{ color: 'info.main', bgcolor: alpha(theme.palette.info.main, 0.05), borderRadius: '7px', mr: 0.5 }}
+                          >
+                            <InfoIcon fontSize="small" />
+                          </IconButton>
+                        </Tooltip>
                         <Tooltip title="Print Invoice">
                           <IconButton 
                             size="small" 
@@ -582,190 +597,149 @@ export default function BillingPage() {
           </Table>
         </TableContainer>
 
-        {/* Card View for Mobile */}
+        {/* List View for Mobile */}
         {isMobile && (
-          <Box sx={{ flexGrow: { xs: 0, md: 1 }, overflowY: { xs: 'visible', md: 'auto' }, p: 2, minHeight: 0 }}>
+          <Box sx={{ flexGrow: 1, overflowY: 'auto', p: 1, pb: 10, minHeight: 0 }}>
             {loading ? (
               <Box sx={{ display: 'flex', justifyContent: 'center', py: 5 }}>
                 <CircularProgress size={32} />
               </Box>
             ) : tab === 0 ? (
-              // Settlements Cards
+              // Settlements List
               dineInOrders.length === 0 && takeAwayOrders.length === 0 ? (
                 <Stack sx={{ alignItems: 'center', opacity: 0.4, py: 10 }} spacing={1}>
                   <SettlementIcon sx={{ fontSize: 48 }} />
                   <Typography variant="body1">No pending orders</Typography>
                 </Stack>
               ) : (
-                <Grid container spacing={3}>
+                <Stack spacing={1}>
                   {dineInOrders.length > 0 && (
                     <>
-                      <Grid size={{ xs: 12 }}>
-                        <Stack direction="row" spacing={1} sx={{ alignItems: 'center' }}>
-                          <LocationIcon sx={{ color: 'primary.main' }} />
-                          <Typography variant="subtitle1" sx={{ fontWeight: 800, textTransform: 'uppercase' }}>Dine-in</Typography>
-                          <Chip label={dineInOrders.length} size="small" sx={{ fontWeight: 800, bgcolor: 'primary.main', color: 'white' }} />
-                        </Stack>
-                      </Grid>
+                      <Box sx={{ px: 1, py: 0.5, bgcolor: alpha(theme.palette.primary.main, 0.05), borderRadius: 1 }}>
+                        <Typography variant="caption" sx={{ fontWeight: 900, textTransform: 'uppercase', color: 'primary.main' }}>Dine-in Orders</Typography>
+                      </Box>
                       {dineInOrders.map((order) => (
-                        <Grid size={{ xs: 12 }} key={order.id}>
-                          <MuiCard sx={{ borderRadius: 3, border: '1px solid #e8e4d8', boxShadow: '0 2px 8px rgba(0,0,0,0.04)' }}>
-                            <CardContent sx={{ p: 2 }}>
-                              <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1.5 }}>
-                                <Typography variant="subtitle1" sx={{ fontWeight: 800 }}>Order #{order.id}</Typography>
-                                <Chip 
-                                  label={`Table ${order.table_number}`} 
-                                  size="small" variant="outlined" sx={{ fontWeight: 700, borderRadius: 1.5 }} 
-                                />
+                        <Paper 
+                          key={order.id} 
+                          sx={{ p: 1.5, borderRadius: 2, border: '1px solid #eee', boxShadow: 'none', cursor: 'pointer', '&:active': { bgcolor: alpha(theme.palette.primary.main, 0.05) } }}
+                          onClick={() => { setDrawerOrder(order); setDrawerOpen(true); }}
+                        >
+                          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                            <Box sx={{ flexGrow: 1 }}>
+                              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                                <Typography variant="subtitle2" sx={{ fontWeight: 800 }}>#{order.id}</Typography>
+                                <Chip label={`T${order.table_number}`} size="small" sx={{ height: 18, fontSize: '0.65rem', fontWeight: 700 }} />
                               </Box>
-                              <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end' }}>
-                                <Box>
-                                  <Typography variant="caption" color="text.secondary" sx={{ display: 'block' }}>Waiter: {order.waiter_name}</Typography>
-                                  <Typography variant="h6" sx={{ fontWeight: 900, color: 'primary.main', mt: 0.5 }}>₹{parseFloat(order.total_amount).toFixed(2)}</Typography>
-                                </Box>
-                                <Button 
-                                  variant="contained" 
-                                  size="small" 
-                                  onClick={() => setSelectedOrder(order)}
-                                  sx={{ px: 3, borderRadius: 2, fontWeight: 700 }}
-                                >
-                                  Settle
-                                </Button>
-                              </Box>
-                            </CardContent>
-                          </MuiCard>
-                        </Grid>
+                              <Typography variant="caption" color="text.secondary">Waiter: {order.waiter_name}</Typography>
+                            </Box>
+                            <Box sx={{ textAlign: 'right', mr: 2 }}>
+                              <Typography variant="subtitle2" sx={{ fontWeight: 900, color: 'primary.main' }}>₹{parseFloat(order.total_amount).toFixed(0)}</Typography>
+                            </Box>
+                            <Button 
+                              variant="contained" 
+                              size="small" 
+                              onClick={(e) => { e.stopPropagation(); setSelectedOrder(order); }}
+                              sx={{ minWidth: 70, height: 32, borderRadius: 1.5, fontWeight: 800, fontSize: '0.7rem' }}
+                            >
+                              SETTLE
+                            </Button>
+                          </Box>
+                        </Paper>
                       ))}
                     </>
                   )}
 
                   {takeawayEnabled && takeAwayOrders.length > 0 && (
                     <>
-                      <Grid size={{ xs: 12 }} sx={{ mt: 2 }}>
-                        <Stack direction="row" spacing={1} sx={{ alignItems: 'center' }}>
-                          <ShoppingBagIcon sx={{ color: 'secondary.main' }} />
-                          <Typography variant="subtitle1" sx={{ fontWeight: 800, textTransform: 'uppercase' }}>Parcels</Typography>
-                          <Chip label={takeAwayOrders.length} size="small" sx={{ fontWeight: 800, bgcolor: 'secondary.main', color: 'white' }} />
-                        </Stack>
-                      </Grid>
+                      <Box sx={{ px: 1, py: 0.5, mt: 1, bgcolor: alpha(theme.palette.secondary.main, 0.05), borderRadius: 1 }}>
+                        <Typography variant="caption" sx={{ fontWeight: 900, textTransform: 'uppercase', color: 'secondary.main' }}>Parcel Orders</Typography>
+                      </Box>
                       {takeAwayOrders.map((order) => (
-                        <Grid size={{ xs: 12 }} key={order.id}>
-                          <MuiCard sx={{ borderRadius: 3, border: '1px solid #e8e4d8', bgcolor: '#fdfcf4' }}>
-                            <CardContent sx={{ p: 2 }}>
-                              <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1.5 }}>
-                                <Typography variant="subtitle1" sx={{ fontWeight: 800 }}>Order #{order.id}</Typography>
-                                <Chip 
-                                  label="Parcel" 
-                                  size="small" variant="outlined" sx={{ fontWeight: 700, borderRadius: 1.5, color: 'secondary.main', borderColor: 'secondary.light' }} 
-                                />
+                        <Paper 
+                          key={order.id} 
+                          sx={{ p: 1.5, borderRadius: 2, border: '1px solid #eee', boxShadow: 'none', cursor: 'pointer', bgcolor: '#fdfcf4', '&:active': { bgcolor: alpha(theme.palette.secondary.main, 0.05) } }}
+                          onClick={() => { setDrawerOrder(order); setDrawerOpen(true); }}
+                        >
+                          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                            <Box sx={{ flexGrow: 1 }}>
+                              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                                <Typography variant="subtitle2" sx={{ fontWeight: 800 }}>#{order.id}</Typography>
+                                <Chip label="PARCEL" size="small" color="secondary" variant="outlined" sx={{ height: 18, fontSize: '0.6rem', fontWeight: 800 }} />
                               </Box>
-                              <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end' }}>
-                                <Box>
-                                  <Typography variant="caption" color="text.secondary" sx={{ display: 'block' }}>Waiter: {order.waiter_name}</Typography>
-                                  <Typography variant="h6" sx={{ fontWeight: 900, color: 'primary.main', mt: 0.5 }}>₹{parseFloat(order.total_amount).toFixed(2)}</Typography>
-                                </Box>
-                                <Button 
-                                  variant="contained" 
-                                  size="small" 
-                                  color="secondary"
-                                  onClick={() => setSelectedOrder(order)}
-                                  sx={{ px: 3, borderRadius: 2, fontWeight: 700 }}
-                                >
-                                  Settle
-                                </Button>
-                              </Box>
-                            </CardContent>
-                          </MuiCard>
-                        </Grid>
+                              <Typography variant="caption" color="text.secondary">{order.customer_name || 'No Name'}</Typography>
+                            </Box>
+                            <Box sx={{ textAlign: 'right', mr: 2 }}>
+                              <Typography variant="subtitle2" sx={{ fontWeight: 900, color: 'primary.main' }}>₹{parseFloat(order.total_amount).toFixed(0)}</Typography>
+                            </Box>
+                            <Button 
+                              variant="contained" 
+                              size="small" 
+                              color="secondary"
+                              onClick={(e) => { e.stopPropagation(); setSelectedOrder(order); }}
+                              sx={{ minWidth: 70, height: 32, borderRadius: 1.5, fontWeight: 800, fontSize: '0.7rem' }}
+                            >
+                              SETTLE
+                            </Button>
+                          </Box>
+                        </Paper>
                       ))}
                     </>
                   )}
-                </Grid>
+                </Stack>
               )
             ) : tab === 1 ? (
-              // Cancelled Cards
+              // Cancelled List
               cancelledOrders.length === 0 ? (
                 <Stack sx={{ alignItems: 'center', opacity: 0.4, py: 10 }} spacing={1}>
                   <DeleteIcon sx={{ fontSize: 48 }} />
-                  <Typography variant="body1">No cancelled orders found</Typography>
+                  <Typography variant="body1">No cancelled orders</Typography>
                 </Stack>
               ) : (
-                <Grid container spacing={2}>
+                <Stack spacing={1}>
                   {cancelledOrders.map((order) => (
-                    <Grid size={{ xs: 12 }} key={order.id}>
-                      <MuiCard sx={{ borderRadius: 3, border: '1px solid', borderColor: 'error.light', bgcolor: '#fffafb' }}>
-                        <CardContent sx={{ p: 2 }}>
-                          <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1.5 }}>
-                            <Typography variant="subtitle1" sx={{ fontWeight: 800 }}>Order #{order.id}</Typography>
-                            <Typography variant="caption" sx={{ fontWeight: 900, color: 'error.main' }}>CANCELLED</Typography>
-                          </Box>
-                          <Box sx={{ p: 1, bgcolor: 'error.lighter', borderRadius: 1, mb: 2 }}>
-                            <Typography variant="caption" sx={{ fontWeight: 700, color: 'error.dark', display: 'block' }}>REASON:</Typography>
-                            <Typography variant="body2" color="text.secondary">{order.notes?.replace('CANCELLED: ', '') || 'No reason'}</Typography>
-                          </Box>
-                          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                            <Typography variant="h6" sx={{ fontWeight: 900, color: 'error.main' }}>₹{parseFloat(order.total_amount).toFixed(2)}</Typography>
-                            <Button 
-                              variant="outlined" 
-                              size="small" 
-                              color="error"
-                              onClick={() => setSelectedOrder(order)}
-                              sx={{ px: 3, borderRadius: 2, fontWeight: 700 }}
-                            >
-                              Details
-                            </Button>
-                          </Box>
-                        </CardContent>
-                      </MuiCard>
-                    </Grid>
+                    <Paper key={order.id} sx={{ p: 1.5, borderRadius: 2, border: '1px solid #ffebee', bgcolor: '#fffafb', boxShadow: 'none' }}>
+                      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <Box sx={{ flexGrow: 1 }}>
+                          <Typography variant="subtitle2" sx={{ fontWeight: 800 }}>#{order.id}</Typography>
+                          <Typography variant="caption" sx={{ color: 'error.main', fontWeight: 700 }}>{order.notes?.replace('CANCELLED: ', '').substring(0, 30) || 'No reason'}...</Typography>
+                        </Box>
+                        <Typography variant="subtitle2" sx={{ fontWeight: 900, color: 'error.main', mr: 2 }}>₹{parseFloat(order.total_amount).toFixed(0)}</Typography>
+                        <IconButton size="small" onClick={() => { setDrawerOrder(order); setDrawerOpen(true); }} sx={{ color: 'error.main' }}>
+                          <ChevronRightIcon />
+                        </IconButton>
+                      </Box>
+                    </Paper>
                   ))}
-                </Grid>
+                </Stack>
               )
             ) : (
-              // Invoices Cards
+              // Invoices List
               filteredInvoices.length === 0 ? (
                 <Stack sx={{ alignItems: 'center', opacity: 0.4, py: 10 }} spacing={1}>
                   <BillIcon sx={{ fontSize: 48 }} />
                   <Typography variant="body1">No invoices found</Typography>
                 </Stack>
               ) : (
-                <Grid container spacing={2}>
+                <Stack spacing={1}>
                   {filteredInvoices.map((invoice) => (
-                    <Grid size={{ xs: 12 }} key={invoice.id}>
-                      <MuiCard sx={{ borderRadius: 3, border: '1px solid #e8e4d8', boxShadow: '0 2px 8px rgba(0,0,0,0.04)' }}>
-                        <CardContent sx={{ p: 2 }}>
-                          <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
-                            <Typography variant="subtitle2" sx={{ fontWeight: 800 }}>{invoice.invoice_number}</Typography>
-                            <Typography variant="caption" color="text.secondary">{new Date(invoice.created_at).toLocaleDateString()}</Typography>
-                          </Box>
-                          <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 2 }}>
-                            <Chip label={`Order #${invoice.order}`} size="small" variant="outlined" sx={{ height: 20, fontSize: '0.65rem' }} />
-                            <Chip label={invoice.payment_method} size="small" color="success" sx={{ height: 20, fontSize: '0.65rem' }} />
-                          </Box>
-                          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                            <Typography variant="h6" sx={{ fontWeight: 900, color: 'primary.main' }}>₹{parseFloat(invoice.total_amount).toFixed(2)}</Typography>
-                            <Stack direction="row" spacing={1}>
-                              <IconButton 
-                                size="small" 
-                                onClick={() => setPreviewInvoice(invoice)}
-                                sx={{ border: '1px solid', borderColor: 'primary.light', borderRadius: 2, color: 'primary.main' }}
-                              >
-                                <ViewIcon fontSize="small" />
-                              </IconButton>
-                              <IconButton 
-                                size="small" 
-                                onClick={() => handlePrint(invoice)}
-                                sx={{ border: '1px solid #e8e4d8', borderRadius: 2 }}
-                              >
-                                <PrintIcon fontSize="small" />
-                              </IconButton>
-                            </Stack>
-                          </Box>
-                        </CardContent>
-                      </MuiCard>
-                    </Grid>
+                    <Paper key={invoice.id} sx={{ p: 1.2, borderRadius: 2, border: '1px solid #f1f5f9', boxShadow: 'none' }}>
+                      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <Box sx={{ flexGrow: 1 }}>
+                          <Typography variant="subtitle2" sx={{ fontWeight: 800, fontSize: '0.75rem' }}>{invoice.invoice_number}</Typography>
+                          <Stack direction="row" spacing={1} sx={{ alignItems: 'center', mt: 0.3 }}>
+                            <Chip label={invoice.payment_method} size="small" color="success" sx={{ height: 16, fontSize: '0.6rem', fontWeight: 800 }} />
+                            <Typography variant="caption" color="text.secondary" sx={{ fontSize: '0.65rem' }}>{new Date(invoice.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</Typography>
+                          </Stack>
+                        </Box>
+                        <Typography variant="subtitle2" sx={{ fontWeight: 900, color: 'primary.main', mr: 1.5 }}>₹{parseFloat(invoice.total_amount).toFixed(0)}</Typography>
+                        <Stack direction="row" spacing={0.5}>
+                          <IconButton size="small" onClick={() => setPreviewInvoice(invoice)} sx={{ color: 'primary.main', p: 0.5 }}><ViewIcon sx={{ fontSize: 18 }} /></IconButton>
+                          <IconButton size="small" onClick={() => handlePrint(invoice)} sx={{ color: 'text.secondary', p: 0.5 }}><PrintIcon sx={{ fontSize: 18 }} /></IconButton>
+                        </Stack>
+                      </Box>
+                    </Paper>
                   ))}
-                </Grid>
+                </Stack>
               )
             )}
           </Box>
@@ -807,6 +781,112 @@ export default function BillingPage() {
           onPrint={() => handlePrint(previewInvoice)}
         />
       )}
+
+      {/* Order Details Drawer */}
+      <Drawer
+        anchor="right"
+        open={drawerOpen}
+        onClose={() => setDrawerOpen(false)}
+        slotProps={{
+          paper: {
+            sx: { width: { xs: '100%', sm: 400 }, borderRadius: { xs: 0, sm: '16px 0 0 16px' } }
+          }
+        }}
+      >
+        {drawerOrder && (
+          <Box sx={{ height: '100%', display: 'flex', flexDirection: 'column', bgcolor: '#fdfdfd' }}>
+            {/* Header */}
+            <Box sx={{ p: 3, borderBottom: '1px solid', borderColor: 'divider', bgcolor: 'white' }}>
+              <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 1 }}>
+                <Box>
+                  <Typography variant="h5" sx={{ fontWeight: 900 }}>
+                    {drawerOrder.table_number ? `TABLE ${drawerOrder.table_number}` : 'PARCEL'}
+                  </Typography>
+                  <Typography variant="caption" sx={{ fontWeight: 700, color: 'text.secondary', display: 'block' }}>
+                    {new Date(drawerOrder.created_at).toLocaleString([], { dateStyle: 'medium', timeStyle: 'short' })}
+                  </Typography>
+                  <Typography variant="caption" sx={{ fontWeight: 700, color: 'text.disabled' }}>
+                    {drawerOrder.invoice_number ? `Invoice ${drawerOrder.invoice_number}` : `Order #${drawerOrder.id}`}
+                  </Typography>
+                </Box>
+                <IconButton onClick={() => setDrawerOpen(false)} size="small">
+                  <ChevronRightIcon />
+                </IconButton>
+              </Box>
+              <OrderStatusChip status={drawerOrder.status || 'PAID'} orderType={drawerOrder.order_type} />
+            </Box>
+
+            {/* Customer & Payment Details */}
+            {(drawerOrder.customer_name || drawerOrder.customer_mobile || drawerOrder.payment_method || drawerOrder.invoice?.payment_method) && (
+              <Box sx={{ px: 3, py: 2, bgcolor: alpha(theme.palette.primary.main, 0.02), borderBottom: '1px solid', borderColor: 'divider' }}>
+                <Grid container spacing={2}>
+                  {(drawerOrder.customer_name || drawerOrder.customer_mobile) && (
+                    <Grid size={{ xs: (drawerOrder.payment_method || drawerOrder.invoice?.payment_method) ? 6 : 12 }}>
+                      <Typography variant="overline" sx={{ fontWeight: 800, color: 'text.disabled' }}>Customer</Typography>
+                      {drawerOrder.customer_name && (
+                        <Typography variant="body2" sx={{ fontWeight: 700 }}>{drawerOrder.customer_name}</Typography>
+                      )}
+                      {drawerOrder.customer_mobile && (
+                        <Typography variant="caption" sx={{ fontWeight: 600, color: 'text.secondary', display: 'block' }}>{drawerOrder.customer_mobile}</Typography>
+                      )}
+                    </Grid>
+                  )}
+                  {(drawerOrder.payment_method || drawerOrder.invoice?.payment_method) && (
+                    <Grid size={{ xs: (drawerOrder.customer_name || drawerOrder.customer_mobile) ? 6 : 12 }}>
+                      <Typography variant="overline" sx={{ fontWeight: 800, color: 'text.disabled' }}>Payment</Typography>
+                      <Typography variant="body2" sx={{ fontWeight: 700, color: 'success.main' }}>
+                        {drawerOrder.payment_method || drawerOrder.invoice?.payment_method}
+                      </Typography>
+                      {drawerOrder.invoice_number && (
+                        <Typography variant="caption" sx={{ fontWeight: 600, color: 'text.secondary' }}>
+                          #{drawerOrder.invoice_number}
+                        </Typography>
+                      )}
+                    </Grid>
+                  )}
+                </Grid>
+              </Box>
+            )}
+
+            {/* Items Section - SCROLLABLE */}
+            <Box sx={{ flexGrow: 1, overflowY: 'auto', p: 3 }}>
+              <Typography variant="overline" sx={{ fontWeight: 800, color: 'text.disabled', mb: 1, display: 'block' }}>Items</Typography>
+              <Stack spacing={2}>
+                {(drawerOrder.items || []).map((item: any, idx: number) => (
+                  <Box key={item.id || idx} sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <Box sx={{ flexGrow: 1 }}>
+                      <Typography variant="body2" sx={{ fontWeight: 800 }}>{item.item_details?.name || 'Unknown Item'}</Typography>
+                      <Typography variant="caption" sx={{ color: 'text.secondary', fontWeight: 600 }}>
+                        {item.quantity} × ₹{parseFloat(item.price).toFixed(2)}
+                      </Typography>
+                    </Box>
+                    <Typography variant="body2" sx={{ fontWeight: 900 }}>
+                      ₹{(item.quantity * parseFloat(item.price)).toFixed(2)}
+                    </Typography>
+                  </Box>
+                ))}
+              </Stack>
+            </Box>
+
+            {/* Footer */}
+            <Box sx={{ p: 3, pb: { xs: 'calc(80px + env(safe-area-inset-bottom))', sm: 3 }, borderTop: '2px dashed', borderColor: 'divider', bgcolor: 'white' }}>
+              <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+                <Typography variant="h6" sx={{ fontWeight: 900 }}>Total Amount</Typography>
+                <Typography variant="h5" sx={{ fontWeight: 950, color: 'primary.main' }}>
+                  ₹{parseFloat(drawerOrder.total_amount).toFixed(2)}
+                </Typography>
+              </Box>
+              
+              {drawerOrder.notes && (
+                <Box sx={{ p: 2, bgcolor: 'action.hover', borderRadius: '8px' }}>
+                  <Typography variant="caption" sx={{ fontWeight: 800, color: 'text.secondary', display: 'block', mb: 0.5 }}>NOTES</Typography>
+                  <Typography variant="body2" sx={{ fontWeight: 600, color: 'text.primary' }}>{drawerOrder.notes}</Typography>
+                </Box>
+              )}
+            </Box>
+          </Box>
+        )}
+      </Drawer>
     </Box>
   );
 }

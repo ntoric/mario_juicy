@@ -147,11 +147,17 @@ export default function TakeAwayPage() {
     window.addEventListener('app-refresh', handleRefresh);
     return () => window.removeEventListener('app-refresh', handleRefresh);
   }, [fetchOrders]);
+
+  useEffect(() => {
+    const handleClose = () => setDialogOpen(false);
+    window.addEventListener('close-dialogs', handleClose);
+    return () => window.removeEventListener('close-dialogs', handleClose);
+  }, []);
   
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
 
   return (
-    <Box sx={{ position: 'relative', height: { xs: 'auto', md: '100%' }, display: "flex", flexDirection: "column", p: { xs: 1.5, md: 2 }, overflow: { xs: 'visible', md: 'hidden' } }}>
+    <Box sx={{ position: 'relative', height: '100%', display: "flex", flexDirection: "column", p: { xs: 1.5, md: 2 }, overflow: 'hidden' }}>
       {/* Optimized Header Row */}
       {/* Optimized Header Row */}
       <Box sx={{ 
@@ -189,32 +195,49 @@ export default function TakeAwayPage() {
         </Box>
 
         <Stack direction="row" spacing={1} sx={{ alignItems: 'center' }}>
-          {isMobile ? (
-            <IconButton onClick={fetchOrders} size="small" sx={{ color: 'primary.main', border: '1px solid', borderColor: 'divider', borderRadius: '7px' }}>
+          <Tooltip title="Refresh Orders">
+            <IconButton 
+              onClick={fetchOrders} 
+              size="small" 
+              sx={{ 
+                color: 'primary.main', 
+                border: '1px solid', 
+                borderColor: 'divider', 
+                borderRadius: '7px',
+                height: 40,
+                width: 40
+              }}
+            >
               <RefreshIcon fontSize="small" />
             </IconButton>
-          ) : (
-            <Tooltip title="Refresh Orders">
-              <Button 
-                variant="outlined" 
-                size="small"
-                onClick={fetchOrders} 
-                sx={{ borderRadius: '7px', height: 40, minWidth: 40, p: 0 }}
-              >
-                <RefreshIcon />
-              </Button>
-            </Tooltip>
-          )}
+          </Tooltip>
           
-          <Button
-            variant="contained"
-            size="small"
-            onClick={() => { setSelectedOrder(null); setDialogOpen(true); }}
-            sx={{ borderRadius: '7px', height: 40, px: 2, fontWeight: 800 }}
-            startIcon={<AddIcon />}
-          >
-            {isMobile ? "New" : "New Order"}
-          </Button>
+          {isMobile ? (
+            <IconButton
+              color="primary"
+              onClick={() => { setSelectedOrder(null); setDialogOpen(true); }}
+              sx={{ 
+                borderRadius: '7px', 
+                height: 40, 
+                width: 40,
+                bgcolor: 'primary.main',
+                color: 'white',
+                '&:hover': { bgcolor: 'primary.dark' }
+              }}
+            >
+              <AddIcon fontSize="small" />
+            </IconButton>
+          ) : (
+            <Button
+              variant="contained"
+              size="small"
+              onClick={() => { setSelectedOrder(null); setDialogOpen(true); }}
+              sx={{ borderRadius: '7px', height: 40, px: 2, fontWeight: 800 }}
+              startIcon={<AddIcon />}
+            >
+              New Order
+            </Button>
+          )}
         </Stack>
       </Box>
 
@@ -238,27 +261,10 @@ export default function TakeAwayPage() {
         </Box>
       )}
 
-      {/* Mobile Only Tabs */}
-      {isMobile && (
-        <Box sx={{ borderBottom: 1, borderColor: 'divider', mb: 2 }}>
-          <Tabs 
-            value={activeTab} 
-            onChange={(_, val) => setActiveTab(val)} 
-            variant="fullWidth"
-            sx={{
-              '& .MuiTabs-indicator': { height: 3, borderRadius: '7px 7px 0 0' },
-              '& .MuiTab-root': { fontWeight: 700, fontSize: '0.85rem' }
-            }}
-          >
-            <Tab label={`Active (${activeOrders.length})`} />
-            <Tab label="History" />
-          </Tabs>
-        </Box>
-      )}
 
       {error && <Alert severity="error" sx={{ mb: 2, borderRadius: '7px' }}>{error}</Alert>}
 
-      <Box sx={{ flexGrow: 1, overflowY: 'auto', px: 0.5 }}>
+      <Box sx={{ flexGrow: 1, overflowY: 'auto', px: 0.5, pb: { xs: 15, md: 0.5 } }}>
         {loading ? (
           <Box sx={{ display: 'flex', justifyContent: 'center', py: 10 }}><CircularProgress /></Box>
         ) : (
@@ -272,9 +278,11 @@ export default function TakeAwayPage() {
                     <Typography variant="body2" color="text.secondary" sx={{ mt: 1, mb: 3 }}>
                       Current active take-away orders will appear here. Click the button above to start a new one.
                     </Typography>
-                    <Button variant="contained" startIcon={<AddIcon />} onClick={() => setDialogOpen(true)} sx={{ borderRadius: '7px' }}>
-                      New Parcel Order
-                    </Button>
+                    {!isMobile && (
+                      <Button variant="contained" startIcon={<AddIcon />} onClick={() => setDialogOpen(true)} sx={{ borderRadius: '7px' }}>
+                        New Parcel Order
+                      </Button>
+                    )}
                   </Card>
                 </Box>
               ) : (
@@ -319,24 +327,6 @@ export default function TakeAwayPage() {
         onOrderUpdated={fetchOrders}
       />
 
-      {/* Floating Action Button for Mobile */}
-      {isMobile && (
-        <Zoom in={true} unmountOnExit>
-          <Fab
-            color="primary"
-            aria-label="add-parcel"
-            onClick={() => { setSelectedOrder(null); setDialogOpen(true); }}
-            sx={{
-              position: 'fixed',
-              bottom: { xs: 80, sm: 32 }, // Higher on mobile to avoid bottom nav
-              right: { xs: 16, sm: 32 },
-              boxShadow: 3
-            }}
-          >
-            <AddIcon />
-          </Fab>
-        </Zoom>
-      )}
     </Box>
   );
 }

@@ -126,3 +126,12 @@ func UpdateStore(c *gin.Context) {
 	config.DB.Save(&store)
 	utils.SuccessResponse(c, http.StatusOK, store)
 }
+
+func DeleteStore(c *gin.Context) {
+	id := c.Param("id")
+	if err := config.DB.Delete(&models.Store{}, id).Error; err != nil {
+		utils.ErrorResponse(c, http.StatusInternalServerError, "Failed to delete store")
+		return
+	}
+	utils.SuccessResponse(c, http.StatusOK, gin.H{"message": "Store deleted successfully"})
+}

@@ -33,13 +33,11 @@ import {
   Lock as ViewModeIcon,
   Refresh as RefreshIcon,
   TableBar as TableBarIcon,
-  RadioButtonUnchecked as RoundIcon,
-  CropLandscape as RectIcon,
 } from '@mui/icons-material';
 import { restaurantService, Table } from '@/services/restaurantService';
 import OrderDialog from '@/components/backoffice/restaurant/OrderDialog';
 import { useAuth } from '@/hooks/useAuth';
-import Preloader from '@/components/ui/Preloader';
+import { useWebSocket } from '@/hooks/useWebSocket';
 
 // ── Status config ─────────────────────────────────────────────────────────────
 
@@ -72,7 +70,7 @@ interface DragState {
 
 interface AddTableForm {
   number: string; capacity: string;
-  shape: 'RECT' | 'CIRCLE'; status: string;
+  status: string;
 }
 
 export default function TableMapPage() {
@@ -92,13 +90,12 @@ export default function TableMapPage() {
   const [dragging, setDragging] = useState<DragState | null>(null);
   const [filterStatus, setFilterStatus] = useState<string | null>(null);
   const [filterAnchor, setFilterAnchor] = useState<null | HTMLElement>(null);
-  const [syncing, setSyncing] = useState(false);
 
   const [orderTable, setOrderTable] = useState<Table | null>(null);
   const [orderDialogOpen, setOrderDialogOpen] = useState(false);
 
   const [addOpen, setAddOpen] = useState(false);
-  const [addForm, setAddForm] = useState<AddTableForm>({ number: '', capacity: '4', shape: 'RECT', status: 'VACANT' });
+  const [addForm, setAddForm] = useState<AddTableForm>({ number: '', capacity: '4', status: 'VACANT' });
   const [addLoading, setAddLoading] = useState(false);
 
   const [editTable, setEditTable] = useState<Table | null>(null);
@@ -114,30 +111,26 @@ export default function TableMapPage() {
     finally { setLoading(false); }
   }, [tables?.length]);
   
-  const handleSyncAll = async () => {
-    setSyncing(true);
-    try {
-      await restaurantService.recalculateAllTableStatuses();
-      await fetchTables();
-    } catch (e: any) {
-      setError(e.message || 'Failed to sync table statuses');
-    } finally {
-      setSyncing(false);
-    }
-  };
-
   useEffect(() => { 
     fetchTables(); 
-    // Enable 10s polling for real-time status updates
-    const interval = setInterval(fetchTables, 10000);
-    return () => clearInterval(interval);
   }, [fetchTables]);
+
+  useWebSocket('ORDER_CREATED', () => fetchTables());
+  useWebSocket('TABLE_UPDATED', () => fetchTables());
+  useWebSocket('ORDER_UPDATED', () => fetchTables());
+  useWebSocket('ORDER_CHECKOUT', () => fetchTables());
 
   useEffect(() => {
     const handleRefresh = () => fetchTables();
     window.addEventListener('app-refresh', handleRefresh);
     return () => window.removeEventListener('app-refresh', handleRefresh);
   }, [fetchTables]);
+
+  useEffect(() => {
+    const handleClose = () => setOrderDialogOpen(false);
+    window.addEventListener('close-dialogs', handleClose);
+    return () => window.removeEventListener('close-dialogs', handleClose);
+  }, []);
 
   const onPointerDown = (e: React.PointerEvent, table: Table) => {
     if (!editMode) return;
@@ -183,10 +176,11 @@ export default function TableMapPage() {
 
   return (
     <Box sx={{ 
-      height: { xs: 'calc(100dvh - 180px)', md: '100%' }, 
+      height: '100%', 
       display: "flex", 
       flexDirection: "column", 
       p: { xs: 1.5, md: 2 }, 
+      pb: { xs: 15, md: 2 },
       overflow: "hidden",
       position: 'relative'
     }}>
@@ -281,26 +275,13 @@ export default function TableMapPage() {
                   variant="outlined" 
                   size="small"
                   onClick={fetchTables} 
-                  disabled={loading || syncing}
+                  disabled={loading}
                   sx={{ borderRadius: '7px', height: 40, minWidth: 40, p: 0 }}
                 >
                   <RefreshIcon fontSize="small" />
                 </Button>
               </Tooltip>
               
-              <Tooltip title="Sync Table Statuses">
-                <Button 
-                  variant="outlined" 
-                  size="small"
-                  color="secondary"
-                  onClick={handleSyncAll} 
-                  disabled={loading || syncing}
-                  sx={{ borderRadius: '7px', height: 40, minWidth: 40, p: 0, display: { xs: 'none', sm: 'flex' } }}
-                >
-                  {syncing ? <CircularProgress size={20} color="inherit" /> : <SaveIcon fontSize="small" />}
-                </Button>
-              </Tooltip>
-
               {canManageLayout && (
                 <>
                   <Tooltip title={editMode ? 'Exit Edit Mode' : 'Enter Edit Mode'}>
@@ -360,7 +341,7 @@ export default function TableMapPage() {
             <style>{PULSE_ANIMATION}</style>
             {loading && (
               <Box sx={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                <Preloader fullScreen={false} size={80} message="Loading floor map..." />
+                <CircularProgress sx={{ color: '#E9762B' }} />
               </Box>
             )}
 
@@ -385,7 +366,6 @@ export default function TableMapPage() {
               {visible.map(table => {
                 const pos = pending[table.id] ?? { pos_x: table.pos_x, pos_y: table.pos_y };
                 const cfg = STATUS_CONFIG[table.status] ?? STATUS_CONFIG['VACANT'];
-                const isRound = table.shape === 'CIRCLE';
                 const isDragging = dragging?.tableId === table.id;
 
                 return (
@@ -397,15 +377,15 @@ export default function TableMapPage() {
                       position: isMobile ? 'relative' : 'absolute',
                       left: isMobile ? 'auto' : `${pos.pos_x}%`,
                       top: isMobile ? 'auto' : `${pos.pos_y}%`,
-                      width: isMobile ? '100%' : (isRound ? { sm: '10%' } : { sm: '11%' }),
-                      minWidth: isMobile ? 'auto' : (isRound ? { sm: 70 } : { sm: 85 }),
-                      maxWidth: isMobile ? 'none' : (isRound ? 120 : 140),
-                      aspectRatio: isRound ? '1' : (isMobile ? '1' : '1.2'),
+                      width: isMobile ? '100%' : { sm: '11%' },
+                      minWidth: isMobile ? 'auto' : { sm: 85 },
+                      maxWidth: isMobile ? 'none' : 140,
+                      aspectRatio: isMobile ? '1' : '1.2',
                       bgcolor: cfg.bg,
                       border: isMobile ? `2px solid ${cfg.border}` : `3px solid ${cfg.border}`,
-                      borderRadius: isRound ? '50%' : '7px',
+                      borderRadius: '7px',
                       display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
-                      p: isMobile ? 0.5 : (isRound ? 0.75 : { xs: 0.75, sm: 1.5 }),
+                      p: isMobile ? 0.5 : { xs: 0.75, sm: 1.5 },
                       cursor: editMode ? 'grab' : 'pointer',
                       boxShadow: isDragging 
                         ? '0 20px 40px rgba(0,0,0,0.25)' 
@@ -420,7 +400,7 @@ export default function TableMapPage() {
                         transform: 'scale(1.05) translateY(-4px)',
                         borderColor: table.status === 'VACANT' ? 'primary.main' : cfg.border
                       } : {},
-                      '&::after': isRound ? {} : {
+                      '&::after': {
                         content: '""',
                         position: 'absolute',
                         inset: 0,
@@ -432,8 +412,8 @@ export default function TableMapPage() {
                   >
                     <Box sx={{
                       position: 'absolute', 
-                      top: isMobile ? 3 : (isRound ? '12%' : 4), 
-                      right: isMobile ? 3 : (isRound ? '12%' : 4),
+                      top: isMobile ? 3 : 4, 
+                      right: isMobile ? 3 : 4,
                       width: isMobile ? 7 : 8, 
                       height: isMobile ? 7 : 8, 
                       borderRadius: '50%', bgcolor: cfg.dot,
@@ -448,44 +428,64 @@ export default function TableMapPage() {
                       {table.current_occupancy || 0}/{table.capacity}
                     </Typography>
 
-                    {!isRound && (
-                      <Box sx={{ mt: 0.25, px: 0.5, py: 0.1, borderRadius: '2px', bgcolor: `${cfg.border}15`, border: `1px solid ${cfg.border}22` }}>
-                        <Typography sx={{ fontSize: { xs: '0.45rem', sm: '0.6rem' }, fontWeight: 900, color: cfg.text, letterSpacing: '0.04em' }}>
-                          {cfg.label.toUpperCase()}
-                        </Typography>
-                      </Box>
-                    )}
+                    <Box sx={{ mt: 0.25, px: 0.5, py: 0.1, borderRadius: '2px', bgcolor: `${cfg.border}15`, border: `1px solid ${cfg.border}22` }}>
+                      <Typography sx={{ fontSize: { xs: '0.45rem', sm: '0.6rem' }, fontWeight: 900, color: cfg.text, letterSpacing: '0.04em' }}>
+                        {cfg.label.toUpperCase()}
+                      </Typography>
+                    </Box>
 
                     {editMode && !isDragging && (
                       <Box
-                        sx={{ position: 'absolute', bottom: isRound ? '4%' : -16, display: 'flex', gap: 0.25, bgcolor: 'white', borderRadius: '7px', boxShadow: 2, px: 0.25 }}
+                        sx={{ 
+                          position: 'absolute', 
+                          bottom: -12, 
+                          left: '50%',
+                          transform: 'translateX(-50%)',
+                          display: 'flex', 
+                          gap: 0.5, 
+                          bgcolor: 'white', 
+                          borderRadius: '8px', 
+                          boxShadow: '0 4px 15px rgba(0,0,0,0.2)', 
+                          px: 0.5,
+                          py: 0.25,
+                          zIndex: 30,
+                          cursor: 'default',
+                          border: '1px solid #e8e4d8'
+                        }}
+                        onPointerDown={e => e.stopPropagation()}
                         onClick={e => e.stopPropagation()}
                       >
-                        <Tooltip title="Edit">
-                          <IconButton size="small" sx={{ p: 0.3 }} onClick={() => { setEditTable(table); setEditOpen(true); }}>
-                            <EditIcon sx={{ fontSize: 12 }} />
+                        <Tooltip title="Edit Table Details">
+                          <IconButton 
+                            size="small" 
+                            sx={{ p: 0.5, color: 'primary.main', '&:hover': { bgcolor: alpha(theme.palette.primary.main, 0.1) } }} 
+                            onClick={(e) => { 
+                              e.stopPropagation();
+                              setEditTable(table); 
+                              setEditOpen(true); 
+                            }}
+                          >
+                            <EditIcon sx={{ fontSize: 16 }} />
                           </IconButton>
                         </Tooltip>
-                        <Tooltip title="Delete">
-                          <IconButton size="small" color="error" sx={{ p: 0.3 }} onClick={async () => {
-                            if (!confirm('Delete this table?')) return;
-                            try {
-                              await restaurantService.deleteTable(table.id); 
-                              fetchTables();
-                            } catch (e: any) {
-                              console.error('Failed to delete table:', e);
-                              let errorMsg = 'Failed to delete table';
-                              if (typeof e === 'object' && e !== null) {
-                                errorMsg = Object.entries(e)
-                                  .map(([field, msgs]) => `${field}: ${Array.isArray(msgs) ? msgs.join(', ') : msgs}`)
-                                  .join(' | ') || errorMsg;
-                              } else if (typeof e === 'string') {
-                                errorMsg = e;
+                        <Tooltip title="Delete Table">
+                          <IconButton 
+                            size="small" 
+                            color="error" 
+                            sx={{ p: 0.5, '&:hover': { bgcolor: alpha(theme.palette.error.main, 0.1) } }} 
+                            onClick={async (e) => {
+                              e.stopPropagation();
+                              if (!confirm(`Are you sure you want to delete Table ${table.number}?`)) return;
+                              try {
+                                await restaurantService.deleteTable(table.id); 
+                                fetchTables();
+                              } catch (e: any) {
+                                console.error('Failed to delete table:', e);
+                                alert('Failed to delete table. Please ensure it has no active orders.');
                               }
-                              alert(errorMsg);
-                            }
-                          }}>
-                            <DeleteIcon sx={{ fontSize: 12 }} />
+                            }}
+                          >
+                            <DeleteIcon sx={{ fontSize: 16 }} />
                           </IconButton>
                         </Tooltip>
                       </Box>
@@ -511,10 +511,6 @@ export default function TableMapPage() {
                 <Stack spacing={2.5} sx={{ mb: 4 }}>
                     <TextField label="Table Number / Name" value={addForm.number} onChange={e => setAddForm(f => ({ ...f, number: e.target.value }))} fullWidth required placeholder="e.g. 1, A1, VIP-1" slotProps={{ input: { sx: { borderRadius: '12px' } } }} />
                     <TextField label="Capacity" type="number" value={addForm.capacity} onChange={e => setAddForm(f => ({ ...f, capacity: e.target.value }))} fullWidth slotProps={{ input: { sx: { borderRadius: '12px' } } }} />
-                    <TextField select label="Shape" value={addForm.shape} onChange={e => setAddForm(f => ({ ...f, shape: e.target.value as any }))} fullWidth slotProps={{ input: { sx: { borderRadius: '12px' } } }}>
-                        <MenuItem value="RECT"><RectIcon sx={{ mr: 1, verticalAlign: 'middle', fontSize: 16 }} />Rectangle</MenuItem>
-                        <MenuItem value="CIRCLE"><RoundIcon sx={{ mr: 1, verticalAlign: 'middle', fontSize: 16 }} />Circle</MenuItem>
-                    </TextField>
                     <TextField select label="Initial Status" value={addForm.status} onChange={e => setAddForm(f => ({ ...f, status: e.target.value }))} fullWidth slotProps={{ input: { sx: { borderRadius: '12px' } } }}>
                         {Object.entries(STATUS_CONFIG).map(([val, cfg]) => (
                             <MenuItem key={val} value={val}>
@@ -532,9 +528,9 @@ export default function TableMapPage() {
                     <Button variant="contained" fullWidth onClick={async () => {
                         setAddLoading(true);
                         try {
-                            await restaurantService.createTable({ number: addForm.number, capacity: Number(addForm.capacity), shape: addForm.shape, status: addForm.status as any, pos_x: 10, pos_y: 10 });
+                             await restaurantService.createTable({ number: addForm.number, capacity: Number(addForm.capacity), status: addForm.status as any, pos_x: 10, pos_y: 10 });
                             setAddOpen(false);
-                            setAddForm({ number: '', capacity: '4', shape: 'RECT', status: 'VACANT' });
+                            setAddForm({ number: '', capacity: '4', status: 'VACANT' });
                             fetchTables();
                         } catch (e: any) { alert('Failed to add table'); }
                         finally { setAddLoading(false); }
@@ -559,10 +555,6 @@ export default function TableMapPage() {
                 
                 <Stack spacing={2.5} sx={{ mb: 4 }}>
                     <TextField label="Capacity" type="number" value={editTable.capacity} onChange={e => setEditTable(t => t ? { ...t, capacity: Number(e.target.value) } : null)} fullWidth slotProps={{ input: { sx: { borderRadius: '12px' } } }} />
-                    <TextField select label="Shape" value={editTable.shape} onChange={e => setEditTable(t => t ? { ...t, shape: e.target.value as any } : null)} fullWidth slotProps={{ input: { sx: { borderRadius: '12px' } } }}>
-                        <MenuItem value="RECT">Rectangle</MenuItem>
-                        <MenuItem value="CIRCLE">Circle</MenuItem>
-                    </TextField>
                     <TextField select label="Availability Status" value={editTable.status} onChange={e => setEditTable(t => t ? { ...t, status: e.target.value as any } : null)} fullWidth slotProps={{ input: { sx: { borderRadius: '12px' } } }}>
                         {Object.entries(STATUS_CONFIG).map(([val, cfg]) => (
                             <MenuItem key={val} value={val}>
@@ -579,7 +571,7 @@ export default function TableMapPage() {
                     <Button variant="contained" fullWidth onClick={async () => {
                         if (editTable) {
                             try {
-                                await restaurantService.updateTable(editTable.id, { capacity: editTable.capacity, shape: editTable.shape, status: editTable.status });
+                                await restaurantService.updateTable(editTable.id, { capacity: editTable.capacity, status: editTable.status });
                                 setEditOpen(false); 
                                 fetchTables();
                             } catch (e: any) { alert('Failed to update table'); }

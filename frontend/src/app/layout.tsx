@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { Toaster } from "sonner";
 import "./globals.css";
+import { Providers } from "@/components/providers/Providers";
 
 export const metadata: Metadata = {
   title: "POS Matrix | Premium Retail POS",
@@ -36,7 +37,9 @@ export default function RootLayout({
       </head>
       <body>
         <Toaster position="top-center" richColors expand />
-        {children}
+        <Providers>
+          {children}
+        </Providers>
       </body>
     </html>
   );

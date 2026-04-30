@@ -19,6 +19,11 @@ import {
   Menu,
   Stack,
   InputBase,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  Grid,
 } from "@mui/material";
 import MuiDrawer from "@mui/material/Drawer";
 import MuiAppBar, { AppBarProps as MuiAppBarProps } from "@mui/material/AppBar";
@@ -55,12 +60,18 @@ import {
   LockPerson as LockPersonIcon,
   Search as SearchIcon,
   Notifications as NotificationsIcon,
+  Add as AddIcon,
 } from "@mui/icons-material";
+import Fab from "@mui/material/Fab";
+import { restaurantService, Table } from "@/services/restaurantService";
+import OrderDialog from "@/components/backoffice/restaurant/OrderDialog";
+import { toast } from "sonner";
 import Avatar from "@mui/material/Avatar";
 import Tooltip from "@mui/material/Tooltip";
 import { useAuth } from "@/hooks/useAuth";
 import { Pacifico } from "next/font/google";
-import Preloader from "@/components/ui/Preloader";
+import { Toaster } from 'sonner';
+// import Preloader from "@/components/ui/Preloader";
 
 const pacifico = Pacifico({
   subsets: ["latin"],
@@ -93,7 +104,7 @@ const closedMixin = (theme: Theme): CSSObject => ({
   borderRight: 'none',
 });
 
-const HeaderHeight = 80;
+const HeaderHeight = 60;
 
 const AppBar = styled(MuiAppBar)(({ theme }) => ({
   zIndex: theme.zIndex.drawer + 1,
@@ -106,6 +117,12 @@ const AppBar = styled(MuiAppBar)(({ theme }) => ({
   display: 'flex',
   justifyContent: 'center',
   paddingTop: "env(safe-area-inset-top, 0px)",
+  [theme.breakpoints.down("md")]: {
+    backgroundColor: theme.palette.primary.main,
+    color: "#ffffff",
+    backdropFilter: "none",
+    borderBottom: "none",
+  },
 }));
 
 const Drawer = styled(MuiDrawer)(({ theme, open }) => ({
@@ -284,6 +301,24 @@ export default function BackofficeLayout({ children }: { children: React.ReactNo
   const [stores, setStores] = useState<{ id: number, name: string }[]>([]);
   const { user, loading, error, hasPermission, isRole, activeStoreId, activeStore, setActiveStore } = useAuth();
 
+  const [quickOrderOpen, setQuickOrderOpen] = useState(false);
+  const [selectedTableForOrder, setSelectedTableForOrder] = useState<Table | null>(null);
+  const [availableTables, setAvailableTables] = useState<Table[]>([]);
+  const [fetchingTables, setFetchingTables] = useState(false);
+
+  const handleOpenQuickOrder = async () => {
+    setQuickOrderOpen(true);
+    setFetchingTables(true);
+    try {
+      const data = await restaurantService.getTables();
+      setAvailableTables(data || []);
+    } catch (e) {
+      toast.error("Failed to load tables");
+    } finally {
+      setFetchingTables(false);
+    }
+  };
+
   useEffect(() => {
     if (isRole('ADMIN')) {
       const { storeService } = require('@/services/storeService');
@@ -312,9 +347,9 @@ export default function BackofficeLayout({ children }: { children: React.ReactNo
     }
   }, [user, loading, pathname, router]);
 
-  if (loading) {
-    return <Preloader message="Verifying session..." />;
-  }
+  // if (loading) {
+  //   return <Preloader message="Verifying session..." />;
+  // }
 
   if (error) {
     return (
@@ -492,6 +527,7 @@ export default function BackofficeLayout({ children }: { children: React.ReactNo
   return (
     <Box sx={{ display: "flex", height: "100dvh", overflow: "hidden", backgroundColor: theme.palette.background.default }}>
       <CssBaseline />
+      <Toaster position="top-center" richColors closeButton duration={5000} />
       
       <AppBar position="fixed">
         <Toolbar sx={{ justifyContent: 'space-between', px: { xs: 1, sm: 2 } }}>
@@ -512,29 +548,17 @@ export default function BackofficeLayout({ children }: { children: React.ReactNo
                 width: 42, 
                 height: 42, 
                 minWidth: 42,
-                bgcolor: theme.palette.primary.main, 
+                bgcolor: 'white', 
                 borderRadius: '7px', 
                 display: 'flex', 
                 alignItems: 'center', 
                 justifyContent: 'center',
-                boxShadow: `0 8px 20px ${alpha(theme.palette.primary.main, 0.25)}`
+                boxShadow: '0 2px 10px rgba(0,0,0,0.05)',
+                border: { xs: '1.5px solid rgba(255,255,255,0.3)', md: '1.5px solid #E9762B' }
               }}>
-                <img src="/logo.png" alt="Mario Logo" style={{ width: '26px', height: '26px', objectFit: 'contain', filter: 'brightness(0) invert(1)' }} />
+                <img src="/mario_juicy_logo.png" alt="Mario Logo" style={{ width: '32px', height: '32px', objectFit: 'contain' }} />
               </Box>
-              <Typography
-                variant="h5"
-                sx={{ 
-                  color: theme.palette.primary.main, 
-                  fontWeight: 600, 
-                  fontFamily: pacifico.style.fontFamily,
-                  fontSize: '1.8rem',
-                  mt: 0.5,
-                  display: { xs: 'none', md: open ? 'block' : 'none' },
-                  transition: 'opacity 0.2s ease',
-                }}
-              >
-                Mario
-              </Typography>
+
             </Box>
 
             <Tooltip title={open ? "Close Sidebar" : "Open Sidebar"}>
@@ -563,8 +587,13 @@ export default function BackofficeLayout({ children }: { children: React.ReactNo
           </Box>
 
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
-            <IconButton sx={{ bgcolor: theme.palette.background.default, borderRadius: '7px', border: '1px solid rgba(0,0,0,0.03)' }}>
-              <NotificationsIcon sx={{ color: '#94a3b8', fontSize: 22 }} />
+            <IconButton sx={{ 
+              bgcolor: { xs: alpha('#ffffff', 0.15), md: theme.palette.background.default }, 
+              borderRadius: '7px', 
+              border: { xs: '1px solid rgba(255,255,255,0.1)', md: '1px solid rgba(0,0,0,0.03)' },
+              '&:hover': { bgcolor: { xs: alpha('#ffffff', 0.25), md: alpha(theme.palette.primary.main, 0.08) } }
+            }}>
+              <NotificationsIcon sx={{ color: { xs: '#ffffff', md: '#94a3b8' }, fontSize: 22 }} />
             </IconButton>
             
             <Box 
@@ -573,13 +602,13 @@ export default function BackofficeLayout({ children }: { children: React.ReactNo
                 display: 'flex', 
                 alignItems: 'center', 
                 gap: 1.5, 
-                bgcolor: theme.palette.background.default, 
+                bgcolor: { xs: alpha('#ffffff', 0.15), md: theme.palette.background.default }, 
                 p: 0.5, 
-                pr: 2, 
+                pr: { xs: 0.5, sm: 2 }, 
                 borderRadius: '7px', 
                 cursor: 'pointer',
-                border: '1px solid rgba(44, 24, 16, 0.05)',
-                '&:hover': { opacity: 0.9, borderColor: theme.palette.primary.main }
+                border: { xs: '1px solid rgba(255,255,255,0.1)', md: '1px solid rgba(44, 24, 16, 0.05)' },
+                '&:hover': { opacity: 0.9, borderColor: { xs: '#ffffff', md: theme.palette.primary.main } }
               }}
             >
               <Avatar 
@@ -589,7 +618,8 @@ export default function BackofficeLayout({ children }: { children: React.ReactNo
                   fontWeight: 800,
                   fontSize: '0.9rem',
                   width: 38,
-                  height: 38
+                  height: 38,
+                  border: { xs: '2px solid rgba(255,255,255,0.8)', md: 'none' }
                 }}
               >
                 {user?.username?.charAt(0).toUpperCase() || "U"}
@@ -613,12 +643,19 @@ export default function BackofficeLayout({ children }: { children: React.ReactNo
             anchorOrigin={{ horizontal: 'right', vertical: 'bottom' }}
             slotProps={{
               paper: {
-                sx: { borderRadius: '7px', mt: 1.5, minWidth: 220, p: 1, boxShadow: '0 10px 40px rgba(0,0,0,0.08)' }
+                sx: { 
+                  borderRadius: '12px', 
+                  mt: 1.5, 
+                  minWidth: { xs: 160, md: 220 }, 
+                  p: { xs: 0.5, md: 1 }, 
+                  boxShadow: '0 10px 40px rgba(0,0,0,0.08)',
+                  border: '1px solid #f1f5f9'
+                }
               }
             }}
           >
-            <MenuItem onClick={logout} sx={{ borderRadius: '7px', color: 'error.main', py: 1.5 }}>
-              <ListItemIcon><LogoutIcon sx={{ color: 'error.main' }} /></ListItemIcon>
+            <MenuItem onClick={logout} sx={{ borderRadius: '8px', color: 'error.main', py: { xs: 1, md: 1.5 }, fontSize: { xs: '0.85rem', md: '1rem' } }}>
+              <ListItemIcon sx={{ minWidth: { xs: 32, md: 40 } }}><LogoutIcon sx={{ color: 'error.main', fontSize: { xs: 18, md: 22 } }} /></ListItemIcon>
               Logout Account
             </MenuItem>
           </Menu>
@@ -661,45 +698,177 @@ export default function BackofficeLayout({ children }: { children: React.ReactNo
         <Box sx={{ height: HeaderHeight, flexShrink: 0 }} />
         <Box 
           sx={{ 
+            position: "relative",
             flexGrow: 1, 
             overflowY: "auto",
             overflowX: "hidden",
             p: { xs: 1, sm: 2, md: 3 },
-            pb: { xs: 10, md: 3 }, // Added padding at bottom for mobile navigation
+            pb: { xs: 15, md: 3 }, 
             transition: 'padding 0.3s ease',
             scrollBehavior: 'smooth',
           }}
         >
           {children}
         </Box>
-      </Box>
+        
+        {/* Mobile Bottom Navigation & FAB */}
+        {isMobile && (
+          <>
+            <Fab 
+              color="primary" 
+              aria-label="add"
+              onClick={handleOpenQuickOrder}
+              sx={{ 
+                position: 'fixed', 
+                bottom: 'calc(32px + env(safe-area-inset-bottom))', 
+                left: '50%', 
+                transform: 'translateX(-50%)', 
+                zIndex: 2001,
+                width: 60,
+                height: 60,
+                bgcolor: theme.palette.primary.main,
+                boxShadow: `0 8px 25px ${alpha(theme.palette.primary.main, 0.4)}`,
+                border: '4px solid white',
+                '&:hover': { bgcolor: theme.palette.primary.dark }
+              }}
+            >
+              <AddIcon sx={{ fontSize: 32, color: 'white' }} />
+            </Fab>
 
-      {isMobile && (
-        <Paper
-          sx={{ position: 'fixed', bottom: 0, left: 0, right: 0, zIndex: 2000, borderTop: '1px solid #f1f5f9', borderRadius: 0 }}
-          elevation={4}
+            <Paper 
+              sx={{ 
+                position: 'fixed', 
+                bottom: 0, 
+                left: 0, 
+                right: 0, 
+                zIndex: 2000, 
+                borderTop: '1px solid #f1f5f9', 
+                borderRadius: 0 
+              }} 
+              elevation={4}
+            >
+              <BottomNavigation
+                showLabels
+                value={pathname}
+                onChange={(e, val) => {
+                  if (val === 'more') {
+                    handleDrawerToggle();
+                    return;
+                  }
+                  if (val && typeof val === 'string' && val.startsWith('/')) {
+                    router.push(val);
+                  }
+                }}
+                sx={{ height: 'calc(64px + env(safe-area-inset-bottom))', pb: 'env(safe-area-inset-bottom)' }}
+              >
+                <BottomNavigationAction 
+                  label="Tables" 
+                  value="/backoffice/restaurant/tables" 
+                  icon={<TableIcon />} 
+                  onClick={() => { if (pathname === "/backoffice/restaurant/tables") window.dispatchEvent(new CustomEvent('close-dialogs')); }}
+                />
+                <BottomNavigationAction 
+                  label="Orders" 
+                  value="/backoffice/restaurant/orders" 
+                  icon={<OrdersIcon />} 
+                  onClick={() => { if (pathname === "/backoffice/restaurant/orders") window.dispatchEvent(new CustomEvent('close-dialogs')); }}
+                  sx={{ mr: 4 }}
+                />
+                <BottomNavigationAction 
+                  label="Parcel" 
+                  value="/backoffice/restaurant/takeaway" 
+                  icon={<ShoppingBagIcon />} 
+                  onClick={() => { if (pathname === "/backoffice/restaurant/takeaway") window.dispatchEvent(new CustomEvent('close-dialogs')); }}
+                  sx={{ ml: 4 }}
+                />
+                <BottomNavigationAction 
+                  label="More" 
+                  value="more" 
+                  icon={<MenuIcon />} 
+                  onClick={handleDrawerToggle} 
+                />
+              </BottomNavigation>
+            </Paper>
+          </>
+        )}
+
+        {/* Quick Table Selection Dialog */}
+        <Dialog 
+          open={quickOrderOpen} 
+          onClose={() => setQuickOrderOpen(false)}
+          maxWidth="sm"
+          fullWidth
+          slotProps={{ paper: { sx: { borderRadius: '24px', p: 1 } } }}
         >
-          <BottomNavigation
-            showLabels
-            value={pathname}
-            onChange={(e, val) => {
-              if (val === 'more') {
-                handleDrawerToggle();
-                return;
-              }
-              if (val && typeof val === 'string' && val.startsWith('/')) {
-                router.push(val);
-              }
-            }}
-            sx={{ height: 'calc(64px + env(safe-area-inset-bottom))', pb: 'env(safe-area-inset-bottom)' }}
-          >
-            <BottomNavigationAction label="Tables" value="/backoffice/restaurant/tables" icon={<TableIcon />} />
-            <BottomNavigationAction label="Orders" value="/backoffice/restaurant/orders" icon={<OrdersIcon />} />
-            <BottomNavigationAction label="Billing" value="/backoffice/billing" icon={<ReceiptIcon />} />
-            <BottomNavigationAction label="More" value="more" icon={<MenuIcon />} onClick={handleDrawerToggle} />
-          </BottomNavigation>
-        </Paper>
-      )}
+          <DialogTitle sx={{ fontWeight: 900, pb: 1 }}>Select Table</DialogTitle>
+          <DialogContent>
+            <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
+              Choose an available table to start a new order.
+            </Typography>
+            
+            {fetchingTables ? (
+              <Box sx={{ display: 'flex', justifyContent: 'center', py: 4 }}><CircularProgress /></Box>
+            ) : (
+              <Grid container spacing={1.5}>
+                {availableTables.map((table) => {
+                  const isFull = (table.current_occupancy || 0) >= table.capacity;
+                  return (
+                    <Grid size={{ xs: 4 }} key={table.id}>
+                      <Paper
+                        onClick={() => {
+                          if (!isFull) {
+                            setSelectedTableForOrder(table);
+                            setQuickOrderOpen(false);
+                          } else {
+                            toast.info("Table Full", { description: `Table ${table.number} is already at full capacity.` });
+                          }
+                        }}
+                        sx={{
+                          p: 2,
+                          borderRadius: '16px',
+                          border: '2px solid',
+                          borderColor: isFull ? '#f1f5f9' : (table.status === 'VACANT' ? '#4caf50' : '#e9762b'),
+                          bgcolor: isFull ? '#f8fafc' : 'white',
+                          textAlign: 'center',
+                          cursor: isFull ? 'not-allowed' : 'pointer',
+                          opacity: isFull ? 0.6 : 1,
+                          transition: 'all 0.2s',
+                          '&:hover': !isFull ? { borderColor: 'primary.main', transform: 'translateY(-2px)' } : {}
+                        }}
+                      >
+                        <Typography sx={{ fontWeight: 900, fontSize: '1.1rem' }}>{table.number}</Typography>
+                        <Typography variant="caption" sx={{ fontWeight: 700, color: 'text.secondary' }}>
+                          {table.current_occupancy || 0}/{table.capacity}
+                        </Typography>
+                      </Paper>
+                    </Grid>
+                  );
+                })}
+                {availableTables.length === 0 && (
+                  <Grid size={{ xs: 12 }}>
+                    <Typography sx={{ textAlign: 'center', py: 4, color: 'text.secondary' }}>No tables available</Typography>
+                  </Grid>
+                )}
+              </Grid>
+            )}
+          </DialogContent>
+          <DialogActions sx={{ p: 2, pt: 0 }}>
+            <Button fullWidth onClick={() => setQuickOrderOpen(false)} sx={{ fontWeight: 800 }}>CANCEL</Button>
+          </DialogActions>
+        </Dialog>
+
+        {/* Actual Order Dialog */}
+        {selectedTableForOrder && (
+          <OrderDialog 
+            open={Boolean(selectedTableForOrder)} 
+            onClose={() => setSelectedTableForOrder(null)} 
+            table={selectedTableForOrder} 
+            onOrderUpdated={() => {
+              // Refresh logic if needed
+            }} 
+          />
+        )}
+      </Box>
     </Box>
   );
 }

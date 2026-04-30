@@ -1,9 +1,16 @@
-const BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'https://mario-api.ntoric.com/api';
+const getBaseUrl = () => {
+  let url = process.env.NEXT_PUBLIC_API_URL || 'https://mario-api.ntoric.com/api';
+  if (typeof window !== 'undefined' && window.location.hostname !== 'localhost' && url.includes('localhost')) {
+    return url.replace('localhost', window.location.hostname);
+  }
+  return url;
+};
 
 /**
  * Raw fetch wrapper to handle headers and logging
  */
 export const rawFetch = async (endpoint: string, options: RequestInit = {}) => {
+  const baseUrl = getBaseUrl();
   const token = typeof window !== 'undefined' ? localStorage.getItem('access_token') : null;
   const storeId = typeof window !== 'undefined' ? localStorage.getItem('activeStoreId') : null;
 
@@ -16,7 +23,7 @@ export const rawFetch = async (endpoint: string, options: RequestInit = {}) => {
     ...options.headers,
   } as Record<string, string>;
 
-  const url = `${BASE_URL}${endpoint}`;
+  const url = endpoint.startsWith('http') ? endpoint : `${baseUrl}${endpoint}`;
   
   try {
     const response = await fetch(url, {

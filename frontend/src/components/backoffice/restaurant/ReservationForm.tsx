@@ -67,7 +67,8 @@ const ReservationForm: React.FC<ReservationFormProps> = ({
 
   return (
     <Box sx={{ 
-      position: 'absolute', inset: 0, bgcolor: '#fdfdfd', zIndex: 100, display: 'flex', flexDirection: 'column',
+      flexGrow: 1, bgcolor: '#fdfdfd', display: 'flex', flexDirection: 'column',
+      minHeight: '100%',
       animation: 'slideInRight 0.2s ease-out',
       '@keyframes slideInRight': { from: { transform: 'translateX(100%)' }, to: { transform: 'translateX(0)' } }
     }}>

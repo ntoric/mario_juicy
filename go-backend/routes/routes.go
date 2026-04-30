@@ -3,11 +3,12 @@ package routes
 import (
 	"mario-backend/controllers"
 	"mario-backend/middleware"
+	"mario-backend/websocket"
 
 	"github.com/gin-gonic/gin"
 )
 
-func SetupRoutes(r *gin.Engine) {
+func SetupRoutes(r *gin.Engine, hub *websocket.Hub) {
 	api := r.Group("/api")
 	{
 		users := api.Group("/users")
@@ -29,14 +30,24 @@ func SetupRoutes(r *gin.Engine) {
 			stores.GET("/", controllers.GetStores)
 			stores.GET("/:id/", controllers.GetStore)
 			stores.POST("/", middleware.AuthMiddleware(), controllers.CreateStore)
-			stores.PUT("/:id/", middleware.AuthMiddleware(), controllers.UpdateStore)
+			stores.PATCH("/:id/", middleware.AuthMiddleware(), controllers.UpdateStore)
+			stores.DELETE("/:id/", middleware.AuthMiddleware(), controllers.DeleteStore)
 		}
 
 		catalogs := api.Group("/catalogs")
 		{
 			catalogs.GET("/categories/", controllers.GetCategories)
+			catalogs.POST("/categories/", middleware.AuthMiddleware(), controllers.CreateCategory)
+			catalogs.PATCH("/categories/:id/", middleware.AuthMiddleware(), controllers.UpdateCategory)
+			catalogs.DELETE("/categories/:id/", middleware.AuthMiddleware(), controllers.DeleteCategory)
+			catalogs.POST("/categories/:id/toggle_status/", middleware.AuthMiddleware(), controllers.ToggleCategoryStatus)
+
 			catalogs.GET("/items/", controllers.GetItems)
 			catalogs.GET("/items/:id/", controllers.GetItem)
+			catalogs.POST("/items/", middleware.AuthMiddleware(), controllers.CreateItem)
+			catalogs.PATCH("/items/:id/", middleware.AuthMiddleware(), controllers.UpdateItem)
+			catalogs.DELETE("/items/:id/", middleware.AuthMiddleware(), controllers.DeleteItem)
+			catalogs.POST("/items/:id/toggle_status/", middleware.AuthMiddleware(), controllers.ToggleItemStatus)
 		}
 
 		restaurants := api.Group("/restaurants")
@@ -103,5 +114,7 @@ func SetupRoutes(r *gin.Engine) {
 		{
 			reports.GET("/dashboard/", middleware.AuthMiddleware(), controllers.GetDashboardStats)
 		}
+
+		api.GET("/ws", websocket.ServeWS(hub))
 	}
 }

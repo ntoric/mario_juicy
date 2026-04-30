@@ -64,13 +64,8 @@ export default function BackofficeRouteLayout({
   }
 
   return (
-    <AppRouterCacheProvider>
-      <ThemeProvider theme={backofficeTheme}>
-        <CssBaseline />
-        <BackofficeLayout>
-          {children}
-        </BackofficeLayout>
-      </ThemeProvider>
-    </AppRouterCacheProvider>
+    <BackofficeLayout>
+      {children}
+    </BackofficeLayout>
   );
 }

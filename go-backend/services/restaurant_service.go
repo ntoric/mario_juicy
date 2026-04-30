@@ -4,8 +4,11 @@ import (
 	"fmt"
 	"mario-backend/config"
 	"mario-backend/models"
+	"mario-backend/websocket"
 	"math/rand"
 	"time"
+
+	"github.com/gin-gonic/gin"
 )
 
 var TerminalStatuses = []string{"PAID", "CANCELLED", "COMPLETED", "RETURNED", "REJECTED"}
@@ -16,11 +19,7 @@ func UpdateTableStatus(tableID uint) error {
 		return err
 	}
 
-	var totalPersons int64
-	config.DB.Model(&models.Order{}).
-		Where("table_id = ? AND status NOT IN ?", tableID, TerminalStatuses).
-		Select("SUM(number_of_persons)").
-		Row().Scan(&totalPersons)
+	totalPersons := GetTableCurrentOccupancy(tableID, 0)
 
 	newStatus := "VACANT"
 	if totalPersons > 0 {
@@ -45,7 +44,27 @@ func UpdateTableStatus(tableID uint) error {
 		}
 	}
 
-	return config.DB.Model(&table).Update("status", newStatus).Error
+	if err := config.DB.Model(&table).Update("status", newStatus).Error; err != nil {
+		return err
+	}
+
+	websocket.Broadcast("TABLE_UPDATED", gin.H{
+		"table_id": tableID,
+		"status":   newStatus,
+	})
+
+	return nil
+}
+
+func GetTableCurrentOccupancy(tableID uint, excludeOrderID uint) int {
+	var totalPersons int64
+	query := config.DB.Model(&models.Order{}).
+		Where("table_id = ? AND status NOT IN ?", tableID, TerminalStatuses)
+	if excludeOrderID > 0 {
+		query = query.Where("id != ?", excludeOrderID)
+	}
+	query.Select("COALESCE(SUM(number_of_persons), 0)").Row().Scan(&totalPersons)
+	return int(totalPersons)
 }
 
 func GenerateInvoiceNumber() string {
@@ -62,7 +81,16 @@ func UpdateOrderTotal(orderID uint) error {
 		Select("SUM(price * quantity)").
 		Row().Scan(&total)
 	
-	return config.DB.Model(&models.Order{}).Where("id = ?", orderID).Update("total_amount", total).Error
+	if err := config.DB.Model(&models.Order{}).Where("id = ?", orderID).Update("total_amount", total).Error; err != nil {
+		return err
+	}
+
+	websocket.Broadcast("ORDER_UPDATED", gin.H{
+		"order_id":     orderID,
+		"total_amount": total,
+	})
+
+	return nil
 }
 func SafeUint(ptr *uint) uint {
 	if ptr == nil {

@@ -163,7 +163,7 @@ export default function SettlementDialog({ open, onClose, order, onSuccess }: Se
       position: 'absolute',
       inset: 0,
       bgcolor: '#fdfdfd',
-      zIndex: 200,
+      zIndex: 1200,
       display: 'flex', 
       flexDirection: 'column',
       animation: 'slideInRight 0.2s ease-out',
@@ -180,7 +180,7 @@ export default function SettlementDialog({ open, onClose, order, onSuccess }: Se
         <Typography variant="h6" sx={{ fontWeight: 900 }}>Settle Order #{order.id}</Typography>
       </Box>
 
-      <Box sx={{ flexGrow: 1, overflowY: 'auto', p: { xs: 2, md: 3 }, bgcolor: '#f9f9f9' }}>
+      <Box sx={{ flexGrow: 1, overflowY: 'auto', p: { xs: 2, md: 3 }, pb: { xs: 15, md: 3 }, bgcolor: '#f9f9f9' }}>
         <Grid container spacing={3}>
           {/* Left Column: Order Details */}
           <Grid size={{ xs: 12, lg: 7, xl: 8 }}>

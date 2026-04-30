@@ -9,6 +9,9 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"go.uber.org/zap"
+	"path/filepath"
+	"strconv"
+	"time"
 )
 
 type CategoryResponse struct {
@@ -124,4 +127,227 @@ func GetItem(c *gin.Context) {
 		UpdatedAt:    item.UpdatedAt.Format("2006-01-02T15:04:05.999Z07:00"),
 	}
 	utils.SuccessResponse(c, http.StatusOK, response)
+}
+
+func CreateCategory(c *gin.Context) {
+	name := c.PostForm("name")
+	isEnabledStr := c.PostForm("is_enabled")
+	isEnabled := isEnabledStr == "true"
+
+	category := models.Category{
+		Name:      name,
+		IsEnabled: isEnabled,
+	}
+
+	// Handle Image Upload
+	file, err := c.FormFile("image")
+	if err == nil {
+		filename := fmt.Sprintf("%d_%s", time.Now().Unix(), filepath.Base(file.Filename))
+		path := filepath.Join("media", "categories", filename)
+		if err := c.SaveUploadedFile(file, path); err == nil {
+			category.Image = "/" + path
+		}
+	}
+
+	// Set StoreID from header
+	storeIDStr := c.GetHeader("X-Store-ID")
+	if storeIDStr != "" {
+		id, _ := strconv.ParseUint(storeIDStr, 10, 32)
+		uID := uint(id)
+		category.StoreID = &uID
+	}
+
+	if err := config.DB.Create(&category).Error; err != nil {
+		utils.ErrorResponse(c, http.StatusInternalServerError, "Failed to create category")
+		return
+	}
+
+	utils.SuccessResponse(c, http.StatusCreated, category)
+}
+
+func UpdateCategory(c *gin.Context) {
+	id := c.Param("id")
+	var category models.Category
+	if err := config.DB.First(&category, id).Error; err != nil {
+		utils.ErrorResponse(c, http.StatusNotFound, "Category not found")
+		return
+	}
+
+	name := c.PostForm("name")
+	if name != "" {
+		category.Name = name
+	}
+	
+	isEnabledStr := c.PostForm("is_enabled")
+	if isEnabledStr != "" {
+		category.IsEnabled = isEnabledStr == "true"
+	}
+
+	// Handle Image Upload
+	file, err := c.FormFile("image")
+	if err == nil {
+		filename := fmt.Sprintf("%d_%s", time.Now().Unix(), filepath.Base(file.Filename))
+		path := filepath.Join("media", "categories", filename)
+		if err := c.SaveUploadedFile(file, path); err == nil {
+			category.Image = "/" + path
+		}
+	}
+
+	if err := config.DB.Save(&category).Error; err != nil {
+		utils.ErrorResponse(c, http.StatusInternalServerError, "Failed to update category")
+		return
+	}
+
+	utils.SuccessResponse(c, http.StatusOK, category)
+}
+
+func DeleteCategory(c *gin.Context) {
+	id := c.Param("id")
+	if err := config.DB.Delete(&models.Category{}, id).Error; err != nil {
+		utils.ErrorResponse(c, http.StatusInternalServerError, "Failed to delete category")
+		return
+	}
+	utils.SuccessResponse(c, http.StatusOK, gin.H{"message": "Category deleted"})
+}
+
+func CreateItem(c *gin.Context) {
+	name := c.PostForm("name")
+	code := c.PostForm("code")
+	description := c.PostForm("description")
+	priceStr := c.PostForm("price")
+	categoryIDStr := c.PostForm("category")
+	isEnabledStr := c.PostForm("is_enabled")
+
+	price, _ := strconv.ParseFloat(priceStr, 64)
+	isEnabled := isEnabledStr == "true"
+
+	item := models.Item{
+		Name:        name,
+		Code:        code,
+		Description: description,
+		Price:       price,
+		IsEnabled:   isEnabled,
+	}
+
+	if categoryIDStr != "" {
+		catID, _ := strconv.ParseUint(categoryIDStr, 10, 32)
+		uCatID := uint(catID)
+		item.CategoryID = &uCatID
+	}
+
+	// Handle Image Upload
+	file, err := c.FormFile("image")
+	if err == nil {
+		filename := fmt.Sprintf("%d_%s", time.Now().Unix(), filepath.Base(file.Filename))
+		path := filepath.Join("media", "items", filename)
+		if err := c.SaveUploadedFile(file, path); err == nil {
+			item.Image = "/" + path
+		}
+	}
+
+	// Set StoreID from header
+	storeIDStr := c.GetHeader("X-Store-ID")
+	if storeIDStr != "" {
+		id, _ := strconv.ParseUint(storeIDStr, 10, 32)
+		uID := uint(id)
+		item.StoreID = &uID
+	}
+
+	if err := config.DB.Create(&item).Error; err != nil {
+		utils.ErrorResponse(c, http.StatusInternalServerError, "Failed to create item")
+		return
+	}
+
+	utils.SuccessResponse(c, http.StatusCreated, item)
+}
+
+func UpdateItem(c *gin.Context) {
+	id := c.Param("id")
+	var item models.Item
+	if err := config.DB.First(&item, id).Error; err != nil {
+		utils.ErrorResponse(c, http.StatusNotFound, "Item not found")
+		return
+	}
+
+	if name := c.PostForm("name"); name != "" {
+		item.Name = name
+	}
+	if code := c.PostForm("code"); code != "" {
+		item.Code = code
+	}
+	if description := c.PostForm("description"); description != "" {
+		item.Description = description
+	}
+	if priceStr := c.PostForm("price"); priceStr != "" {
+		price, _ := strconv.ParseFloat(priceStr, 64)
+		item.Price = price
+	}
+	if categoryIDStr := c.PostForm("category"); categoryIDStr != "" {
+		catID, _ := strconv.ParseUint(categoryIDStr, 10, 32)
+		uCatID := uint(catID)
+		item.CategoryID = &uCatID
+	}
+	if isEnabledStr := c.PostForm("is_enabled"); isEnabledStr != "" {
+		item.IsEnabled = isEnabledStr == "true"
+	}
+
+	// Handle Image Upload
+	file, err := c.FormFile("image")
+	if err == nil {
+		filename := fmt.Sprintf("%d_%s", time.Now().Unix(), filepath.Base(file.Filename))
+		path := filepath.Join("media", "items", filename)
+		if err := c.SaveUploadedFile(file, path); err == nil {
+			item.Image = "/" + path
+		}
+	}
+
+	if err := config.DB.Save(&item).Error; err != nil {
+		utils.ErrorResponse(c, http.StatusInternalServerError, "Failed to update item")
+		return
+	}
+
+	utils.SuccessResponse(c, http.StatusOK, item)
+}
+
+func DeleteItem(c *gin.Context) {
+	id := c.Param("id")
+	if err := config.DB.Delete(&models.Item{}, id).Error; err != nil {
+		utils.ErrorResponse(c, http.StatusInternalServerError, "Failed to delete item")
+		return
+	}
+	utils.SuccessResponse(c, http.StatusOK, gin.H{"message": "Item deleted"})
+}
+
+func ToggleItemStatus(c *gin.Context) {
+	id := c.Param("id")
+	var item models.Item
+	if err := config.DB.First(&item, id).Error; err != nil {
+		utils.ErrorResponse(c, http.StatusNotFound, "Item not found")
+		return
+	}
+
+	item.IsEnabled = !item.IsEnabled
+	if err := config.DB.Save(&item).Error; err != nil {
+		utils.ErrorResponse(c, http.StatusInternalServerError, "Failed to toggle status")
+		return
+	}
+
+	utils.SuccessResponse(c, http.StatusOK, item)
+}
+
+func ToggleCategoryStatus(c *gin.Context) {
+	id := c.Param("id")
+	var category models.Category
+	if err := config.DB.First(&category, id).Error; err != nil {
+		utils.ErrorResponse(c, http.StatusNotFound, "Category not found")
+		return
+	}
+
+	category.IsEnabled = !category.IsEnabled
+	if err := config.DB.Save(&category).Error; err != nil {
+		utils.ErrorResponse(c, http.StatusInternalServerError, "Failed to toggle status")
+		return
+	}
+
+	utils.SuccessResponse(c, http.StatusOK, category)
 }

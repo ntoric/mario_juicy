@@ -7,28 +7,30 @@ import (
 	"mario-backend/models"
 	"mario-backend/services"
 	"mario-backend/utils"
+	"mario-backend/websocket"
 	"net/http"
+
+	"strconv"
 
 	"github.com/gin-gonic/gin"
 	"go.uber.org/zap"
 	"gorm.io/gorm"
-	"strconv"
 )
 
 type TableResponse struct {
-	ID               uint        `json:"id"`
-	Number           string      `json:"number"`
-	Capacity         int         `json:"capacity"`
-	Status           string      `json:"status"`
-	IsActive         bool        `json:"is_active"`
-	PosX             float64     `json:"pos_x"`
-	PosY             float64     `json:"pos_y"`
-	Shape            string      `json:"shape"`
-	ActiveOrder      interface{} `json:"active_order"`
+	ID               uint          `json:"id"`
+	Number           string        `json:"number"`
+	Capacity         int           `json:"capacity"`
+	Status           string        `json:"status"`
+	IsActive         bool          `json:"is_active"`
+	PosX             float64       `json:"pos_x"`
+	PosY             float64       `json:"pos_y"`
+	Shape            string        `json:"shape,omitempty"`
+	ActiveOrder      interface{}   `json:"active_order"`
 	ActiveOrders     []interface{} `json:"active_orders"`
-	CurrentOccupancy int         `json:"current_occupancy"`
-	CreatedAt        string      `json:"created_at"`
-	UpdatedAt        string      `json:"updated_at"`
+	CurrentOccupancy int           `json:"current_occupancy"`
+	CreatedAt        string        `json:"created_at"`
+	UpdatedAt        string        `json:"updated_at"`
 }
 
 func GetTables(c *gin.Context) {
@@ -74,7 +76,7 @@ func GetTables(c *gin.Context) {
 			IsActive:         t.IsActive,
 			PosX:             t.PosX,
 			PosY:             t.PosY,
-			Shape:            t.Shape,
+			Shape:            "RECT",
 			ActiveOrder:      activeOrder,
 			ActiveOrders:     activeOrdersResp,
 			CurrentOccupancy: currentOccupancy,
@@ -104,6 +106,7 @@ func CreateTable(c *gin.Context) {
 		}
 	}
 
+	table.Shape = "RECT"
 	if err := config.DB.Create(&table).Error; err != nil {
 		utils.ErrorResponse(c, http.StatusInternalServerError, err.Error())
 		return
@@ -149,7 +152,6 @@ func UpdateTablePosition(c *gin.Context) {
 	var input struct {
 		PosX  float64 `json:"pos_x"`
 		PosY  float64 `json:"pos_y"`
-		Shape string  `json:"shape"`
 	}
 	if err := c.ShouldBindJSON(&input); err != nil {
 		utils.ErrorResponse(c, http.StatusBadRequest, err.Error())
@@ -159,7 +161,6 @@ func UpdateTablePosition(c *gin.Context) {
 	if err := config.DB.Model(&models.Table{}).Where("id = ?", id).Updates(map[string]interface{}{
 		"pos_x": input.PosX,
 		"pos_y": input.PosY,
-		"shape": input.Shape,
 	}).Error; err != nil {
 		utils.ErrorResponse(c, http.StatusInternalServerError, err.Error())
 		return
@@ -186,7 +187,6 @@ func RecalculateAllTableStatuses(c *gin.Context) {
 	utils.SuccessResponse(c, http.StatusOK, gin.H{"message": "All statuses recalculated"})
 }
 
-
 type OrderItemResponse struct {
 	ID               uint        `json:"id"`
 	Order            uint        `json:"order"`
@@ -203,23 +203,23 @@ type OrderItemResponse struct {
 }
 
 type OrderResponse struct {
-	ID              uint        `json:"id"`
-	Table           *uint       `json:"table"`
-	TableNumber     string      `json:"table_number"`
-	Waiter          *uint       `json:"waiter"`
-	WaiterName      string      `json:"waiter_name"`
-	Store           uint        `json:"store"`
-	CustomerName    string      `json:"customer_name"`
-	CustomerMobile  string      `json:"customer_mobile"`
-	NumberOfPersons int         `json:"number_of_persons"`
-	Status          string      `json:"status"`
-	OrderType       string      `json:"order_type"`
-	TotalAmount     string      `json:"total_amount"`
-	Notes           string      `json:"notes"`
+	ID              uint                `json:"id"`
+	Table           *uint               `json:"table"`
+	TableNumber     string              `json:"table_number"`
+	Waiter          *uint               `json:"waiter"`
+	WaiterName      string              `json:"waiter_name"`
+	Store           uint                `json:"store"`
+	CustomerName    string              `json:"customer_name"`
+	CustomerMobile  string              `json:"customer_mobile"`
+	NumberOfPersons int                 `json:"number_of_persons"`
+	Status          string              `json:"status"`
+	OrderType       string              `json:"order_type"`
+	TotalAmount     string              `json:"total_amount"`
+	Notes           string              `json:"notes"`
 	Items           []OrderItemResponse `json:"items"`
-	Invoice         interface{} `json:"invoice"`
-	CreatedAt       string      `json:"created_at"`
-	UpdatedAt       string      `json:"updated_at"`
+	Invoice         interface{}         `json:"invoice"`
+	CreatedAt       string              `json:"created_at"`
+	UpdatedAt       string              `json:"updated_at"`
 }
 
 func GetOrders(c *gin.Context) {
@@ -313,14 +313,20 @@ func MapOrdersToResponse(orders []models.Order) []OrderResponse {
 	return response
 }
 
-
 func GetPendingSettlements(c *gin.Context) {
 	var orders []models.Order
 	storeID := c.Query("store_id")
 
-	// Orders without invoices (left join checking for null invoice ID)
+	// Filter logic:
+	// 1. DINE_IN: Show if COMPLETED OR has an Invoice (Checkout)
+	// 2. TAKE_AWAY: Show only if READY (Ready to pickup)
+	// 3. Always show CANCELLED for the cancelled tab
 	query := config.DB.Preload("Table").Preload("Waiter").Preload("Invoice").Preload("Items.Item").
-		Where("restaurants_order.status IN ?", []string{"READY", "SERVED", "COMPLETED", "CANCELLED"})
+		Where(`
+			(restaurants_order.order_type = 'DINE_IN' AND restaurants_order.status = 'COMPLETED' )
+			OR (restaurants_order.order_type = 'TAKE_AWAY' AND restaurants_order.status = 'READY')
+			OR restaurants_order.status = 'CANCELLED'
+		`)
 
 	if storeID != "" {
 		query = query.Where("restaurants_order.store_id = ?", storeID)
@@ -329,7 +335,6 @@ func GetPendingSettlements(c *gin.Context) {
 	query.Find(&orders)
 	utils.SuccessResponse(c, http.StatusOK, MapOrdersToResponse(orders))
 }
-
 
 func CreateOrder(c *gin.Context) {
 	var order models.Order
@@ -355,6 +360,18 @@ func CreateOrder(c *gin.Context) {
 		}
 	}
 
+	// Capacity Check
+	if order.TableID != nil && order.OrderType == "DINE_IN" {
+		var table models.Table
+		if err := config.DB.First(&table, *order.TableID).Error; err == nil {
+			currentOccupancy := services.GetTableCurrentOccupancy(*order.TableID, 0)
+			if currentOccupancy+order.NumberOfPersons > table.Capacity {
+				utils.ErrorResponse(c, http.StatusBadRequest, fmt.Sprintf("Table capacity exceeded. Available: %d, Requested: %d", table.Capacity-currentOccupancy, order.NumberOfPersons))
+				return
+			}
+		}
+	}
+
 	err := config.DB.Transaction(func(tx *gorm.DB) error {
 		if err := tx.Create(&order).Error; err != nil {
 			return err
@@ -376,6 +393,7 @@ func CreateOrder(c *gin.Context) {
 	// Re-fetch with preloads for complete response
 	config.DB.Preload("Table").Preload("Items.Item").Preload("Waiter").Preload("Invoice").First(&order, order.ID)
 
+	websocket.Broadcast("ORDER_CREATED", MapOrderToResponse(order))
 	utils.SuccessResponse(c, http.StatusCreated, MapOrderToResponse(order))
 }
 
@@ -433,6 +451,30 @@ func UpdateOrder(c *gin.Context) {
 		return
 	}
 
+	// Capacity Check if persons updated
+	if order.TableID != nil && order.OrderType == "DINE_IN" {
+		if val, ok := input["number_of_persons"]; ok {
+			var newPersons int
+			switch v := val.(type) {
+			case float64:
+				newPersons = int(v)
+			case int:
+				newPersons = v
+			}
+
+			if newPersons > 0 {
+				var table models.Table
+				if err := config.DB.First(&table, *order.TableID).Error; err == nil {
+					currentOccupancy := services.GetTableCurrentOccupancy(*order.TableID, order.ID)
+					if currentOccupancy+newPersons > table.Capacity {
+						utils.ErrorResponse(c, http.StatusBadRequest, fmt.Sprintf("Table capacity exceeded. Available: %d, Requested: %d", table.Capacity-currentOccupancy, newPersons))
+						return
+					}
+				}
+			}
+		}
+	}
+
 	if err := config.DB.Model(&order).Updates(input).Error; err != nil {
 		utils.ErrorResponse(c, http.StatusInternalServerError, err.Error())
 		return
@@ -460,6 +502,7 @@ func UpdateOrder(c *gin.Context) {
 		return
 	}
 
+	websocket.Broadcast("ORDER_UPDATED", MapOrderToResponse(order))
 	utils.SuccessResponse(c, http.StatusOK, MapOrderToResponse(order))
 }
 
@@ -496,7 +539,7 @@ func SendToKitchen(c *gin.Context) {
 	// Logic from Django: If kitchen step enabled ? AWAITING : PREPARING
 	// For simplicity, let's go to PREPARING for now or check store
 	status := "PREPARING"
-	
+
 	err := config.DB.Model(&models.OrderItem{}).Where("order_id = ? AND status = 'ORDERED'", order.ID).Update("status", status).Error
 	if err != nil {
 		utils.ErrorResponse(c, http.StatusInternalServerError, err.Error())
@@ -507,6 +550,7 @@ func SendToKitchen(c *gin.Context) {
 		config.DB.Model(&order).Update("status", status)
 	}
 
+	websocket.Broadcast("ORDER_UPDATED", gin.H{"id": order.ID, "status": status})
 	utils.SuccessResponse(c, http.StatusOK, gin.H{"message": "Sent to kitchen"})
 }
 
@@ -531,6 +575,7 @@ func ServeAllReady(c *gin.Context) {
 		config.DB.Model(&order).Update("status", "SERVED")
 	}
 
+	websocket.Broadcast("ORDER_UPDATED", gin.H{"id": order.ID, "status": "SERVED"})
 	utils.SuccessResponse(c, http.StatusOK, gin.H{"message": "All items served"})
 }
 
@@ -579,6 +624,18 @@ func ChangeOrderTable(c *gin.Context) {
 		return
 	}
 
+	// Capacity Check on Target Table
+	if order.OrderType == "DINE_IN" {
+		var targetTable models.Table
+		if err := config.DB.First(&targetTable, input.TargetTableID).Error; err == nil {
+			currentOccupancy := services.GetTableCurrentOccupancy(input.TargetTableID, order.ID)
+			if currentOccupancy+order.NumberOfPersons > targetTable.Capacity {
+				utils.ErrorResponse(c, http.StatusBadRequest, fmt.Sprintf("Target table capacity exceeded. Available: %d, Required: %d", targetTable.Capacity-currentOccupancy, order.NumberOfPersons))
+				return
+			}
+		}
+	}
+
 	oldTableID := order.TableID
 	if err := config.DB.Model(&order).Update("table_id", input.TargetTableID).Error; err != nil {
 		utils.ErrorResponse(c, http.StatusInternalServerError, err.Error())
@@ -596,7 +653,7 @@ func ChangeOrderTable(c *gin.Context) {
 func RecalculateOrderTotal(c *gin.Context) {
 	idStr := c.Param("id")
 	id, _ := strconv.ParseUint(idStr, 10, 32)
-	
+
 	if err := services.UpdateOrderTotal(uint(id)); err != nil {
 		utils.ErrorResponse(c, http.StatusInternalServerError, err.Error())
 		return
@@ -700,7 +757,7 @@ func Checkout(c *gin.Context) {
 		existingInvoice.TaxDetails = string(taxDetailsJSON)
 		existingInvoice.TotalAmount = totalAmount
 		existingInvoice.PaymentMethod = input.PaymentMethod
-		
+
 		if err := config.DB.Save(&existingInvoice).Error; err != nil {
 			utils.Error("Failed to update invoice", zap.Error(err), zap.Uint("orderID", order.ID))
 			utils.ErrorResponse(c, http.StatusInternalServerError, err.Error())
@@ -721,7 +778,7 @@ func Checkout(c *gin.Context) {
 			WaiterID:      order.WaiterID,
 		}
 
-	if err := config.DB.Create(&invoice).Error; err != nil {
+		if err := config.DB.Create(&invoice).Error; err != nil {
 			utils.Error("Failed to create invoice", zap.Error(err), zap.Uint("orderID", order.ID))
 			utils.ErrorResponse(c, http.StatusInternalServerError, err.Error())
 			return
@@ -743,7 +800,7 @@ func Checkout(c *gin.Context) {
 			updates["notes"] = newNotes
 		}
 		config.DB.Model(&order).Updates(updates)
-		
+
 		config.DB.Model(&models.OrderItem{}).Where("order_id = ? AND status NOT IN ?", order.ID, []string{"CANCELLED", "REJECTED"}).Update("status", "SERVED")
 		if order.TableID != nil {
 			services.UpdateTableStatus(*order.TableID)
@@ -757,6 +814,7 @@ func Checkout(c *gin.Context) {
 	}
 
 	utils.Info("Checkout successful", zap.Uint("orderID", order.ID), zap.String("invoice", invoice.InvoiceNumber), zap.Float64("total", invoice.TotalAmount))
+	websocket.Broadcast("ORDER_CHECKOUT", MapInvoiceToResponse(invoice))
 	utils.SuccessResponse(c, http.StatusCreated, MapInvoiceToResponse(invoice))
 }
 
@@ -863,7 +921,7 @@ func DeleteOrderItem(c *gin.Context) {
 func GetKitchenItems(c *gin.Context) {
 	var items []models.OrderItem
 	storeID := c.Query("store_id")
-	
+
 	query := config.DB.Preload("Item").Preload("Order.Table").
 		Joins("JOIN restaurants_order ON restaurants_order.id = restaurants_orderitem.order_id").
 		Where("restaurants_orderitem.status IN ?", []string{"AWAITING", "PREPARING", "READY"})
@@ -890,6 +948,7 @@ func AttendItem(c *gin.Context) {
 		utils.ErrorResponse(c, http.StatusInternalServerError, err.Error())
 		return
 	}
+	websocket.Broadcast("KITCHEN_UPDATED", gin.H{"item_id": id, "status": "PREPARING"})
 	utils.SuccessResponse(c, http.StatusOK, gin.H{"message": "Item attending"})
 }
 
@@ -899,6 +958,7 @@ func ReadyItem(c *gin.Context) {
 		utils.ErrorResponse(c, http.StatusInternalServerError, err.Error())
 		return
 	}
+	websocket.Broadcast("KITCHEN_UPDATED", gin.H{"item_id": id, "status": "READY"})
 	utils.SuccessResponse(c, http.StatusOK, gin.H{"message": "Item ready"})
 }
 
@@ -916,6 +976,6 @@ func RejectItem(c *gin.Context) {
 		utils.ErrorResponse(c, http.StatusInternalServerError, err.Error())
 		return
 	}
+	websocket.Broadcast("KITCHEN_UPDATED", gin.H{"item_id": id, "status": "REJECTED"})
 	utils.SuccessResponse(c, http.StatusOK, gin.H{"message": "Item rejected"})
 }
-

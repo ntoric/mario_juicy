@@ -218,7 +218,8 @@ export default function CategoryPage() {
   if (view === 'create' || view === 'edit') {
     return (
       <Box sx={{ 
-        position: 'absolute', inset: 0, bgcolor: '#fdfdfd', zIndex: 100, display: 'flex', flexDirection: 'column',
+        flexGrow: 1, bgcolor: '#fdfdfd', display: 'flex', flexDirection: 'column',
+        minHeight: '100%',
         animation: 'slideInRight 0.2s ease-out',
         '@keyframes slideInRight': { from: { transform: 'translateX(100%)' }, to: { transform: 'translateX(0)' } }
       }}>
@@ -380,7 +381,7 @@ export default function CategoryPage() {
         </Alert>
       )}
 
-      <TableContainer component={Paper} sx={{ borderRadius: "20px", border: '1px solid #e8e4d8', overflow: "hidden", boxShadow: '0 4px 20px rgba(0,0,0,0.02)' }}>
+      <TableContainer component={Paper} sx={{ flexGrow: 1, overflowY: 'auto', borderRadius: "20px", border: '1px solid #e8e4d8', boxShadow: '0 4px 20px rgba(0,0,0,0.02)', mb: { xs: 15, md: 0 } }}>
         {loading ? (
           <Box sx={{ display: "flex", justifyContent: "center", py: 10 }}>
             <CircularProgress size={40} thickness={4} />

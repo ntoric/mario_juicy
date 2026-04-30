@@ -15,10 +15,12 @@ import {
   IconButton,
   Tooltip,
   Tab,
+  CircularProgress,
   Tabs,
   useTheme,
   useMediaQuery,
   alpha,
+  Drawer,
 } from '@mui/material';
 import {
   Refresh as RefreshIcon,
@@ -32,11 +34,10 @@ import { restaurantService, Order } from '@/services/restaurantService';
 import { OrderStatusChip } from '@/components/backoffice/restaurant/StatusChips';
 import OrderDialog from '@/components/backoffice/restaurant/OrderDialog';
 import { useAuth } from '@/hooks/useAuth';
-import Preloader from '@/components/ui/Preloader';
+import { useWebSocket } from '@/hooks/useWebSocket';
 
 const TABS = [
   { label: 'Active',   filter: (o: Order) => o.status !== 'PAID' && o.status !== 'CANCELLED' && o.status !== 'COMPLETED' },
-  { label: 'Recent',   filter: (o: Order) => o.status === 'COMPLETED' },
   { label: 'Settled',  filter: (o: Order) => o.status === 'PAID' },
   { label: 'Cancelled', filter: (o: Order) => o.status === 'CANCELLED' },
 ];
@@ -157,6 +158,7 @@ export default function LiveOrdersPage() {
   const [tab, setTab] = useState(0);
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [drawerOpen, setDrawerOpen] = useState(false);
 
   const fetchOrders = useCallback(async () => {
     setLoading(true);
@@ -174,11 +176,22 @@ export default function LiveOrdersPage() {
 
   useEffect(() => { fetchOrders(); }, [fetchOrders]);
 
+  useWebSocket('ORDER_CREATED', () => fetchOrders());
+  useWebSocket('ORDER_UPDATED', () => fetchOrders());
+  useWebSocket('TABLE_UPDATED', () => fetchOrders());
+  useWebSocket('ORDER_CHECKOUT', () => fetchOrders());
+
   useEffect(() => {
     const handleRefresh = () => fetchOrders();
     window.addEventListener('app-refresh', handleRefresh);
     return () => window.removeEventListener('app-refresh', handleRefresh);
   }, [fetchOrders]);
+
+  useEffect(() => {
+    const handleClose = () => { setDialogOpen(false); setDrawerOpen(false); };
+    window.addEventListener('close-dialogs', handleClose);
+    return () => window.removeEventListener('close-dialogs', handleClose);
+  }, []);
   
   const handleDeleteOrder = async (orderId: number) => {
     if (!window.confirm("Are you sure you want to PERMANENTLY delete this order? This will also free up the table.")) return;
@@ -194,7 +207,7 @@ export default function LiveOrdersPage() {
   const filtered = orders.filter(TABS[tab].filter);
 
   return (
-    <Box sx={{ position: 'relative', p: { xs: 1.5, md: 2 } }}>
+    <Box sx={{ position: 'relative', height: '100%', display: 'flex', flexDirection: 'column', p: { xs: 1.5, md: 2 }, overflow: 'hidden' }}>
       <Box sx={{ 
         mb: 2, 
         display: 'flex', 
@@ -229,7 +242,7 @@ export default function LiveOrdersPage() {
 
       {error && <Alert severity="error" sx={{ mb: 2 }} onClose={() => setError(null)}>{error}</Alert>}
 
-      <Paper elevation={0} sx={{ borderRadius: '7px', border: '1px solid', borderColor: 'divider', overflow: 'hidden' }}>
+      <Paper elevation={0} sx={{ borderRadius: '7px', border: '1px solid', borderColor: 'divider', overflow: 'hidden', display: 'flex', flexDirection: 'column', flexGrow: 1, minHeight: 0 }}>
         <Tabs
           value={tab}
           onChange={(_, v) => setTab(v)}
@@ -268,10 +281,10 @@ export default function LiveOrdersPage() {
           })}
         </Tabs>
 
-        <Box sx={{ p: { xs: 1.5, sm: 3 } }}>
+        <Box sx={{ p: { xs: 1.5, sm: 3 }, pb: { xs: 15, md: 3 }, flexGrow: 1, overflowY: 'auto' }}>
           {loading && orders.length === 0 ? (
-            <Box sx={{ position: 'relative', py: 12 }}>
-              <Preloader fullScreen={false} size={80} message="Syncing orders..." />
+            <Box sx={{ display: 'flex', justifyContent: 'center', py: 12 }}>
+              <CircularProgress sx={{ color: '#E9762B' }} />
             </Box>
           ) : filtered.length === 0 ? (
             <Box sx={{ py: 8, textAlign: 'center' }}>
@@ -284,7 +297,14 @@ export default function LiveOrdersPage() {
                 <Grid size={{ xs: 12, sm: 6, md: 4, lg: 3 }} key={order.id}>
                   <OrderCard
                     order={order}
-                    onClick={() => { setSelectedOrder(order); setDialogOpen(true); }}
+                    onClick={() => { 
+                      setSelectedOrder(order);
+                      if (order.status === 'PAID' || order.status === 'CANCELLED' || order.status === 'COMPLETED') {
+                        setDrawerOpen(true);
+                      } else {
+                        setDialogOpen(true);
+                      }
+                    }}
                     onDelete={() => handleDeleteOrder(order.id)}
                     showDelete={canDelete}
                   />
@@ -305,6 +325,109 @@ export default function LiveOrdersPage() {
         initialOrder={selectedOrder}
         onOrderUpdated={fetchOrders}
       />
+
+      <Drawer
+        anchor="right"
+        open={drawerOpen}
+        onClose={() => setDrawerOpen(false)}
+        slotProps={{
+          paper: {
+            sx: { width: { xs: '100%', sm: 400 }, borderRadius: { xs: 0, sm: '16px 0 0 16px' } }
+          }
+        }}
+      >
+        {selectedOrder && (
+          <Box sx={{ height: '100%', display: 'flex', flexDirection: 'column', bgcolor: '#fdfdfd' }}>
+            {/* Header */}
+            <Box sx={{ p: 3, borderBottom: '1px solid', borderColor: 'divider', bgcolor: 'white' }}>
+              <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 1 }}>
+                <Box>
+                  <Typography variant="h5" sx={{ fontWeight: 900 }}>
+                    TABLE {selectedOrder.table_number}
+                  </Typography>
+                  <Typography variant="caption" sx={{ fontWeight: 700, color: 'text.secondary', display: 'block' }}>
+                    {new Date(selectedOrder.created_at).toLocaleString([], { dateStyle: 'medium', timeStyle: 'short' })}
+                  </Typography>
+                  <Typography variant="caption" sx={{ fontWeight: 600, color: 'text.disabled' }}>
+                    Order #{selectedOrder.id}
+                  </Typography>
+                </Box>
+                <IconButton onClick={() => setDrawerOpen(false)} size="small">
+                  <ChevronRightIcon />
+                </IconButton>
+              </Box>
+              <OrderStatusChip status={selectedOrder.status} orderType={selectedOrder.order_type} />
+            </Box>
+
+            {/* Customer & Payment Details */}
+            {(selectedOrder.customer_name || selectedOrder.customer_mobile || selectedOrder.invoice?.payment_method) && (
+              <Box sx={{ px: 3, py: 2, bgcolor: alpha(theme.palette.primary.main, 0.02), borderBottom: '1px solid', borderColor: 'divider' }}>
+                <Grid container spacing={2}>
+                  {(selectedOrder.customer_name || selectedOrder.customer_mobile) && (
+                    <Grid size={{ xs: selectedOrder.invoice?.payment_method ? 6 : 12 }}>
+                      <Typography variant="overline" sx={{ fontWeight: 800, color: 'text.disabled' }}>Customer</Typography>
+                      {selectedOrder.customer_name && (
+                        <Typography variant="body2" sx={{ fontWeight: 700 }}>{selectedOrder.customer_name}</Typography>
+                      )}
+                      {selectedOrder.customer_mobile && (
+                        <Typography variant="caption" sx={{ fontWeight: 600, color: 'text.secondary', display: 'block' }}>{selectedOrder.customer_mobile}</Typography>
+                      )}
+                    </Grid>
+                  )}
+                  {selectedOrder.invoice?.payment_method && (
+                    <Grid size={{ xs: selectedOrder.customer_name ? 6 : 12 }}>
+                      <Typography variant="overline" sx={{ fontWeight: 800, color: 'text.disabled' }}>Payment</Typography>
+                      <Typography variant="body2" sx={{ fontWeight: 700, color: 'success.main' }}>
+                        {selectedOrder.invoice.payment_method}
+                      </Typography>
+                      <Typography variant="caption" sx={{ fontWeight: 600, color: 'text.secondary' }}>
+                        {selectedOrder.invoice.invoice_number}
+                      </Typography>
+                    </Grid>
+                  )}
+                </Grid>
+              </Box>
+            )}
+
+            {/* Items Section - SCROLLABLE */}
+            <Box sx={{ flexGrow: 1, overflowY: 'auto', p: 3 }}>
+              <Typography variant="overline" sx={{ fontWeight: 800, color: 'text.disabled', mb: 1, display: 'block' }}>Items</Typography>
+              <Stack spacing={2}>
+                {(selectedOrder.items || []).map((item, idx) => (
+                  <Box key={item.id || idx} sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <Box sx={{ flexGrow: 1 }}>
+                      <Typography variant="body2" sx={{ fontWeight: 800 }}>{item.item_details?.name || 'Unknown Item'}</Typography>
+                      <Typography variant="caption" sx={{ color: 'text.secondary', fontWeight: 600 }}>
+                        {item.quantity} × ₹{parseFloat(item.price).toFixed(2)}
+                      </Typography>
+                    </Box>
+                    <Typography variant="body2" sx={{ fontWeight: 900 }}>
+                      ₹{(item.quantity * parseFloat(item.price)).toFixed(2)}
+                    </Typography>
+                  </Box>
+                ))}
+              </Stack>
+            </Box>
+
+            {/* Footer */}
+            <Box sx={{ p: 3, pb: { xs: 'calc(80px + env(safe-area-inset-bottom))', sm: 3 }, borderTop: '2px dashed', borderColor: 'divider', bgcolor: 'white' }}>
+              <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+                <Typography variant="h6" sx={{ fontWeight: 900 }}>Total Amount</Typography>
+                <Typography variant="h5" sx={{ fontWeight: 950, color: 'primary.main' }}>
+                  ₹{parseFloat(selectedOrder.total_amount).toFixed(2)}
+                </Typography>
+              </Box>
+              
+              {selectedOrder.notes && (
+                <Box sx={{ p: 2, bgcolor: 'action.hover', borderRadius: '8px' }}>
+                  <Typography variant="caption" sx={{ fontWeight: 800, color: 'text.secondary', display: 'block', mb: 0.5 }}>NOTES</Typography>
+                  <Typography variant="body2" sx={{ fontWeight: 600, color: 'text.primary' }}>{selectedOrder.notes}</Typography>
+                </Box>
+              )}
+            </Box>
+          </Box>
+        )}
+      </Drawer>
     </Box>
   );
 }

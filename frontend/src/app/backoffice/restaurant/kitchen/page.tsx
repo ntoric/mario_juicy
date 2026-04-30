@@ -38,6 +38,7 @@ import {
 } from '@mui/icons-material';
 import { restaurantService, OrderItem } from '@/services/restaurantService';
 import { useAuth } from '@/hooks/useAuth';
+import { useWebSocket } from '@/hooks/useWebSocket';
 
 // ── Animations ──────────────────────────────────────────────────────────────
 const pulse = keyframes`
@@ -289,9 +290,10 @@ export default function KitchenDisplayPage() {
 
   useEffect(() => {
     fetchItems();
-    intervalRef.current = setInterval(fetchItems, 8000); 
-    return () => { if (intervalRef.current) clearInterval(intervalRef.current); };
   }, [fetchItems]);
+
+  useWebSocket('KITCHEN_UPDATED', () => fetchItems());
+  useWebSocket('ORDER_UPDATED', () => fetchItems());
 
   useEffect(() => {
     const handleRefresh = () => fetchItems();

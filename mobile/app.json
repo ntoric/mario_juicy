@@ -1,0 +1,40 @@
+{
+  "expo": {
+    "name": "Mario POS",
+    "slug": "mario-pos",
+    "version": "1.0.0",
+    "orientation": "default",
+    "icon": "./assets/images/icon.png",
+    "scheme": "mario-pos",
+    "userInterfaceStyle": "automatic",
+    "newArchEnabled": true,
+    "splash": {
+      "image": "./assets/images/splash-icon.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#E9762B"
+    },
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.ntoric.mariopos"
+    },
+    "android": {
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/images/adaptive-icon.png",
+        "backgroundColor": "#E9762B"
+      },
+      "edgeToEdgeEnabled": true,
+      "package": "com.ntoric.mariopos"
+    },
+    "web": {
+      "bundler": "metro",
+      "output": "static",
+      "favicon": "./assets/images/favicon.png"
+    },
+    "plugins": [
+      "expo-router"
+    ],
+    "experiments": {
+      "typedRoutes": true
+    }
+  }
+}

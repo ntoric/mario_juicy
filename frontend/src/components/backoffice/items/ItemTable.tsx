@@ -92,7 +92,7 @@ export default function ItemTable({
 
   if (isMobile) {
     return (
-      <Box sx={{ pb: 2 }}>
+      <Box sx={{ pb: { xs: 12, md: 2 } }}>
         <Grid container spacing={2}>
           {items.map((item) => (
             <Grid size={{ xs: 12 }} key={item.id}>
@@ -157,6 +157,9 @@ export default function ItemTable({
               </MuiCard>
             </Grid>
           ))}
+          <Grid size={{ xs: 12 }}>
+            <Box sx={{ height: { xs: 120, lg: 0 } }} />
+          </Grid>
         </Grid>
         
         {/* Reuse the Desktop Menu for Mobile as well */}
