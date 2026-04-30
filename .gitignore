@@ -20,3 +20,9 @@ out/*
 *.DS_Store
 android/*
 */android/*
+.npm_cache
+*/.npm_cache
+.npm-cache-local
+*/.npm-cache-local
+.npm-cache-mobile
+*/.npm-cache-mobile
