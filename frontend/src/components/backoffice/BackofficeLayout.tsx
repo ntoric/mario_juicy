@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { useRouter, usePathname } from "next/navigation";
 import { styled, useTheme, Theme, CSSObject, alpha } from "@mui/material/styles";
 import { logout } from "@/lib/auth";
@@ -104,7 +104,7 @@ const closedMixin = (theme: Theme): CSSObject => ({
   borderRight: 'none',
 });
 
-const HeaderHeight = 60;
+const HeaderHeight = 64;
 
 const AppBar = styled(MuiAppBar)(({ theme }) => ({
   zIndex: theme.zIndex.drawer + 1,
@@ -295,8 +295,9 @@ function SectionLabel({ label, expanded }: { label: string; expanded: boolean })
 export default function BackofficeLayout({ children }: { children: React.ReactNode }) {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down("md"));
-  const [open, setOpen] = useState(true);
+  const [open, setOpen] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
+  const sidebarRef = useRef<HTMLDivElement>(null);
   const [profileAnchor, setProfileAnchor] = useState<null | HTMLElement>(null);
   const [stores, setStores] = useState<{ id: number, name: string }[]>([]);
   const { user, loading, error, hasPermission, isRole, activeStoreId, activeStore, setActiveStore } = useAuth();
@@ -346,6 +347,20 @@ export default function BackofficeLayout({ children }: { children: React.ReactNo
       }
     }
   }, [user, loading, pathname, router]);
+
+  // Click Away logic for sidebar
+  useEffect(() => {
+    if (isMobile) return;
+    
+    function handleClickOutside(event: MouseEvent) {
+      if (open && sidebarRef.current && !sidebarRef.current.contains(event.target as Node)) {
+        setOpen(false);
+      }
+    }
+    
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, [open, isMobile]);
 
   // if (loading) {
   //   return <Preloader message="Verifying session..." />;
@@ -451,7 +466,47 @@ export default function BackofficeLayout({ children }: { children: React.ReactNo
   })).filter(section => section.items.length > 0);
 
   const drawerContent = (
-    <>
+    <Box ref={sidebarRef} sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
+      {!isMobile && (
+        <Box sx={{ 
+          height: HeaderHeight, 
+          display: 'flex', 
+          alignItems: 'center', 
+          px: expanded ? 2.5 : 0,
+          justifyContent: expanded ? 'flex-start' : 'center',
+          borderBottom: '1px solid rgba(44, 24, 16, 0.05)',
+          bgcolor: 'white'
+        }}>
+          <Box sx={{ 
+            width: 42, 
+            height: 42, 
+            minWidth: 42,
+            bgcolor: 'white', 
+            borderRadius: '7px', 
+            display: 'flex', 
+            alignItems: 'center', 
+            justifyContent: 'center',
+            boxShadow: '0 2px 10px rgba(0,0,0,0.05)',
+            border: '1.5px solid #E9762B'
+          }}>
+            <img src="/mario_juicy_logo.png" alt="Mario Logo" style={{ width: '32px', height: '32px', objectFit: 'contain' }} />
+          </Box>
+          {expanded && (
+            <Typography 
+              variant="h6" 
+              sx={{ 
+                ml: 2, 
+                fontWeight: 900, 
+                color: theme.palette.primary.main,
+                fontFamily: pacifico.style.fontFamily,
+                fontSize: '1.2rem'
+              }}
+            >
+              Mario
+            </Typography>
+          )}
+        </Box>
+      )}
       {isMobile && <Box sx={{ height: HeaderHeight }} />}
       <Box sx={{ 
         overflowY: "auto", 
@@ -481,6 +536,7 @@ export default function BackofficeLayout({ children }: { children: React.ReactNo
                   pathname={pathname}
                   expanded={expanded}
                   onClick={() => {
+                    if (!open && !isMobile) setOpen(true);
                     router.push(item.path);
                     if (isMobile) setMobileOpen(false);
                   }}
@@ -521,7 +577,7 @@ export default function BackofficeLayout({ children }: { children: React.ReactNo
           </Tooltip>
         </ListItem>
       </Box>
-    </>
+    </Box>
   );
 
   return (
@@ -529,138 +585,7 @@ export default function BackofficeLayout({ children }: { children: React.ReactNo
       <CssBaseline />
       <Toaster position="top-center" richColors closeButton duration={5000} />
       
-      <AppBar position="fixed">
-        <Toolbar sx={{ justifyContent: 'space-between', px: { xs: 1, sm: 2 } }}>
-          <Box sx={{ display: 'flex', alignItems: 'center' }}>
-            {/* Brand Area */}
-            <Box sx={{ 
-              display: 'flex', 
-              alignItems: 'center', 
-              width: open && !isMobile ? drawerWidth - 48 : 48, 
-              justifyContent: open && !isMobile ? 'flex-start' : 'center',
-              mr: open && !isMobile ? 0 : 2,
-              transition: theme.transitions.create(['width', 'margin'], {
-                easing: theme.transitions.easing.sharp,
-                duration: theme.transitions.duration.enteringScreen,
-              }),
-            }}>
-              <Box sx={{ 
-                width: 42, 
-                height: 42, 
-                minWidth: 42,
-                bgcolor: 'white', 
-                borderRadius: '7px', 
-                display: 'flex', 
-                alignItems: 'center', 
-                justifyContent: 'center',
-                boxShadow: '0 2px 10px rgba(0,0,0,0.05)',
-                border: { xs: '1.5px solid rgba(255,255,255,0.3)', md: '1.5px solid #E9762B' }
-              }}>
-                <img src="/mario_juicy_logo.png" alt="Mario Logo" style={{ width: '32px', height: '32px', objectFit: 'contain' }} />
-              </Box>
 
-            </Box>
-
-            <Tooltip title={open ? "Close Sidebar" : "Open Sidebar"}>
-              <IconButton
-                color="inherit"
-                onClick={handleDrawerToggle}
-                sx={{ 
-                  display: { xs: 'none', md: 'flex' }, // Hidden on mobile
-                  mr: 2, 
-                  bgcolor: theme.palette.background.default, 
-                  borderRadius: '7px', 
-                  boxShadow: 'inset 0 0 0 1px rgba(44, 24, 16, 0.05)',
-                  '&:hover': { bgcolor: theme.palette.primary.main, color: 'white' }
-                }}
-              >
-                {open && !isMobile ? <ChevronLeftIcon /> : <MenuIcon />}
-              </IconButton>
-            </Tooltip>
-
-            {!isMobile && (
-              <SearchArea>
-                <SearchIconWrapper><SearchIcon /></SearchIconWrapper>
-                <StyledInputBase placeholder="Search items, orders, tables..." />
-              </SearchArea>
-            )}
-          </Box>
-
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
-            <IconButton sx={{ 
-              bgcolor: { xs: alpha('#ffffff', 0.15), md: theme.palette.background.default }, 
-              borderRadius: '7px', 
-              border: { xs: '1px solid rgba(255,255,255,0.1)', md: '1px solid rgba(0,0,0,0.03)' },
-              '&:hover': { bgcolor: { xs: alpha('#ffffff', 0.25), md: alpha(theme.palette.primary.main, 0.08) } }
-            }}>
-              <NotificationsIcon sx={{ color: { xs: '#ffffff', md: '#94a3b8' }, fontSize: 22 }} />
-            </IconButton>
-            
-            <Box 
-              onClick={(e) => setProfileAnchor(e.currentTarget)}
-              sx={{ 
-                display: 'flex', 
-                alignItems: 'center', 
-                gap: 1.5, 
-                bgcolor: { xs: alpha('#ffffff', 0.15), md: theme.palette.background.default }, 
-                p: 0.5, 
-                pr: { xs: 0.5, sm: 2 }, 
-                borderRadius: '7px', 
-                cursor: 'pointer',
-                border: { xs: '1px solid rgba(255,255,255,0.1)', md: '1px solid rgba(44, 24, 16, 0.05)' },
-                '&:hover': { opacity: 0.9, borderColor: { xs: '#ffffff', md: theme.palette.primary.main } }
-              }}
-            >
-              <Avatar 
-                sx={{ 
-                  bgcolor: theme.palette.primary.main, 
-                  boxShadow: `0 4px 12px ${alpha(theme.palette.primary.main, 0.3)}`,
-                  fontWeight: 800,
-                  fontSize: '0.9rem',
-                  width: 38,
-                  height: 38,
-                  border: { xs: '2px solid rgba(255,255,255,0.8)', md: 'none' }
-                }}
-              >
-                {user?.username?.charAt(0).toUpperCase() || "U"}
-              </Avatar>
-              <Box sx={{ display: { xs: 'none', sm: 'block' } }}>
-                <Typography sx={{ fontWeight: 800, fontSize: '0.85rem', lineHeight: 1.2 }}>
-                  {user?.first_name ? `${user.first_name} ${user.last_name || ''}` : user?.username}
-                </Typography>
-                <Typography variant="caption" sx={{ color: 'text.secondary', fontWeight: 600 }}>
-                  {user?.primary_role?.replace('_', ' ')}
-                </Typography>
-              </Box>
-            </Box>
-          </Box>
-
-          <Menu
-            anchorEl={profileAnchor}
-            open={Boolean(profileAnchor)}
-            onClose={() => setProfileAnchor(null)}
-            transformOrigin={{ horizontal: 'right', vertical: 'top' }}
-            anchorOrigin={{ horizontal: 'right', vertical: 'bottom' }}
-            slotProps={{
-              paper: {
-                sx: { 
-                  borderRadius: '12px', 
-                  mt: 1.5, 
-                  minWidth: { xs: 160, md: 220 }, 
-                  p: { xs: 0.5, md: 1 }, 
-                  boxShadow: '0 10px 40px rgba(0,0,0,0.08)',
-                  border: '1px solid #f1f5f9'
-                }
-              }
-            }}
-          >
-            <MenuItem onClick={logout} sx={{ borderRadius: '8px', color: 'error.main', py: { xs: 1, md: 1.5 }, fontSize: { xs: '0.85rem', md: '1rem' } }}>
-              <ListItemIcon sx={{ minWidth: { xs: 32, md: 40 } }}><LogoutIcon sx={{ color: 'error.main', fontSize: { xs: 18, md: 22 } }} /></ListItemIcon>
-              Logout Account
-            </MenuItem>
-          </Menu>
-        </Toolbar>
-      </AppBar>
 
       <Drawer
         variant={isMobile ? "temporary" : "permanent"}
@@ -670,8 +595,8 @@ export default function BackofficeLayout({ children }: { children: React.ReactNo
           zIndex: isMobile ? 3000 : 'inherit',
           '& .MuiDrawer-paper': { 
             width: isMobile ? drawerWidth : 'inherit', 
-            height: isMobile ? '100dvh' : `calc(100% - ${HeaderHeight}px)`, 
-            marginTop: isMobile ? 0 : `${HeaderHeight}px`,
+            height: '100vh', 
+            marginTop: 0,
             zIndex: isMobile ? 3000 : 'inherit',
             overflow: 'hidden',
             transition: theme.transitions.create(['width', 'margin'], {
@@ -688,14 +613,130 @@ export default function BackofficeLayout({ children }: { children: React.ReactNo
         component="main"
         sx={{
           flexGrow: 1,
-          height: "100vh",
-          display: "flex",
-          flexDirection: "column",
-          overflow: "hidden",
+          display: 'flex',
+          flexDirection: 'column',
+          overflow: 'hidden',
           bgcolor: 'background.default',
+          position: 'relative'
         }}
       >
-        <Box sx={{ height: HeaderHeight, flexShrink: 0 }} />
+        <AppBar position="relative" elevation={0} sx={{ flexShrink: 0 }}>
+          <Toolbar sx={{ justifyContent: 'space-between', px: { xs: 1, sm: 2 } }}>
+            <Box sx={{ display: 'flex', alignItems: 'center' }}>
+              {isMobile && (
+                <Box sx={{ 
+                  mr: 2,
+                  display: 'flex', 
+                  alignItems: 'center', 
+                  justifyContent: 'center',
+                }}>
+                  <Box sx={{ 
+                    width: 42, 
+                    height: 42, 
+                    minWidth: 42,
+                    bgcolor: 'white', 
+                    borderRadius: '7px', 
+                    display: 'flex', 
+                    alignItems: 'center', 
+                    justifyContent: 'center',
+                    boxShadow: '0 2px 10px rgba(0,0,0,0.05)',
+                    border: '1.5px solid rgba(255,255,255,0.3)'
+                  }}>
+                    <img src="/mario_juicy_logo.png" alt="Mario Logo" style={{ width: '32px', height: '32px', objectFit: 'contain' }} />
+                  </Box>
+                </Box>
+              )}
+
+
+
+              {!isMobile && (
+                <SearchArea>
+                  <SearchIconWrapper><SearchIcon /></SearchIconWrapper>
+                  <StyledInputBase placeholder="Search items, orders, tables..." />
+                </SearchArea>
+              )}
+            </Box>
+
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+              <IconButton sx={{ 
+                bgcolor: { xs: alpha('#ffffff', 0.15), md: theme.palette.background.default }, 
+                borderRadius: '7px', 
+                border: { xs: '1px solid rgba(255,255,255,0.1)', md: '1px solid rgba(0,0,0,0.03)' },
+                '&:hover': { bgcolor: { xs: alpha('#ffffff', 0.25), md: alpha(theme.palette.primary.main, 0.08) } }
+              }}>
+                <NotificationsIcon sx={{ color: { xs: '#ffffff', md: '#94a3b8' }, fontSize: 22 }} />
+              </IconButton>
+              
+              <Box 
+                onClick={(e) => setProfileAnchor(e.currentTarget)}
+                sx={{ 
+                  display: 'flex', 
+                  alignItems: 'center', 
+                  gap: 1, 
+                  cursor: 'pointer',
+                  p: 0.5,
+                  pr: 1.5,
+                  borderRadius: '12px',
+                  '&:hover': { bgcolor: alpha('#000', 0.03) }
+                }}
+              >
+                <Avatar 
+                  sx={{ 
+                    width: 38, 
+                    height: 38, 
+                    fontSize: '0.9rem', 
+                    fontWeight: 900,
+                    bgcolor: { xs: '#ffffff', md: alpha(theme.palette.primary.main, 0.1) },
+                    color: { xs: theme.palette.primary.main, md: theme.palette.primary.main },
+                    border: { xs: '2px solid rgba(255,255,255,0.8)', md: `2px solid ${alpha(theme.palette.primary.main, 0.2)}` }
+                  }}
+                >
+                  {user?.username?.[0]?.toUpperCase() || 'A'}
+                </Avatar>
+                <Box sx={{ display: { xs: 'none', lg: 'block' } }}>
+                  <Typography variant="body2" sx={{ fontWeight: 800, color: '#1e293b', lineHeight: 1.2 }}>
+                    {user?.username || 'Admin'}
+                  </Typography>
+                  <Typography variant="caption" sx={{ color: '#94a3b8', fontWeight: 600 }}>
+                    {user?.primary_role?.replace('_', ' ') || 'Staff'}
+                  </Typography>
+                </Box>
+              </Box>
+            </Box>
+
+            <Menu
+              anchorEl={profileAnchor}
+              open={Boolean(profileAnchor)}
+              onClose={() => setProfileAnchor(null)}
+              slotProps={{
+                paper: {
+                  sx: {
+                    mt: 1.5,
+                    minWidth: 200,
+                    borderRadius: '16px',
+                    border: '1px solid #f1f5f9',
+                    boxShadow: '0 10px 30px rgba(0,0,0,0.05)',
+                    '& .MuiMenuItem-root': {
+                      px: 2,
+                      py: 1.5,
+                      fontWeight: 700,
+                      fontSize: '0.85rem',
+                      '&:hover': { bgcolor: alpha(theme.palette.primary.main, 0.05) }
+                    }
+                  }
+                }
+              }}
+            >
+              <MenuItem onClick={() => { setProfileAnchor(null); router.push('/backoffice/settings'); }}>
+                Profile Settings
+              </MenuItem>
+              <MenuItem onClick={() => { setProfileAnchor(null); logout(); }} sx={{ color: 'error.main' }}>
+                Sign Out
+              </MenuItem>
+            </Menu>
+          </Toolbar>
+        </AppBar>
+
         <Box 
           sx={{ 
             position: "relative",
@@ -703,9 +744,10 @@ export default function BackofficeLayout({ children }: { children: React.ReactNo
             overflowY: "auto",
             overflowX: "hidden",
             p: { xs: 1, sm: 2, md: 3 },
-            pb: { xs: 15, md: 3 }, 
             transition: 'padding 0.3s ease',
             scrollBehavior: 'smooth',
+            display: 'flex',
+            flexDirection: 'column'
           }}
         >
           {children}
@@ -720,27 +762,25 @@ export default function BackofficeLayout({ children }: { children: React.ReactNo
               onClick={handleOpenQuickOrder}
               sx={{ 
                 position: 'fixed', 
-                bottom: 'calc(32px + env(safe-area-inset-bottom))', 
+                bottom: 'calc(10px + env(safe-area-inset-bottom))', 
                 left: '50%', 
                 transform: 'translateX(-50%)', 
                 zIndex: 2001,
-                width: 60,
-                height: 60,
+                width: 54,
+                height: 54,
                 bgcolor: theme.palette.primary.main,
                 boxShadow: `0 8px 25px ${alpha(theme.palette.primary.main, 0.4)}`,
                 border: '4px solid white',
                 '&:hover': { bgcolor: theme.palette.primary.dark }
               }}
             >
-              <AddIcon sx={{ fontSize: 32, color: 'white' }} />
+              <AddIcon sx={{ fontSize: 28, color: 'white' }} />
             </Fab>
 
             <Paper 
               sx={{ 
-                position: 'fixed', 
-                bottom: 0, 
-                left: 0, 
-                right: 0, 
+                position: 'relative', 
+                flexShrink: 0,
                 zIndex: 2000, 
                 borderTop: '1px solid #f1f5f9', 
                 borderRadius: 0 

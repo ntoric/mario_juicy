@@ -112,6 +112,7 @@ func CreateTable(c *gin.Context) {
 		return
 	}
 
+	websocket.Broadcast("TABLE_UPDATED", table)
 	utils.SuccessResponse(c, http.StatusCreated, table)
 }
 
@@ -134,6 +135,7 @@ func UpdateTable(c *gin.Context) {
 		return
 	}
 
+	websocket.Broadcast("TABLE_UPDATED", table)
 	utils.SuccessResponse(c, http.StatusOK, table)
 }
 
@@ -144,6 +146,7 @@ func DeleteTable(c *gin.Context) {
 		return
 	}
 
+	websocket.Broadcast("TABLE_UPDATED", gin.H{"id": id})
 	utils.SuccessResponse(c, http.StatusOK, gin.H{"message": "Table deleted"})
 }
 
@@ -166,6 +169,7 @@ func UpdateTablePosition(c *gin.Context) {
 		return
 	}
 
+	websocket.Broadcast("TABLE_UPDATED", gin.H{"id": id})
 	utils.SuccessResponse(c, http.StatusOK, gin.H{"message": "Position updated"})
 }
 
@@ -175,6 +179,7 @@ func ReleaseTable(c *gin.Context) {
 		utils.ErrorResponse(c, http.StatusInternalServerError, err.Error())
 		return
 	}
+	websocket.Broadcast("TABLE_UPDATED", gin.H{"id": id})
 	utils.SuccessResponse(c, http.StatusOK, gin.H{"message": "Table released"})
 }
 
@@ -184,6 +189,7 @@ func RecalculateAllTableStatuses(c *gin.Context) {
 	for _, t := range tables {
 		services.UpdateTableStatus(t.ID)
 	}
+	websocket.Broadcast("TABLE_UPDATED", nil)
 	utils.SuccessResponse(c, http.StatusOK, gin.H{"message": "All statuses recalculated"})
 }
 
@@ -432,6 +438,11 @@ func AddItemToOrder(c *gin.Context) {
 	}
 
 	services.UpdateOrderTotal(uint(orderID))
+	
+	// Broadcast update
+	var order models.Order
+	config.DB.Preload("Table").Preload("Items.Item").Preload("Waiter").Preload("Invoice").First(&order, orderID)
+	websocket.Broadcast("ORDER_UPDATED", MapOrderToResponse(order))
 
 	utils.SuccessResponse(c, http.StatusCreated, orderItem)
 }
@@ -524,6 +535,7 @@ func DeleteOrder(c *gin.Context) {
 		services.UpdateTableStatus(*tableID)
 	}
 
+	websocket.Broadcast("ORDER_DELETED", gin.H{"id": id})
 	utils.SuccessResponse(c, http.StatusOK, gin.H{"message": "Order deleted"})
 }
 
@@ -605,6 +617,9 @@ func CancelOrder(c *gin.Context) {
 		services.UpdateTableStatus(*order.TableID)
 	}
 
+	config.DB.Preload("Table").Preload("Items.Item").Preload("Waiter").Preload("Invoice").First(&order, id)
+	websocket.Broadcast("ORDER_UPDATED", MapOrderToResponse(order))
+
 	utils.SuccessResponse(c, http.StatusOK, gin.H{"message": "Order cancelled"})
 }
 
@@ -646,6 +661,10 @@ func ChangeOrderTable(c *gin.Context) {
 		services.UpdateTableStatus(*oldTableID)
 	}
 	services.UpdateTableStatus(input.TargetTableID)
+
+	config.DB.Preload("Table").Preload("Items.Item").Preload("Waiter").Preload("Invoice").First(&order, id)
+	websocket.Broadcast("ORDER_UPDATED", MapOrderToResponse(order))
+	websocket.Broadcast("TABLE_UPDATED", nil)
 
 	utils.SuccessResponse(c, http.StatusOK, gin.H{"message": "Table changed"})
 }
@@ -815,6 +834,7 @@ func Checkout(c *gin.Context) {
 
 	utils.Info("Checkout successful", zap.Uint("orderID", order.ID), zap.String("invoice", invoice.InvoiceNumber), zap.Float64("total", invoice.TotalAmount))
 	websocket.Broadcast("ORDER_CHECKOUT", MapInvoiceToResponse(invoice))
+	websocket.Broadcast("TABLE_UPDATED", nil)
 	utils.SuccessResponse(c, http.StatusCreated, MapInvoiceToResponse(invoice))
 }
 
@@ -895,6 +915,11 @@ func UpdateOrderItem(c *gin.Context) {
 	// Recalculate order total
 	services.UpdateOrderTotal(orderItem.OrderID)
 
+	// Broadcast update
+	var order models.Order
+	config.DB.Preload("Table").Preload("Items.Item").Preload("Waiter").Preload("Invoice").First(&order, orderItem.OrderID)
+	websocket.Broadcast("ORDER_UPDATED", MapOrderToResponse(order))
+
 	utils.SuccessResponse(c, http.StatusOK, orderItem)
 }
 
@@ -914,6 +939,11 @@ func DeleteOrderItem(c *gin.Context) {
 
 	// Recalculate order total
 	services.UpdateOrderTotal(orderID)
+
+	// Broadcast update
+	var order models.Order
+	config.DB.Preload("Table").Preload("Items.Item").Preload("Waiter").Preload("Invoice").First(&order, orderID)
+	websocket.Broadcast("ORDER_UPDATED", MapOrderToResponse(order))
 
 	utils.SuccessResponse(c, http.StatusOK, gin.H{"message": "Item removed"})
 }
@@ -949,6 +979,11 @@ func AttendItem(c *gin.Context) {
 		return
 	}
 	websocket.Broadcast("KITCHEN_UPDATED", gin.H{"item_id": id, "status": "PREPARING"})
+	
+	var item models.OrderItem
+	config.DB.First(&item, id)
+	websocket.Broadcast("ORDER_UPDATED", gin.H{"id": item.OrderID})
+
 	utils.SuccessResponse(c, http.StatusOK, gin.H{"message": "Item attending"})
 }
 
@@ -959,6 +994,11 @@ func ReadyItem(c *gin.Context) {
 		return
 	}
 	websocket.Broadcast("KITCHEN_UPDATED", gin.H{"item_id": id, "status": "READY"})
+	
+	var item models.OrderItem
+	config.DB.First(&item, id)
+	websocket.Broadcast("ORDER_UPDATED", gin.H{"id": item.OrderID})
+
 	utils.SuccessResponse(c, http.StatusOK, gin.H{"message": "Item ready"})
 }
 
@@ -977,5 +1017,10 @@ func RejectItem(c *gin.Context) {
 		return
 	}
 	websocket.Broadcast("KITCHEN_UPDATED", gin.H{"item_id": id, "status": "REJECTED"})
+	
+	var item models.OrderItem
+	config.DB.First(&item, id)
+	websocket.Broadcast("ORDER_UPDATED", gin.H{"id": item.OrderID})
+
 	utils.SuccessResponse(c, http.StatusOK, gin.H{"message": "Item rejected"})
 }

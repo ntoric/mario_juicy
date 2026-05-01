@@ -36,6 +36,7 @@ import CheckoutDialog from './CheckoutDialog';
 import InvoicePreviewDialog from './InvoicePreviewDialog';
 import InvoicePrint from './InvoicePrint';
 import { getImageUrl } from '@/utils/image';
+import { useWebSocket } from '@/hooks/useWebSocket';
 
 const DINE_IN_STATUS_FLOW: Order['status'][] = ['ORDER_TAKEN', 'PREPARING', 'SERVED', 'COMPLETED', 'PAID'];
 const DINE_IN_STATUS_FLOW_NO_KITCHEN: Order['status'][] = ['ORDER_TAKEN', 'SERVED', 'COMPLETED', 'PAID'];
@@ -107,7 +108,6 @@ const OrderDialog: React.FC<OrderDialogProps> = ({ open, onClose, table, initial
     if (order.status === 'PREPARING' && order.order_type === 'TAKE_AWAY' && activeFlow.includes('READY')) return 'READY';
     return null;
   })();
-
   const hasNewItems = (order?.items || []).some((i: OrderItem) => i.status === 'ORDERED');
   const hasReadyItems = (order?.items || []).some((i: OrderItem) => ['READY', 'PREPARING'].includes(i.status));
   const hasIncompleteItems = (order?.items || []).some((i: OrderItem) => ['AWAITING', 'PREPARING'].includes(i.status));
@@ -136,8 +136,6 @@ const OrderDialog: React.FC<OrderDialogProps> = ({ open, onClose, table, initial
       const activeOrds = currentTable?.active_orders || [];
       setActiveOrders(activeOrds);
 
-      // Initialize states from initialOrder ONLY when opening or when initialOrder changes
-      // But don't overwrite if we've already started editing a new order
       if (initialOrder) {
         setOrder(initialOrder);
         setOrderType(initialOrder.order_type);
@@ -183,6 +181,32 @@ const OrderDialog: React.FC<OrderDialogProps> = ({ open, onClose, table, initial
       setLoading(false);
     }
   };
+
+  const refreshOrder = async () => {
+    if (selectedOrderId) {
+      try {
+        const orderData = await restaurantService.getOrder(selectedOrderId);
+        setOrder(orderData);
+        // Also refresh table data to keep active_orders in sync
+        const tablesData = await restaurantService.getTables();
+        setAllTables(tablesData);
+        const currentTable = table ? tablesData.find((t: any) => t.id === table.id) : null;
+        if (currentTable) {
+          setActiveOrders(currentTable.active_orders || []);
+        }
+      } catch (e) {
+        console.error('Failed to refresh order:', e);
+      }
+    } else {
+      // If no order selected, maybe something new was created on this table?
+      await fetchData();
+    }
+  };
+
+  useWebSocket('ORDER_UPDATED', refreshOrder);
+  useWebSocket('ORDER_CREATED', refreshOrder);
+  useWebSocket('KITCHEN_UPDATED', refreshOrder);
+  useWebSocket('TABLE_UPDATED', refreshOrder);
 
   const handleCreateOrder = async (type: 'DINE_IN' | 'TAKE_AWAY' = 'DINE_IN') => {
     if (!table && type === 'DINE_IN') return;
@@ -540,7 +564,20 @@ const OrderDialog: React.FC<OrderDialogProps> = ({ open, onClose, table, initial
     
     const actions = [];
     if (!order) {
-      // If no order yet, no actions possible, but we show the bar for the basket
+      if (dialogStage === 'ORDER_DETAILS' && orderType === 'DINE_IN') {
+        actions.push(
+          <Button 
+            key="start-order" 
+            variant="contained" 
+            fullWidth 
+            onClick={() => handleCreateOrder('DINE_IN')} 
+            sx={{ py: 1, borderRadius: '12px', fontWeight: 900, bgcolor: 'primary.main', color: 'white' }}
+            disabled={loading}
+          >
+            {loading ? <CircularProgress size={20} color="inherit" /> : 'START ORDER'}
+          </Button>
+        );
+      }
     } else {
     if (hasNewItems) {
       actions.push(
@@ -575,19 +612,16 @@ const OrderDialog: React.FC<OrderDialogProps> = ({ open, onClose, table, initial
 
     return (
       <Box sx={{ 
-        p: 1.5, 
+        p: 1, 
         bgcolor: 'white', 
         borderTop: '1px solid #e8e4d8', 
         display: 'flex', 
         gap: 1.5, 
         alignItems: 'center', 
-        position: 'absolute', 
-        bottom: 0,
-        left: 0,
-        right: 0,
-        zIndex: 2500, 
+        flexShrink: 0,
+        zIndex: 1100
       }}>
-        <Box sx={{ width: '80%', display: 'flex', gap: 1 }}>
+        <Box sx={{ width: '85%', display: 'flex', gap: 1 }}>
           {actions.length > 0 ? actions : (
             <Box sx={{ flexGrow: 1, display: 'flex', alignItems: 'center' }}>
                <Typography variant="caption" sx={{ fontWeight: 800, color: 'text.secondary' }}>NO ACTIONS AVAILABLE</Typography>
@@ -847,101 +881,83 @@ const OrderDialog: React.FC<OrderDialogProps> = ({ open, onClose, table, initial
           {/* MENU */}
           {(!order || !order.invoice) && !['COMPLETED', 'PAID', 'CANCELLED', 'REJECTED', 'RETURNED'].includes(order?.status || 'ORDER_TAKEN') ? (
             <Box sx={{ flexGrow: 1, display: 'flex', flexDirection: 'column', height: '100%', overflow: 'hidden' }}>
-              {order || orderType === 'TAKE_AWAY' ? (
-                <>
-                  <Box sx={{ p: { xs: 1, md: 2 }, borderBottom: '1px solid #e8e4d8', bgcolor: 'white' }}>
-                    <Grid container spacing={1} sx={{ alignItems: 'center' }}>
-                      <Grid size={{ xs: 12, md: 'auto' }}>
-                        <Stack direction="row" spacing={1} sx={{ overflowX: 'auto', pb: 0.5, '&::-webkit-scrollbar': { display: 'none' } }}>
-                          <Button size="small" variant={activeCategory === 'all' ? 'contained' : 'outlined'} onClick={() => setActiveCategory('all')} sx={{ minWidth: 'fit-content' }}>All</Button>
-                          {categories.map(cat => (
-                            <Button key={cat.id} size="small" variant={activeCategory === cat.id ? 'contained' : 'outlined'} onClick={() => setActiveCategory(cat.id)} sx={{ minWidth: 'fit-content' }}>{cat.name}</Button>
-                          ))}
+              <Box sx={{ p: { xs: 1, md: 2 }, borderBottom: '1px solid #e8e4d8', bgcolor: 'white' }}>
+                <Grid container spacing={1} sx={{ alignItems: 'center' }}>
+                  <Grid size={{ xs: 12, md: 'auto' }}>
+                    <Stack direction="row" spacing={1} sx={{ alignItems: 'center', mb: { xs: 1, md: 0 } }}>
+                      {orderType === 'DINE_IN' && (
+                        <Stack direction="row" spacing={0.5} sx={{ alignItems: 'center', bgcolor: '#f8fafc', borderRadius: '20px', px: 1, border: '1px solid #e2e8f0', mr: 1 }}>
+                          <PersonIcon sx={{ fontSize: 16, color: 'text.secondary' }} />
+                          <IconButton size="small" onClick={() => order ? handleUpdateOrderDetails({ number_of_persons: Math.max(1, order.number_of_persons - 1) }) : setNumberOfPersons(p => Math.max(1, p-1))} disabled={Boolean(order?.invoice)} sx={{ p: 0.5 }}>
+                            <RemoveIcon sx={{ fontSize: 14 }} />
+                          </IconButton>
+                          <Typography sx={{ fontWeight: 800, fontSize: '0.85rem', minWidth: 20, textAlign: 'center' }}>{order ? order.number_of_persons : numberOfPersons}</Typography>
+                          <IconButton size="small" onClick={() => order ? handleUpdateOrderDetails({ number_of_persons: order.number_of_persons + 1 }) : setNumberOfPersons(p => p+1)} disabled={Boolean(order?.invoice) || (table ? ((table.current_occupancy || 0) + (order ? 0 : numberOfPersons)) >= table.capacity : false)} sx={{ p: 0.5 }}>
+                            <AddIcon sx={{ fontSize: 14 }} />
+                          </IconButton>
                         </Stack>
-                      </Grid>
-                      <Grid size={{ xs: 12, md: 'grow' }}>
-                        <TextField fullWidth size="small" placeholder="Search menu..." value={searchQuery} onChange={e => setSearchQuery(e.target.value)} sx={{ '& .MuiInputBase-root': { borderRadius: '12px' } }} />
-                      </Grid>
-                    </Grid>
-                  </Box>
-                  <Box sx={{ flexGrow: 1, p: { xs: 0, md: 2 }, pb: { xs: '140px', md: 2 }, overflowY: 'auto', bgcolor: 'white' }}>
-                    <Stack spacing={0}>
-                      {filteredItems.map((item: Item) => (
-                        <Box 
-                          key={item.id}
-                          onClick={() => setSelectedItemForDetail(item)}
+                      )}
+                      <Box sx={{ display: 'flex', gap: 1, overflowX: 'auto', pb: 0.5, '&::-webkit-scrollbar': { display: 'none' } }}>
+                        <Button size="small" variant={activeCategory === 'all' ? 'contained' : 'outlined'} onClick={() => setActiveCategory('all')} sx={{ minWidth: 'fit-content', borderRadius: '20px' }}>All</Button>
+                        {categories.map(cat => (
+                          <Button key={cat.id} size="small" variant={activeCategory === cat.id ? 'contained' : 'outlined'} onClick={() => setActiveCategory(cat.id)} sx={{ minWidth: 'fit-content', borderRadius: '20px' }}>{cat.name}</Button>
+                        ))}
+                      </Box>
+                    </Stack>
+                  </Grid>
+                  <Grid size={{ xs: 12, md: 'grow' }}>
+                    <TextField fullWidth size="small" placeholder="Search menu..." value={searchQuery} onChange={e => setSearchQuery(e.target.value)} sx={{ '& .MuiInputBase-root': { borderRadius: '12px' } }} />
+                  </Grid>
+                </Grid>
+              </Box>
+              <Box sx={{ flexGrow: 1, p: { xs: 0, md: 2 }, pb: { xs: '140px', md: 2 }, overflowY: 'auto', bgcolor: 'white' }}>
+                <Stack spacing={0}>
+                  {filteredItems.map((item: Item) => (
+                    <Box 
+                      key={item.id}
+                      onClick={() => setSelectedItemForDetail(item)}
+                      sx={{ 
+                        px: 2.5, 
+                        py: 1.75, 
+                        borderBottom: '1px solid #f1f5f9', 
+                        display: 'flex', 
+                        justifyContent: 'space-between', 
+                        alignItems: 'center',
+                        cursor: 'pointer',
+                        transition: 'all 0.2s',
+                        '&:hover': { bgcolor: alpha(theme.palette.primary.main, 0.05) },
+                        '&:active': { bgcolor: alpha(theme.palette.primary.main, 0.1) }
+                      }}
+                    >
+                      <Box>
+                        <Typography variant="body1" sx={{ fontWeight: 700, color: '#334155' }}>{item.name}</Typography>
+                      </Box>
+                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                        <Typography variant="body1" sx={{ fontWeight: 900, color: 'primary.main' }}>₹{item.price}</Typography>
+                        <IconButton 
+                          size="small" 
+                          onClick={(e) => { e.stopPropagation(); handleAddItem(item); }}
+                          disabled={loading || Boolean(order?.invoice)}
                           sx={{ 
-                            px: 2.5, 
-                            py: 1.75, 
-                            borderBottom: '1px solid #f1f5f9', 
-                            display: 'flex', 
-                            justifyContent: 'space-between', 
-                            alignItems: 'center',
-                            cursor: 'pointer',
-                            transition: 'all 0.2s',
-                            '&:hover': { bgcolor: alpha(theme.palette.primary.main, 0.05) },
-                            '&:active': { bgcolor: alpha(theme.palette.primary.main, 0.1) }
+                            bgcolor: alpha(theme.palette.primary.main, 0.08), 
+                            color: 'primary.main',
+                            border: `1px solid ${alpha(theme.palette.primary.main, 0.2)}`,
+                            '&:hover': { bgcolor: alpha(theme.palette.primary.main, 0.15) },
+                            '&.Mui-disabled': { bgcolor: 'action.disabledBackground' }
                           }}
                         >
-                          <Box>
-                            <Typography variant="body1" sx={{ fontWeight: 700, color: '#334155' }}>{item.name}</Typography>
-                            {/* You could add category or description here if needed */}
-                          </Box>
-                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-                            <Typography variant="body1" sx={{ fontWeight: 900, color: 'primary.main' }}>₹{item.price}</Typography>
-                            <IconButton 
-                              size="small" 
-                              onClick={(e) => { e.stopPropagation(); handleAddItem(item); }}
-                              disabled={loading || Boolean(order?.invoice)}
-                              sx={{ 
-                                bgcolor: alpha(theme.palette.primary.main, 0.08), 
-                                color: 'primary.main',
-                                border: `1px solid ${alpha(theme.palette.primary.main, 0.2)}`,
-                                '&:hover': { bgcolor: alpha(theme.palette.primary.main, 0.15) },
-                                '&.Mui-disabled': { bgcolor: 'action.disabledBackground' }
-                              }}
-                            >
-                              {loading ? <CircularProgress size={16} color="inherit" /> : <AddIcon fontSize="small" />}
-                            </IconButton>
-                          </Box>
-                        </Box>
-                      ))}
-                      {filteredItems.length === 0 && (
-                        <Box sx={{ p: 4, textAlign: 'center', opacity: 0.5 }}>
-                          <Typography>No items found</Typography>
-                        </Box>
-                      )}
-                    </Stack>
-                  </Box>
-                </>
-              ) : (
-                <Box sx={{ flexGrow: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', p: 2, bgcolor: '#f8fafc' }}>
-                   <Container maxWidth="xs">
-                    <Typography variant="h6" sx={{ fontWeight: 900, mb: 2, textAlign: 'center' }}>Create New Order: Table {table?.number}</Typography>
-                    <Paper sx={{ p: 3, borderRadius: '24px', border: '1px solid #e8e4d8' }}>
-                      <Stack spacing={2.5}>
-                        <Box sx={{ textAlign: 'center' }}>
-                          <Typography variant="overline" sx={{ fontWeight: 800, color: 'text.secondary' }}>GUEST COUNT</Typography>
-                          <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 3, mt: 1 }}>
-                            <IconButton size="small" onClick={() => setNumberOfPersons(Math.max(1, numberOfPersons - 1))} sx={{ border: '1px solid #e8e4d8' }}><RemoveIcon fontSize="small" /></IconButton>
-                            <Typography variant="h4" sx={{ fontWeight: 900 }}>{numberOfPersons}</Typography>
-                            <IconButton size="small" onClick={() => setNumberOfPersons(numberOfPersons + 1)} disabled={table ? ((table.current_occupancy || 0) + numberOfPersons) >= table.capacity : false} sx={{ border: '1px solid #e8e4d8' }}><AddIcon fontSize="small" /></IconButton>
-                          </Box>
-                        </Box>
-                        <Button 
-                          variant="contained" 
-                          fullWidth 
-                          onClick={() => handleCreateOrder('DINE_IN')} 
-                          sx={{ py: 1.5, borderRadius: '12px', fontWeight: 900, fontSize: '0.9rem' }}
-                          disabled={loading}
-                        >
-                          {loading ? <CircularProgress size={20} color="inherit" /> : 'START ORDER'}
-                        </Button>
-                      </Stack>
-                    </Paper>
-                  </Container>
-                </Box>
-              )}
+                          {loading ? <CircularProgress size={16} color="inherit" /> : <AddIcon fontSize="small" />}
+                        </IconButton>
+                      </Box>
+                    </Box>
+                  ))}
+                  {filteredItems.length === 0 && (
+                    <Box sx={{ p: 4, textAlign: 'center', opacity: 0.5 }}>
+                      <Typography>No items found</Typography>
+                    </Box>
+                  )}
+                </Stack>
+              </Box>
             </Box>
           ) : (
             <Box sx={{ flexGrow: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', p: 4 }}>
@@ -964,14 +980,19 @@ const OrderDialog: React.FC<OrderDialogProps> = ({ open, onClose, table, initial
   return (
     <Box sx={{ 
       position: 'absolute', 
-      inset: 0,
-      zIndex: 1200, 
+      top: 0,
+      left: 0,
+      right: 0,
+      bottom: 0,
+      m: { xs: -1, md: 0 },
+      zIndex: 1050, 
       display: 'flex', 
       flexDirection: 'column', 
       bgcolor: 'white', 
-      overflow: 'hidden' 
+      overflow: 'hidden',
+      boxShadow: '0 -4px 20px rgba(0,0,0,0.1)'
     }}>
-      <Box sx={{ px: { xs: 1.5, md: 2 }, py: { xs: 0.5, md: 1.5 }, borderBottom: '1px solid #e8e4d8', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+      <Box sx={{ px: { xs: 1.5, md: 2 }, py: { xs: 1, md: 1.5 }, borderBottom: '1px solid #e8e4d8', display: 'flex', alignItems: 'center', justifyContent: 'space-between', bgcolor: 'white', zIndex: 10 }}>
         <Box sx={{ display: 'flex', alignItems: 'center', gap: { xs: 1, md: 2 } }}>
           <IconButton onClick={onClose} size="small" sx={{ border: { xs: '1px solid #f1f5f9', md: 'none' }, p: 0.5 }}><ChevronLeftIcon fontSize="small" /></IconButton>
           <Box>
@@ -996,11 +1017,11 @@ const OrderDialog: React.FC<OrderDialogProps> = ({ open, onClose, table, initial
             variant="scrollable"
             scrollButtons="auto"
             sx={{
-              minHeight: isMobile ? 40 : 48,
+              minHeight: { xs: 48, md: 48 },
               '& .MuiTab-root': {
                 fontWeight: 800,
                 fontSize: isMobile ? '0.75rem' : '0.8rem',
-                minHeight: isMobile ? 40 : 48,
+                minHeight: { xs: 48, md: 48 },
                 textTransform: 'none',
                 px: isMobile ? 2 : 3
               },
@@ -1043,7 +1064,7 @@ const OrderDialog: React.FC<OrderDialogProps> = ({ open, onClose, table, initial
             }
           }}
         >
-          <Box sx={{ display: 'flex', flexDirection: 'column', height: '100%', overflow: 'hidden', pb: '140px' }}>
+          <Box sx={{ display: 'flex', flexDirection: 'column', height: '100%', overflow: 'hidden', pb: 'env(safe-area-inset-bottom, 16px)' }}>
             <Box sx={{ p: 1, display: 'flex', justifyContent: 'center', flexShrink: 0 }}>
               <Box sx={{ width: 40, height: 4, bgcolor: '#e8e4d8', borderRadius: 2 }} />
             </Box>

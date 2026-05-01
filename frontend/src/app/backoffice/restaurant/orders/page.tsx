@@ -180,6 +180,7 @@ export default function LiveOrdersPage() {
   useWebSocket('ORDER_UPDATED', () => fetchOrders());
   useWebSocket('TABLE_UPDATED', () => fetchOrders());
   useWebSocket('ORDER_CHECKOUT', () => fetchOrders());
+  useWebSocket('ORDER_DELETED', () => fetchOrders());
 
   useEffect(() => {
     const handleRefresh = () => fetchOrders();
@@ -281,7 +282,7 @@ export default function LiveOrdersPage() {
           })}
         </Tabs>
 
-        <Box sx={{ p: { xs: 1.5, sm: 3 }, pb: { xs: 15, md: 3 }, flexGrow: 1, overflowY: 'auto' }}>
+        <Box sx={{ p: { xs: 1.5, sm: 3 }, flexGrow: 1, overflowY: 'auto' }}>
           {loading && orders.length === 0 ? (
             <Box sx={{ display: 'flex', justifyContent: 'center', py: 12 }}>
               <CircularProgress sx={{ color: '#E9762B' }} />
@@ -410,7 +411,7 @@ export default function LiveOrdersPage() {
             </Box>
 
             {/* Footer */}
-            <Box sx={{ p: 3, pb: { xs: 'calc(80px + env(safe-area-inset-bottom))', sm: 3 }, borderTop: '2px dashed', borderColor: 'divider', bgcolor: 'white' }}>
+            <Box sx={{ p: 3, borderTop: '2px dashed', borderColor: 'divider', bgcolor: 'white' }}>
               <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
                 <Typography variant="h6" sx={{ fontWeight: 900 }}>Total Amount</Typography>
                 <Typography variant="h5" sx={{ fontWeight: 950, color: 'primary.main' }}>

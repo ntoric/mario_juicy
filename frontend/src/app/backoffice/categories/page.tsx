@@ -381,7 +381,7 @@ export default function CategoryPage() {
         </Alert>
       )}
 
-      <TableContainer component={Paper} sx={{ flexGrow: 1, overflowY: 'auto', borderRadius: "20px", border: '1px solid #e8e4d8', boxShadow: '0 4px 20px rgba(0,0,0,0.02)', mb: { xs: 15, md: 0 } }}>
+      <TableContainer component={Paper} sx={{ flexGrow: 1, overflowY: 'auto', borderRadius: "20px", border: '1px solid #e8e4d8', boxShadow: '0 4px 20px rgba(0,0,0,0.02)' }}>
         {loading ? (
           <Box sx={{ display: "flex", justifyContent: "center", py: 10 }}>
             <CircularProgress size={40} thickness={4} />

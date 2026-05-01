@@ -119,6 +119,7 @@ export default function TableMapPage() {
   useWebSocket('TABLE_UPDATED', () => fetchTables());
   useWebSocket('ORDER_UPDATED', () => fetchTables());
   useWebSocket('ORDER_CHECKOUT', () => fetchTables());
+  useWebSocket('ORDER_DELETED', () => fetchTables());
 
   useEffect(() => {
     const handleRefresh = () => fetchTables();

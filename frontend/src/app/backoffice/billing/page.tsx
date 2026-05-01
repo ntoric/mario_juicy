@@ -49,6 +49,7 @@ import InvoicePrint from '@/components/backoffice/restaurant/InvoicePrint';
 import InvoicePreviewDialog from '@/components/backoffice/restaurant/InvoicePreviewDialog';
 import SettlementDialog from '@/components/backoffice/restaurant/SettlementDialog';
 import { useAuth } from '@/hooks/useAuth';
+import { useWebSocket } from '@/hooks/useWebSocket';
 
 export default function BillingPage() {
   const theme = useTheme();
@@ -89,6 +90,68 @@ export default function BillingPage() {
   useEffect(() => {
     fetchData();
   }, [fetchData]);
+
+  useWebSocket('ORDER_CREATED', (payload) => {
+    if (!payload) return;
+    // Check if it should be in pending settlements
+    const shouldBeInPending = payload.status === 'COMPLETED' || 
+                             (payload.order_type === 'TAKE_AWAY' && payload.status === 'READY') ||
+                             payload.status === 'CANCELLED';
+    
+    if (shouldBeInPending) {
+      setPendingOrders(prev => {
+        if (prev.some(o => o.id === payload.id)) return prev;
+        return [payload, ...prev];
+      });
+    }
+  });
+
+  useWebSocket('ORDER_UPDATED', (payload) => {
+    if (!payload || !payload.id) return;
+    
+    // Check if it should be in pending settlements
+    const shouldBeInPending = payload.status === 'COMPLETED' || 
+                             (payload.order_type === 'TAKE_AWAY' && payload.status === 'READY') ||
+                             payload.status === 'CANCELLED' ||
+                             (payload.invoice && payload.status !== 'PAID');
+    
+    setPendingOrders(prev => {
+      const existing = prev.find(o => o.id === payload.id);
+      
+      if (shouldBeInPending) {
+        if (existing) {
+          return prev.map(o => o.id === payload.id ? { ...o, ...payload } : o);
+        } else {
+          return [payload, ...prev];
+        }
+      } else {
+        // If it was there but now shouldn't be (e.g. moved from COMPLETED to PAID)
+        if (existing) {
+          return prev.filter(o => o.id !== payload.id);
+        }
+      }
+      return prev;
+    });
+  });
+
+  useWebSocket('ORDER_CHECKOUT', (payload) => {
+    if (!payload) return;
+    // ORDER_CHECKOUT sends an Invoice. Add to invoices if we're on that tab (or just always update state)
+    setInvoices(prev => {
+      if (prev.some(inv => inv.id === payload.id)) return prev.map(inv => inv.id === payload.id ? payload : inv);
+      return [payload, ...prev];
+    });
+    
+    // Also remove the order from pending if it's now PAID (Terminal status check usually happens in ORDER_UPDATED)
+    if (payload.order) {
+      setPendingOrders(prev => prev.filter(o => o.id !== payload.order));
+    }
+  });
+
+  useWebSocket('ORDER_DELETED', (payload) => {
+    if (!payload || !payload.id) return;
+    setPendingOrders(prev => prev.filter(o => o.id !== payload.id));
+  });
 
   useEffect(() => {
     const handleRefresh = () => fetchData();

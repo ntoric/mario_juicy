@@ -35,10 +35,11 @@ import {
 import { restaurantService, Order } from '@/services/restaurantService';
 import { OrderStatusChip } from '@/components/backoffice/restaurant/StatusChips';
 import OrderDialog from '@/components/backoffice/restaurant/OrderDialog';
+import { useWebSocket } from '@/hooks/useWebSocket';
 
 function TakeAwayCard({ order, onClick }: { order: Order; onClick: () => void }) {
   const mins = Math.floor((Date.now() - new Date(order.created_at).getTime()) / 60000);
-  const readyCount = order.items.filter(i => i.status === 'READY').length;
+  const readyCount = (order.items || []).filter((i: any) => i.status === 'READY').length;
 
   return (
     <Card
@@ -141,6 +142,11 @@ export default function TakeAwayPage() {
   }, []);
 
   useEffect(() => { fetchOrders(); }, [fetchOrders]);
+
+  useWebSocket('ORDER_CREATED', () => fetchOrders());
+  useWebSocket('ORDER_UPDATED', () => fetchOrders());
+  useWebSocket('ORDER_CHECKOUT', () => fetchOrders());
+  useWebSocket('ORDER_DELETED', () => fetchOrders());
 
   useEffect(() => {
     const handleRefresh = () => fetchOrders();

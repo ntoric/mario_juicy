@@ -52,16 +52,24 @@ export const WebSocketProvider = ({ children }: { children: ReactNode }) => {
       };
 
       ws.onmessage = (event) => {
-        try {
-          const message: WebSocketMessage = JSON.parse(event.data);
-          setLastMessage(message);
+        const rawData = event.data;
+        if (typeof rawData !== 'string') return;
 
-          if (subscribersRef.current[message.type]) {
-            subscribersRef.current[message.type].forEach((callback) => callback(message.payload));
+        // Split messages by newline (Go backend appends them with \n)
+        const rawMessages = rawData.split('\n').filter(msg => msg.trim() !== '');
+
+        rawMessages.forEach(msgStr => {
+          try {
+            const message: WebSocketMessage = JSON.parse(msgStr);
+            setLastMessage(message);
+
+            if (subscribersRef.current[message.type]) {
+              subscribersRef.current[message.type].forEach((callback) => callback(message.payload));
+            }
+          } catch (error) {
+            console.error('Failed to parse WebSocket message chunk:', error, 'Raw:', msgStr);
           }
-        } catch (error) {
-          console.error('Failed to parse WebSocket message:', error);
-        }
+        });
       };
 
       ws.onclose = (e) => {
