@@ -9,7 +9,12 @@ const getBaseUrl = () => {
   if (typeof window !== 'undefined') {
     // If we're on a mobile browser or Capacitor
     if (window.location.hostname !== 'localhost' && url.includes('localhost')) {
-      return url.replace('localhost', window.location.hostname);
+      url = url.replace('localhost', window.location.hostname);
+    }
+    
+    // Automatically use https:// if the page is loaded over https://
+    if (window.location.protocol === 'https:' && url.startsWith('http:')) {
+      url = url.replace('http:', 'https:');
     }
   }
   return url;

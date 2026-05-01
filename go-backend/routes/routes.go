@@ -72,7 +72,7 @@ func SetupRoutes(r *gin.Engine, hub *websocket.Hub) {
 			restaurants.POST("/orders/:id/recalculate_total/", middleware.AuthMiddleware(), controllers.RecalculateOrderTotal)
 			restaurants.POST("/orders/:id/update_payment_status/", middleware.AuthMiddleware(), controllers.UpdatePaymentStatus)
 			restaurants.POST("/orders/:id/checkout/", middleware.AuthMiddleware(), controllers.Checkout)
-			
+
 			restaurants.GET("/orders/pending_settlements/", middleware.AuthMiddleware(), controllers.GetPendingSettlements)
 			restaurants.POST("/orders/", middleware.AuthMiddleware(), controllers.CreateOrder)
 			restaurants.GET("/invoices/", middleware.AuthMiddleware(), controllers.GetInvoices)
@@ -90,7 +90,7 @@ func SetupRoutes(r *gin.Engine, hub *websocket.Hub) {
 				kitchen.POST("/:id/ready/", middleware.AuthMiddleware(), controllers.ReadyItem)
 				kitchen.POST("/:id/reject/", middleware.AuthMiddleware(), controllers.RejectItem)
 			}
-			
+
 			reports := restaurants.Group("/reports")
 			{
 				reports.GET("/summary/", middleware.AuthMiddleware(), controllers.GetSummary)

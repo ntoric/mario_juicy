@@ -4,8 +4,9 @@ RUN apk add --no-cache libc6-compat
 WORKDIR /app
 
 # Copy package files for better caching
-COPY package.json package-lock.json ./
-RUN npm ci
+COPY package.json ./
+COPY package-lock.json* ./
+RUN if [ -f package-lock.json ]; then npm ci; else npm install; fi
 
 # --- Stage 2: Build the Application ---
 FROM node:20-alpine AS builder
@@ -18,10 +19,10 @@ COPY . .
 # Set environment variables for the build
 # NEXT_PUBLIC_ variables are baked into the static files at build time
 ARG NEXT_PUBLIC_API_URL
-ENV NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL:-http://localhost:8020/api}
+ENV NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL:-https://mario-api.ntoric.com/api}
 
 # Disable Next.js telemetry during build
-ENV NEXT_TELEMETRY_DISABLED 1
+ENV NEXT_TELEMETRY_DISABLED=1
 
 # Build the application (produces the 'out' directory)
 RUN npm run build

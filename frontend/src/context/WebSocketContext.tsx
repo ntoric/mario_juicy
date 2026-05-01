@@ -39,15 +39,25 @@ export const WebSocketProvider = ({ children }: { children: ReactNode }) => {
 
     // Clean up apiUrl to ensure no double slashes and correct protocol
     const cleanApiUrl = apiUrl.endsWith('/') ? apiUrl.slice(0, -1) : apiUrl;
-    const wsUrl = cleanApiUrl.replace(/^http/, 'ws') + '/ws';
+    
+    // Automatically use wss:// if the page is loaded over https://
+    let wsUrl = cleanApiUrl.replace(/^http/, 'ws');
+    if (typeof window !== 'undefined' && window.location.protocol === 'https:') {
+      wsUrl = wsUrl.replace(/^ws:/, 'wss:');
+    }
+    
+    // Some proxies prefer the /ws path at the root
+    // But we use /api/ws by default. Let's make it clear in the logs.
+    wsUrl = wsUrl + '/ws';
 
-    console.log('Connecting to WebSocket:', wsUrl, 'Current Host:', typeof window !== 'undefined' ? window.location.host : 'SSR');
+    console.log('[WS] Attempting connection:', wsUrl);
+    console.log('[WS] Request headers will be handled by browser/proxy');
     
     try {
       const ws = new WebSocket(wsUrl);
 
       ws.onopen = () => {
-        console.log('WebSocket connected');
+        console.log('[WS] Connected successfully');
         setIsConnected(true);
       };
 
@@ -67,27 +77,28 @@ export const WebSocketProvider = ({ children }: { children: ReactNode }) => {
               subscribersRef.current[message.type].forEach((callback) => callback(message.payload));
             }
           } catch (error) {
-            console.error('Failed to parse WebSocket message chunk:', error, 'Raw:', msgStr);
+            console.error('[WS] Failed to parse message:', error, 'Raw:', msgStr);
           }
         });
       };
 
       ws.onclose = (e) => {
-        console.log('WebSocket disconnected', e.code, e.reason);
+        console.log('[WS] Disconnected', { code: e.code, reason: e.reason, wasClean: e.wasClean });
         setIsConnected(false);
         // Attempt to reconnect after 3 seconds
         if (socketRef.current === ws) {
+          console.log('[WS] Reconnecting in 3s...');
           setTimeout(connect, 3000);
         }
       };
 
       ws.onerror = (error) => {
-        console.error('WebSocket error:', error);
+        console.error('[WS] Error observed:', error);
       };
 
       socketRef.current = ws;
     } catch (e) {
-      console.error('WebSocket connection setup failed:', e);
+      console.error('[WS] Connection setup failed:', e);
       setTimeout(connect, 3000);
     }
   };

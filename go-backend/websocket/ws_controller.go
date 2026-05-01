@@ -7,6 +7,11 @@ import (
 
 func ServeWS(hub *Hub) gin.HandlerFunc {
 	return func(c *gin.Context) {
+		// Debug headers
+		log.Printf("WS Upgrade Request Headers: %v", c.Request.Header)
+		log.Printf("WS Connection Header: %s", c.Request.Header.Get("Connection"))
+		log.Printf("WS Upgrade Header: %s", c.Request.Header.Get("Upgrade"))
+
 		conn, err := upgrader.Upgrade(c.Writer, c.Request, nil)
 		if err != nil {
 			log.Printf("Failed to set websocket upgrade: %+v", err)
