@@ -44,9 +44,6 @@ services:
   go_backend:
     container_name: pos_go_backend
     image: ntoric/mario-backend:latest
-    platform:
-     - linux/arm64
-     - linux/amd64
     restart: always
     build:
       context: ./go-backend
