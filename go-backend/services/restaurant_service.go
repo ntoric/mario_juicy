@@ -9,20 +9,31 @@ import (
 	"time"
 
 	"github.com/gin-gonic/gin"
+	"gorm.io/gorm"
 )
 
 var TerminalStatuses = []string{"PAID", "CANCELLED", "COMPLETED", "RETURNED", "REJECTED"}
 
 func UpdateTableStatus(tableID uint) error {
+	return UpdateTableStatusWithDB(config.DB, tableID)
+}
+
+func UpdateTableStatusWithDB(db *gorm.DB, tableID uint) error {
 	var table models.Table
-	if err := config.DB.First(&table, tableID).Error; err != nil {
+	if err := db.First(&table, tableID).Error; err != nil {
 		return err
 	}
 
-	totalPersons := GetTableCurrentOccupancy(tableID, 0)
+	// Check for any active orders on this table
+	var activeOrdersCount int64
+	db.Model(&models.Order{}).
+		Where("table_id = ? AND order_type = 'DINE_IN' AND status NOT IN ?", tableID, TerminalStatuses).
+		Count(&activeOrdersCount)
+
+	totalPersons := GetTableCurrentOccupancyWithDB(db, tableID, 0)
 
 	newStatus := "VACANT"
-	if totalPersons > 0 {
+	if activeOrdersCount > 0 {
 		if int(totalPersons) < table.Capacity {
 			newStatus = "PARTIALLY_OCCUPIED"
 		} else {
@@ -35,7 +46,7 @@ func UpdateTableStatus(tableID uint) error {
 		var count int64
 		now := time.Now()
 		windowEnd := now.Add(30 * time.Minute)
-		config.DB.Model(&models.Reservation{}).
+		db.Model(&models.Reservation{}).
 			Where("table_id = ? AND status = ? AND reservation_time >= ? AND reservation_time <= ?", 
 				tableID, "CONFIRMED", now, windowEnd).
 			Count(&count)
@@ -44,7 +55,7 @@ func UpdateTableStatus(tableID uint) error {
 		}
 	}
 
-	if err := config.DB.Model(&table).Update("status", newStatus).Error; err != nil {
+	if err := db.Model(&table).Update("status", newStatus).Error; err != nil {
 		return err
 	}
 
@@ -57,9 +68,13 @@ func UpdateTableStatus(tableID uint) error {
 }
 
 func GetTableCurrentOccupancy(tableID uint, excludeOrderID uint) int {
+	return GetTableCurrentOccupancyWithDB(config.DB, tableID, excludeOrderID)
+}
+
+func GetTableCurrentOccupancyWithDB(db *gorm.DB, tableID uint, excludeOrderID uint) int {
 	var totalPersons int64
-	query := config.DB.Model(&models.Order{}).
-		Where("table_id = ? AND status NOT IN ?", tableID, TerminalStatuses)
+	query := db.Model(&models.Order{}).
+		Where("table_id = ? AND order_type = 'DINE_IN' AND status NOT IN ?", tableID, TerminalStatuses)
 	if excludeOrderID > 0 {
 		query = query.Where("id != ?", excludeOrderID)
 	}

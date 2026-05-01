@@ -30,29 +30,36 @@ export const WebSocketProvider = ({ children }: { children: ReactNode }) => {
   const subscribersRef = useRef<{ [key: string]: Set<(payload: any) => void> }>({});
 
   const connect = () => {
-    let apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8022/api';
-    
-    // Fallback logic for accessing from network IP
-    if (typeof window !== 'undefined' && window.location.hostname !== 'localhost' && apiUrl.includes('localhost')) {
-      apiUrl = apiUrl.replace('localhost', window.location.hostname);
+    let apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8020/api';
+
+    // Fallback logic for accessing from network IP or mobile
+    if (typeof window !== 'undefined' && window.location.hostname !== 'localhost') {
+      if (apiUrl.includes('localhost')) {
+        apiUrl = apiUrl.replace('localhost', window.location.hostname);
+      } else if (apiUrl.includes('127.0.0.1')) {
+        apiUrl = apiUrl.replace('127.0.0.1', window.location.hostname);
+      }
     }
 
     // Clean up apiUrl to ensure no double slashes and correct protocol
     const cleanApiUrl = apiUrl.endsWith('/') ? apiUrl.slice(0, -1) : apiUrl;
-    
+
     // Automatically use wss:// if the page is loaded over https://
     let wsUrl = cleanApiUrl.replace(/^http/, 'ws');
     if (typeof window !== 'undefined' && window.location.protocol === 'https:') {
       wsUrl = wsUrl.replace(/^ws:/, 'wss:');
     }
-    
-    // Some proxies prefer the /ws path at the root
-    // But we use /api/ws by default. Let's make it clear in the logs.
-    wsUrl = wsUrl + '/ws';
 
-    console.log('[WS] Attempting connection:', wsUrl);
+    // The Go backend is served under /api/ws
+    if (!wsUrl.endsWith('/ws')) {
+      wsUrl = wsUrl + '/ws';
+    }
+
+    console.log('[WS] Connecting to:', wsUrl);
+    console.log('[WS] API Source:', apiUrl);
+    console.log('[WS] Hostname:', typeof window !== 'undefined' ? window.location.hostname : 'n/a');
     console.log('[WS] Request headers will be handled by browser/proxy');
-    
+
     try {
       const ws = new WebSocket(wsUrl);
 

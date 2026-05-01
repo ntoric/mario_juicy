@@ -8,6 +8,7 @@ import (
 	"mario-backend/utils"
 	"mario-backend/websocket"
 	"os"
+	"time"
 
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
@@ -21,6 +22,9 @@ func main() {
 	utils.InitializeLogger()
 	defer utils.Log.Sync()
 
+	// Initialize Config and Database
+	config.LoadConfig()
+
 	// Initialize Sentry
 	err := sentry.Init(sentry.ClientOptions{
 		Dsn: os.Getenv("SENTRY_DSN"),
@@ -32,10 +36,11 @@ func main() {
 	})
 	if err != nil {
 		utils.Error("Sentry initialization failed", zap.Error(err))
+	} else {
+		utils.Info("Sentry initialized successfully")
 	}
+	defer sentry.Flush(2 * time.Second)
 
-	// Initialize Config and Database
-	config.LoadConfig()
 	config.ConnectDatabase()
 	config.DB.AutoMigrate(&models.User{}, &models.Group{}, &models.MenuPermission{})
 

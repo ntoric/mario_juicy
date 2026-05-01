@@ -3,6 +3,7 @@ package utils
 import (
 	"os"
 
+	"github.com/getsentry/sentry-go"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 )
@@ -39,6 +40,7 @@ func Info(message string, fields ...zap.Field) {
 // Error logs error level message
 func Error(message string, fields ...zap.Field) {
 	Log.Error(message, fields...)
+	sentry.CaptureMessage(message)
 }
 
 // Debug logs debug level message
@@ -54,4 +56,5 @@ func Warn(message string, fields ...zap.Field) {
 // Fatal logs fatal level message and exits
 func Fatal(message string, fields ...zap.Field) {
 	Log.Fatal(message, fields...)
+	sentry.CaptureMessage(message)
 }

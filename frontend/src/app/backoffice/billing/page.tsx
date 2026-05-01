@@ -53,7 +53,13 @@ import { useWebSocket } from '@/hooks/useWebSocket';
 
 export default function BillingPage() {
   const theme = useTheme();
-  const [tab, setTab] = useState(0);
+  const [tab, setTab] = useState<number>(() => {
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('billing_active_tab');
+      return saved !== null ? parseInt(saved) : 0;
+    }
+    return 0;
+  });
   const [loading, setLoading] = useState(true);
   const [invoices, setInvoices] = useState<any[]>([]);
   const [pendingOrders, setPendingOrders] = useState<any[]>([]);
@@ -89,7 +95,9 @@ export default function BillingPage() {
 
   useEffect(() => {
     fetchData();
-  }, [fetchData]);
+    // Save session
+    localStorage.setItem('billing_active_tab', tab.toString());
+  }, [fetchData, tab]);
 
   useWebSocket('ORDER_CREATED', (payload) => {
     if (!payload) return;
@@ -156,8 +164,28 @@ export default function BillingPage() {
   useEffect(() => {
     const handleRefresh = () => fetchData();
     window.addEventListener('app-refresh', handleRefresh);
-    return () => window.removeEventListener('app-refresh', handleRefresh);
+    return () => {
+      window.removeEventListener('app-refresh', handleRefresh);
+    };
   }, [fetchData]);
+
+  // Restore settlement session
+  useEffect(() => {
+    const savedOrderId = localStorage.getItem('billing_selected_order_id');
+    if (savedOrderId && pendingOrders.length > 0) {
+      const order = pendingOrders.find(o => o.id === Number(savedOrderId));
+      if (order) setSelectedOrder(order);
+    }
+  }, [pendingOrders.length]);
+
+  // Save settlement session
+  useEffect(() => {
+    if (selectedOrder) {
+      localStorage.setItem('billing_selected_order_id', selectedOrder.id.toString());
+    } else {
+      localStorage.removeItem('billing_selected_order_id');
+    }
+  }, [selectedOrder]);
 
   const handlePrint = async (invoice: any) => {
     setPrintingInvoice(invoice);

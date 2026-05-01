@@ -1,6 +1,27 @@
 import { withSentryConfig } from "@sentry/nextjs";
 import type { NextConfig } from "next";
 import withPWAInit from "@ducanh2912/next-pwa";
+import fs from 'fs';
+import path from 'path';
+
+// Load environment variables from ../env/.env.frontend if available
+const envPath = path.resolve(process.cwd(), '../env/.env.frontend');
+if (fs.existsSync(envPath)) {
+  console.log('[NextConfig] Loading additional env from:', envPath);
+  const envContent = fs.readFileSync(envPath, 'utf8');
+  envContent.split('\n').forEach(line => {
+    const trimmedLine = line.trim();
+    if (!trimmedLine || trimmedLine.startsWith('#')) return;
+    const [key, ...valueParts] = trimmedLine.split('=');
+    if (key && valueParts.length > 0) {
+      const value = valueParts.join('=').trim();
+      // Only set if not already set by system/docker
+      if (!process.env[key]) {
+        process.env[key] = value;
+      }
+    }
+  });
+}
 
 const withPWA = withPWAInit({
   dest: "public",
@@ -18,6 +39,10 @@ const withPWA = withPWAInit({
 const nextConfig: NextConfig = {
   /* config options here */
   output: 'export',
+  env: {
+    NEXT_PUBLIC_API_URL: process.env.NEXT_PUBLIC_API_URL,
+    NEXT_PUBLIC_SENTRY_DSN: process.env.NEXT_PUBLIC_SENTRY_DSN,
+  },
   trailingSlash: true,
   images: {
     unoptimized: true,

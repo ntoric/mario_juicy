@@ -46,7 +46,7 @@ func GetTables(c *gin.Context) {
 	for _, t := range tables {
 		// Calculate active orders
 		var activeOrders []models.Order
-		config.DB.Where("table_id = ? AND order_type = 'DINE_IN' AND status NOT IN ?", t.ID, services.TerminalStatuses).Find(&activeOrders)
+		config.DB.Where("table_id = ? AND order_type = 'DINE_IN' AND status NOT IN ?", t.ID, services.TerminalStatuses).Order("id DESC").Find(&activeOrders)
 
 		activeOrdersResp := []interface{}{}
 		var currentOccupancy int
@@ -486,6 +486,9 @@ func UpdateOrder(c *gin.Context) {
 		}
 	}
 
+	// Capture old table ID for potential update
+	oldTableID := order.TableID
+
 	if err := config.DB.Model(&order).Updates(input).Error; err != nil {
 		utils.ErrorResponse(c, http.StatusInternalServerError, err.Error())
 		return
@@ -504,6 +507,16 @@ func UpdateOrder(c *gin.Context) {
 				itemStatus = "SERVED" // Items don't have COMPLETED/PAID status
 			}
 			config.DB.Model(&models.OrderItem{}).Where("order_id = ? AND status NOT IN ?", order.ID, []string{"CANCELLED", "REJECTED"}).Update("status", itemStatus)
+		}
+	}
+
+	// If table changed, update both old and new table status
+	if _, ok := input["table_id"]; ok {
+		if oldTableID != nil {
+			services.UpdateTableStatus(*oldTableID)
+		}
+		if order.TableID != nil {
+			services.UpdateTableStatus(*order.TableID)
 		}
 	}
 
@@ -626,7 +639,8 @@ func CancelOrder(c *gin.Context) {
 func ChangeOrderTable(c *gin.Context) {
 	id := c.Param("id")
 	var input struct {
-		TargetTableID uint `json:"target_table_id"`
+		TargetTableID   uint `json:"target_table_id"`
+		NumberOfPersons *int `json:"number_of_persons"`
 	}
 	if err := c.ShouldBindJSON(&input); err != nil {
 		utils.ErrorResponse(c, http.StatusBadRequest, err.Error())
@@ -639,28 +653,58 @@ func ChangeOrderTable(c *gin.Context) {
 		return
 	}
 
+	numPersons := order.NumberOfPersons
+	if input.NumberOfPersons != nil {
+		numPersons = *input.NumberOfPersons
+	}
+
 	// Capacity Check on Target Table
 	if order.OrderType == "DINE_IN" {
 		var targetTable models.Table
 		if err := config.DB.First(&targetTable, input.TargetTableID).Error; err == nil {
 			currentOccupancy := services.GetTableCurrentOccupancy(input.TargetTableID, order.ID)
-			if currentOccupancy+order.NumberOfPersons > targetTable.Capacity {
-				utils.ErrorResponse(c, http.StatusBadRequest, fmt.Sprintf("Target table capacity exceeded. Available: %d, Required: %d", targetTable.Capacity-currentOccupancy, order.NumberOfPersons))
+			if currentOccupancy+numPersons > targetTable.Capacity {
+				utils.ErrorResponse(c, http.StatusBadRequest, fmt.Sprintf("Target table capacity exceeded. Available: %d, Required: %d", targetTable.Capacity-currentOccupancy, numPersons))
 				return
 			}
 		}
 	}
 
-	oldTableID := order.TableID
-	if err := config.DB.Model(&order).Update("table_id", input.TargetTableID).Error; err != nil {
+	// Capture the old table ID value before updating
+	var oldTableID *uint
+	if order.TableID != nil {
+		id := *order.TableID
+		oldTableID = &id
+	}
+
+	err := config.DB.Transaction(func(tx *gorm.DB) error {
+		updates := map[string]interface{}{
+			"table_id": input.TargetTableID,
+		}
+		if input.NumberOfPersons != nil {
+			updates["number_of_persons"] = *input.NumberOfPersons
+		}
+
+		if err := tx.Model(&order).Updates(updates).Error; err != nil {
+			return err
+		}
+
+		if oldTableID != nil {
+			if err := services.UpdateTableStatusWithDB(tx, *oldTableID); err != nil {
+				return err
+			}
+		}
+		if err := services.UpdateTableStatusWithDB(tx, input.TargetTableID); err != nil {
+			return err
+		}
+
+		return nil
+	})
+
+	if err != nil {
 		utils.ErrorResponse(c, http.StatusInternalServerError, err.Error())
 		return
 	}
-
-	if oldTableID != nil {
-		services.UpdateTableStatus(*oldTableID)
-	}
-	services.UpdateTableStatus(input.TargetTableID)
 
 	config.DB.Preload("Table").Preload("Items.Item").Preload("Waiter").Preload("Invoice").First(&order, id)
 	websocket.Broadcast("ORDER_UPDATED", MapOrderToResponse(order))

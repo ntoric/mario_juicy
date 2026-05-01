@@ -19,8 +19,8 @@ import { useAuth } from "@/hooks/useAuth";
 import { storeService } from "@/services/storeService";
 
 export default function RestaurantSettings() {
-  const { activeStoreId, refreshActiveStore } = useAuth();
-  const [loading, setLoading] = useState(true);
+  const { activeStoreId, refreshActiveStore, loading: authLoading } = useAuth();
+  const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
@@ -80,6 +80,7 @@ export default function RestaurantSettings() {
   const fetchStoreSettings = async () => {
     try {
       setLoading(true);
+      setError(null);
       const data = await storeService.getStore(activeStoreId!);
       setSettings({
         is_kitchen_step_enabled: data.is_kitchen_step_enabled,
@@ -91,6 +92,7 @@ export default function RestaurantSettings() {
         thermal_printer_product_id: data.thermal_printer_product_id || null,
       });
     } catch (err: any) {
+      console.error("Failed to load store settings:", err);
       setError(err.message || "Failed to load store settings");
     } finally {
       setLoading(false);
@@ -117,11 +119,19 @@ export default function RestaurantSettings() {
     }
   };
 
-  if (loading) {
+  if (authLoading || (activeStoreId && loading)) {
     return (
       <Box sx={{ display: 'flex', justifyContent: 'center', p: 4 }}>
-        <CircularProgress color="inherit" />
+        <CircularProgress color="primary" />
       </Box>
+    );
+  }
+
+  if (!activeStoreId && !authLoading) {
+    return (
+      <Alert severity="warning" sx={{ borderRadius: '7px' }}>
+        No active store selected. Please select a store to view configuration.
+      </Alert>
     );
   }
 

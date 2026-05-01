@@ -4,14 +4,14 @@ const getBaseUrl = () => {
     if (customUrl) return customUrl;
   }
 
-  let url = process.env.NEXT_PUBLIC_API_URL || 'https://mario-api.ntoric.com/api';
-  
+  let url = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8020/api';
+
   if (typeof window !== 'undefined') {
     // If we're on a mobile browser or Capacitor
     if (window.location.hostname !== 'localhost' && url.includes('localhost')) {
       url = url.replace('localhost', window.location.hostname);
     }
-    
+
     // Automatically use https:// if the page is loaded over https://
     if (window.location.protocol === 'https:' && url.startsWith('http:')) {
       url = url.replace('http:', 'https:');
@@ -29,7 +29,7 @@ export const rawFetch = async (endpoint: string, options: RequestInit = {}) => {
   const storeId = typeof window !== 'undefined' ? localStorage.getItem('activeStoreId') : null;
 
   const isFormData = options.body instanceof FormData;
-  
+
   const headers = {
     ...(!isFormData && { 'Content-Type': 'application/json' }),
     ...(token && { Authorization: `Bearer ${token}` }),
@@ -38,19 +38,19 @@ export const rawFetch = async (endpoint: string, options: RequestInit = {}) => {
   } as Record<string, string>;
 
   const url = endpoint.startsWith('http') ? endpoint : `${baseUrl}${endpoint}`;
-  
+
   try {
     const response = await fetch(url, {
       ...options,
       headers,
     });
-    
+
     if (response.status === 401) {
       if (typeof window !== 'undefined') {
         localStorage.removeItem('access_token');
       }
     }
-    
+
     return response;
   } catch (error: any) {
     console.error(`API Fetch Error: Failed to reach ${url}`, error);
@@ -64,7 +64,7 @@ export const rawFetch = async (endpoint: string, options: RequestInit = {}) => {
 export const fetcher = async (endpoint: string, options: RequestInit = {}) => {
   const response = await rawFetch(endpoint, options);
   const data = await response.json().catch(() => ({}));
-  
+
   if (!response.ok) {
     let message = 'An error occurred';
     if (data.detail) message = data.detail;

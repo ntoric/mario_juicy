@@ -38,7 +38,7 @@ import InvoicePrint from './InvoicePrint';
 import { getImageUrl } from '@/utils/image';
 import { useWebSocket } from '@/hooks/useWebSocket';
 
-const DINE_IN_STATUS_FLOW: Order['status'][] = ['ORDER_TAKEN', 'PREPARING', 'SERVED', 'COMPLETED', 'PAID'];
+const DINE_IN_STATUS_FLOW: Order['status'][] = ['ORDER_TAKEN', 'SERVED', 'COMPLETED', 'PAID'];
 const DINE_IN_STATUS_FLOW_NO_KITCHEN: Order['status'][] = ['ORDER_TAKEN', 'SERVED', 'COMPLETED', 'PAID'];
 const TAKE_AWAY_STATUS_FLOW: Order['status'][] = ['ORDER_TAKEN', 'READY'];
 const TAKE_AWAY_STATUS_FLOW_NO_KITCHEN: Order['status'][] = ['ORDER_TAKEN', 'READY'];
@@ -75,6 +75,10 @@ const OrderDialog: React.FC<OrderDialogProps> = ({ open, onClose, table, initial
   const [moveTableOpen, setMoveTableOpen] = useState(false);
   const [allTables, setAllTables] = useState<RestaurantTable[]>([]);
   const [moving, setMoving] = useState(false);
+  const [selectedTargetTable, setSelectedTargetTable] = useState<RestaurantTable | null>(null);
+  const [moveFinalConfirmOpen, setMoveFinalConfirmOpen] = useState(false);
+
+
 
   // Parcel details
   const [customerName, setCustomerName] = useState('');
@@ -119,7 +123,7 @@ const OrderDialog: React.FC<OrderDialogProps> = ({ open, onClose, table, initial
     return matchesCategory && matchesSearch;
   });
 
-  const fetchData = async () => {
+  const fetchData = async (orderIdToSelect?: number) => {
     setLoading(true);
 
     try {
@@ -134,7 +138,7 @@ const OrderDialog: React.FC<OrderDialogProps> = ({ open, onClose, table, initial
       setAllTables(tablesData);
 
       const currentTable = table ? tablesData.find((t: any) => t.id === table.id) : null;
-      const activeOrds = currentTable?.active_orders || [];
+      const activeOrds = (currentTable?.active_orders || []).sort((a: any, b: any) => b.id - a.id);
       setActiveOrders(activeOrds);
 
       if (initialOrder) {
@@ -145,24 +149,34 @@ const OrderDialog: React.FC<OrderDialogProps> = ({ open, onClose, table, initial
         setSelectedOrderId(initialOrder.id);
         setDialogStage('ORDER_DETAILS');
       } else if (currentTable) {
-        setOrder(null);
-        setSelectedOrderId(null);
+        // Only reset if we don't have an active selection already
+        const currentSelection = orderIdToSelect || selectedOrderId;
+
+        if (!currentSelection && !order) {
+           setOrder(null);
+           setSelectedOrderId(null);
+        }
         // Don't reset customerName/Mobile if we're already in the process of creating one
         if (!customerMobile && !customerName) {
            setCustomerName('');
            setCustomerMobile('');
         }
         if (activeOrds.length > 0) {
-          // If we already have a selected order, try to refresh it
-          const ordToSelect = selectedOrderId 
-            ? (activeOrds.find((o: Order) => o.id === selectedOrderId) || activeOrds[0])
-            : activeOrds[0];
+          // Try to restore from localStorage first, then from state, then default to first (newest)
+          const savedOrderId = localStorage.getItem(`last_order_id_${table?.id}`);
+          
+          const ordToSelect = currentSelection 
+            ? (activeOrds.find((o: Order) => o.id === currentSelection) || activeOrds[0])
+            : (savedOrderId ? (activeOrds.find((o: Order) => o.id === Number(savedOrderId)) || activeOrds[0]) : activeOrds[0]);
             
           const orderData = await restaurantService.getOrder(ordToSelect.id);
           setOrder(orderData);
           setOrderType(orderData.order_type);
           setSelectedOrderId(orderData.id);
           setDialogStage('ORDER_DETAILS');
+          
+          // Persist the selection
+          localStorage.setItem(`last_order_id_${table?.id}`, orderData.id.toString());
         } else {
           // No active orders, start fresh
           setOrder(null);
@@ -170,7 +184,8 @@ const OrderDialog: React.FC<OrderDialogProps> = ({ open, onClose, table, initial
           setSelectedOrderId(null);
           setDialogStage('ORDER_DETAILS');
         }
-      } else {
+      }
+ else {
         setOrder(null);
         setOrderType('TAKE_AWAY');
         setDialogStage('ORDER_DETAILS');
@@ -268,6 +283,9 @@ const OrderDialog: React.FC<OrderDialogProps> = ({ open, onClose, table, initial
       setOrder(orderData);
       setOrderType(orderData.order_type);
       setDialogStage('ORDER_DETAILS');
+      
+      // Persist the selection
+      localStorage.setItem(`last_order_id_${table?.id}`, orderId.toString());
     } catch (e) {
       showError('Error', 'Failed to load order');
     } finally {
@@ -280,6 +298,13 @@ const OrderDialog: React.FC<OrderDialogProps> = ({ open, onClose, table, initial
       fetchData();
     }
   }, [open, table, initialOrder]);
+
+  useEffect(() => {
+    if (!moveTableOpen) {
+      setSelectedTargetTable(null);
+    }
+  }, [moveTableOpen]);
+
 
   const handleAddItem = async (item: Item) => {
     if (order?.invoice) return;
@@ -340,6 +365,9 @@ const OrderDialog: React.FC<OrderDialogProps> = ({ open, onClose, table, initial
       // Refresh the order data to show the new item
       const updatedOrder = await restaurantService.getOrder(activeOrder.id);
       setOrder(updatedOrder);
+      
+      // Refresh local active orders list to show the new tab immediately
+      await fetchData(activeOrder.id);
       
       // Notify parent that something changed
       onOrderUpdated();
@@ -489,17 +517,21 @@ const OrderDialog: React.FC<OrderDialogProps> = ({ open, onClose, table, initial
     finally { setLoading(false); }
   };
 
-  const handleMoveTable = async (targetTable: RestaurantTable) => {
-    if (!order) return;
+  const handleMoveTable = async () => {
+    if (!order || !selectedTargetTable) return;
+    
     setMoving(true);
     try {
-      await restaurantService.changeOrderTable(order.id, targetTable.id, movePersons);
+      await restaurantService.changeOrderTable(order.id, selectedTargetTable.id, movePersons);
       setMoveTableOpen(false);
+      setMoveFinalConfirmOpen(false);
       onOrderUpdated();
       onClose();
+      showSuccess("Success", `Order moved to Table ${selectedTargetTable.number}`);
     } catch (e) { showError('Error', 'Failed to move table'); }
     finally { setMoving(false); }
   };
+
 
   const handleCheckoutSuccess = async (invoiceData: any) => {
     setInvoice(invoiceData);
@@ -607,11 +639,11 @@ const OrderDialog: React.FC<OrderDialogProps> = ({ open, onClose, table, initial
 
     return (
       <Box sx={{ 
-        p: 1, 
+        p: { xs: 1, md: 2 }, 
         bgcolor: 'white', 
         borderTop: '1px solid #e8e4d8', 
         display: 'flex', 
-        gap: 1.5, 
+        gap: 2, 
         alignItems: 'center', 
         flexShrink: 0,
         zIndex: 1100
@@ -662,7 +694,7 @@ const OrderDialog: React.FC<OrderDialogProps> = ({ open, onClose, table, initial
   const renderSummaryContent = () => (
     <>
       <Box sx={{ p: 2, borderBottom: '1px solid #e8e4d8', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <Typography sx={{ fontWeight: 900 }}>SUMMARY</Typography>
+        <Typography variant="caption" sx={{ fontWeight: 900, letterSpacing: '0.05em' }}>SUMMARY</Typography>
         
           {orderType === 'DINE_IN' && (
           <Stack direction="row" spacing={0.5} sx={{ alignItems: 'center', border: '1px solid #e8e4d8', borderRadius: '20px', px: 1 }}>
@@ -724,32 +756,32 @@ const OrderDialog: React.FC<OrderDialogProps> = ({ open, onClose, table, initial
             <TableBody>
               {[...(order?.items || [])].sort((a, b) => a.id - b.id).map(item => (
                 <TableRow key={item.id}>
-                  <TableCell sx={{ py: 1.5 }}>
-                    <Typography variant="body2" sx={{ fontWeight: 800 }}>{item.item_details.name}</Typography>
-                    <ItemStatusChip status={item.status} orderType={order?.order_type || 'DINE_IN'} sx={{ height: 18 }} />
+                  <TableCell sx={{ py: 1.5, px: 1 }}>
+                    <Typography variant="body2" sx={{ fontWeight: 800, display: 'block' }}>{item.item_details.name}</Typography>
+                    <ItemStatusChip status={item.status} orderType={order?.order_type || 'DINE_IN'} sx={{ height: 18, fontSize: '0.7rem' }} />
                   </TableCell>
-                  <TableCell align="right">
+                  <TableCell align="right" sx={{ px: 1 }}>
                     {item.status === 'ORDERED' && !order?.invoice ? (
-                      <Stack direction="row" spacing={1} sx={{ alignItems: 'center', justifyContent: 'flex-end' }}>
-                        <IconButton size="small" onClick={() => handleUpdateItemQuantity(item, -1)}><RemoveIcon sx={{ fontSize: 14 }} /></IconButton>
-                        <Typography sx={{ fontWeight: 800 }}>{item.quantity}</Typography>
-                        <IconButton size="small" onClick={() => handleUpdateItemQuantity(item, 1)}><AddIcon sx={{ fontSize: 14 }} /></IconButton>
+                      <Stack direction="row" spacing={0.5} sx={{ alignItems: 'center', justifyContent: 'flex-end' }}>
+                        <IconButton size="small" onClick={() => handleUpdateItemQuantity(item, -1)} sx={{ p: 0.25 }}><RemoveIcon sx={{ fontSize: 12 }} /></IconButton>
+                        <Typography sx={{ fontWeight: 800, fontSize: '1rem' }}>{item.quantity}</Typography>
+                        <IconButton size="small" onClick={() => handleUpdateItemQuantity(item, 1)} sx={{ p: 0.25 }}><AddIcon sx={{ fontSize: 12 }} /></IconButton>
                       </Stack>
                     ) : (
-                      <Typography sx={{ fontWeight: 800 }}>×{item.quantity}</Typography>
+                      <Typography sx={{ fontWeight: 800, fontSize: '1rem' }}>×{item.quantity}</Typography>
                     )}
                   </TableCell>
-                  <TableCell align="right" sx={{ fontWeight: 800 }}>₹{(parseFloat(item.price) * item.quantity).toFixed(2)}</TableCell>
+                  <TableCell align="right" sx={{ fontWeight: 800, fontSize: '1rem', px: 1 }}>₹{(parseFloat(item.price) * item.quantity).toFixed(2)}</TableCell>
                 </TableRow>
               ))}
             </TableBody>
           </Table>
         )}
       </Box>
-      <Box sx={{ p: { xs: 1.5, md: 3 }, borderTop: '2px dashed #e8e4d8', bgcolor: '#fdfdfd' }}>
-        <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: { xs: 0.5, md: 2 } }}>
-          <Typography variant={isMobile ? "body1" : "h6"} sx={{ fontWeight: 900 }}>Total</Typography>
-          <Typography variant={isMobile ? "h6" : "h5"} sx={{ fontWeight: 900, color: 'primary.main' }}>₹{order?.total_amount || '0.00'}</Typography>
+      <Box sx={{ p: 1.5, borderTop: '2px dashed #e8e4d8', bgcolor: '#fdfdfd' }}>
+        <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 2 }}>
+          <Typography variant="body2" sx={{ fontWeight: 900 }}>Total</Typography>
+          <Typography variant="h5" sx={{ fontWeight: 900, color: 'primary.main' }}>₹{order?.total_amount || '0.00'}</Typography>
         </Box>
         {!isMobile && (
           <Stack spacing={1}>
@@ -877,25 +909,25 @@ const OrderDialog: React.FC<OrderDialogProps> = ({ open, onClose, table, initial
           {(!order || !order.invoice) && !['COMPLETED', 'PAID', 'CANCELLED', 'REJECTED', 'RETURNED'].includes(order?.status || 'ORDER_TAKEN') ? (
             <Box sx={{ flexGrow: 1, display: 'flex', flexDirection: 'column', height: '100%', overflow: 'hidden' }}>
               <Box sx={{ p: { xs: 1, md: 2 }, borderBottom: '1px solid #e8e4d8', bgcolor: 'white' }}>
-                <Grid container spacing={1} sx={{ alignItems: 'center' }}>
+                <Grid container spacing={0.5} sx={{ alignItems: 'center' }}>
                   <Grid size={{ xs: 12, md: 'auto' }}>
-                    <Stack direction="row" spacing={1} sx={{ alignItems: 'center', mb: { xs: 1, md: 0 } }}>
+                    <Stack direction="row" spacing={0.5} sx={{ alignItems: 'center', mb: { xs: 0.5, md: 0 } }}>
                       {orderType === 'DINE_IN' && (
-                        <Stack direction="row" spacing={0.5} sx={{ alignItems: 'center', bgcolor: '#f8fafc', borderRadius: '20px', px: 1, border: '1px solid #e2e8f0', mr: 1 }}>
-                          <PersonIcon sx={{ fontSize: 16, color: 'text.secondary' }} />
-                          <IconButton size="small" onClick={() => order ? handleUpdateOrderDetails({ number_of_persons: Math.max(1, order.number_of_persons - 1) }) : setNumberOfPersons(p => Math.max(1, p-1))} disabled={Boolean(order?.invoice)} sx={{ p: 0.5 }}>
-                            <RemoveIcon sx={{ fontSize: 14 }} />
+                        <Stack direction="row" spacing={0.25} sx={{ alignItems: 'center', bgcolor: '#f8fafc', borderRadius: '12px', px: 0.75, border: '1px solid #e2e8f0', mr: 0.5 }}>
+                          <PersonIcon sx={{ fontSize: 14, color: 'text.secondary' }} />
+                          <IconButton size="small" onClick={() => order ? handleUpdateOrderDetails({ number_of_persons: Math.max(1, order.number_of_persons - 1) }) : setNumberOfPersons(p => Math.max(1, p-1))} disabled={Boolean(order?.invoice)} sx={{ p: 0.25 }}>
+                            <RemoveIcon sx={{ fontSize: 12 }} />
                           </IconButton>
-                          <Typography sx={{ fontWeight: 800, fontSize: '0.85rem', minWidth: 20, textAlign: 'center' }}>{order ? order.number_of_persons : numberOfPersons}</Typography>
-                          <IconButton size="small" onClick={() => order ? handleUpdateOrderDetails({ number_of_persons: order.number_of_persons + 1 }) : setNumberOfPersons(p => p+1)} disabled={Boolean(order?.invoice) || (table ? ((table.current_occupancy || 0) + (order ? 0 : numberOfPersons)) >= table.capacity : false)} sx={{ p: 0.5 }}>
-                            <AddIcon sx={{ fontSize: 14 }} />
+                          <Typography sx={{ fontWeight: 800, fontSize: '0.75rem', minWidth: 16, textAlign: 'center' }}>{order ? order.number_of_persons : numberOfPersons}</Typography>
+                          <IconButton size="small" onClick={() => order ? handleUpdateOrderDetails({ number_of_persons: order.number_of_persons + 1 }) : setNumberOfPersons(p => p+1)} disabled={Boolean(order?.invoice) || (table ? ((table.current_occupancy || 0) + (order ? 0 : numberOfPersons)) >= table.capacity : false)} sx={{ p: 0.25 }}>
+                            <AddIcon sx={{ fontSize: 12 }} />
                           </IconButton>
                         </Stack>
                       )}
-                      <Box sx={{ display: 'flex', gap: 1, overflowX: 'auto', pb: 0.5, '&::-webkit-scrollbar': { display: 'none' } }}>
-                        <Button size="small" variant={activeCategory === 'all' ? 'contained' : 'outlined'} onClick={() => setActiveCategory('all')} sx={{ minWidth: 'fit-content', borderRadius: '20px' }}>All</Button>
+                      <Box sx={{ display: 'flex', gap: 0.5, overflowX: 'auto', pb: 0.25, '&::-webkit-scrollbar': { display: 'none' } }}>
+                        <Button size="small" variant={activeCategory === 'all' ? 'contained' : 'outlined'} onClick={() => setActiveCategory('all')} sx={{ minWidth: 'fit-content', borderRadius: '12px', fontSize: '0.8rem', py: 0.5 }}>All</Button>
                         {categories.map(cat => (
-                          <Button key={cat.id} size="small" variant={activeCategory === cat.id ? 'contained' : 'outlined'} onClick={() => setActiveCategory(cat.id)} sx={{ minWidth: 'fit-content', borderRadius: '20px' }}>{cat.name}</Button>
+                          <Button key={cat.id} size="small" variant={activeCategory === cat.id ? 'contained' : 'outlined'} onClick={() => setActiveCategory(cat.id)} sx={{ minWidth: 'fit-content', borderRadius: '12px', fontSize: '0.8rem', py: 0.5 }}>{cat.name}</Button>
                         ))}
                       </Box>
                     </Stack>
@@ -912,7 +944,7 @@ const OrderDialog: React.FC<OrderDialogProps> = ({ open, onClose, table, initial
                       key={item.id}
                       onClick={() => setSelectedItemForDetail(item)}
                       sx={{ 
-                        px: 2.5, 
+                        px: 2, 
                         py: 1.75, 
                         borderBottom: '1px solid #f1f5f9', 
                         display: 'flex', 
@@ -920,28 +952,27 @@ const OrderDialog: React.FC<OrderDialogProps> = ({ open, onClose, table, initial
                         alignItems: 'center',
                         cursor: 'pointer',
                         transition: 'all 0.2s',
-                        '&:hover': { bgcolor: alpha(theme.palette.primary.main, 0.05) },
-                        '&:active': { bgcolor: alpha(theme.palette.primary.main, 0.1) }
+                        '&:hover': { bgcolor: alpha(theme.palette.primary.main, 0.05) }
                       }}
                     >
                       <Box>
-                        <Typography variant="body1" sx={{ fontWeight: 700, color: '#334155' }}>{item.name}</Typography>
+                        <Typography variant="body1" sx={{ fontWeight: 700, color: '#334155', fontSize: '0.95rem' }}>{item.name}</Typography>
                       </Box>
-                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-                        <Typography variant="body1" sx={{ fontWeight: 900, color: 'primary.main' }}>₹{item.price}</Typography>
+                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+                        <Typography variant="body1" sx={{ fontWeight: 900, color: 'primary.main', fontSize: '1rem' }}>₹{item.price}</Typography>
                         <IconButton 
                           size="small" 
                           onClick={(e) => { e.stopPropagation(); handleAddItem(item); }}
                           disabled={loading || Boolean(order?.invoice)}
                           sx={{ 
+                            p: 0.25,
                             bgcolor: alpha(theme.palette.primary.main, 0.08), 
                             color: 'primary.main',
                             border: `1px solid ${alpha(theme.palette.primary.main, 0.2)}`,
                             '&:hover': { bgcolor: alpha(theme.palette.primary.main, 0.15) },
-                            '&.Mui-disabled': { bgcolor: 'action.disabledBackground' }
                           }}
                         >
-                          {loading ? <CircularProgress size={16} color="inherit" /> : <AddIcon fontSize="small" />}
+                          {loading ? <CircularProgress size={14} color="inherit" /> : <AddIcon sx={{ fontSize: 16 }} />}
                         </IconButton>
                       </Box>
                     </Box>
@@ -996,50 +1027,89 @@ const OrderDialog: React.FC<OrderDialogProps> = ({ open, onClose, table, initial
           </Box>
         </Box>
         <Box sx={{ display: 'flex', gap: 1 }}>
+          {order && order.order_type === 'DINE_IN' && !order.invoice && (
+            <Tooltip title="Move to Another Table">
+              <IconButton 
+                size="small" 
+                onClick={() => {
+                  setMovePersons(order.number_of_persons);
+                  setMoveTableOpen(true);
+                }}
+                sx={{ 
+                  bgcolor: alpha(theme.palette.primary.main, 0.05),
+                  color: 'primary.main',
+                  '&:hover': { bgcolor: alpha(theme.palette.primary.main, 0.1) }
+                }}
+              >
+                <TableIcon fontSize="small" />
+              </IconButton>
+            </Tooltip>
+          )}
         </Box>
       </Box>
 
       {/* Tabs for multiple orders */}
       {table && (
-        <Box sx={{ borderBottom: '1px solid #e8e4d8', bgcolor: '#fdfdfd' }}>
-          <Tabs
-            value={
-              (selectedOrderId !== null && activeOrders.some(o => o.id === selectedOrderId)) 
-                ? selectedOrderId 
-                : ((table && (table.current_occupancy || 0) < table.capacity) ? 'new' : (activeOrders.length > 0 ? activeOrders[0].id : false))
-            }
-            onChange={(_, val) => handleTabChange(val === 'new' ? null : val)}
-            variant="scrollable"
-            scrollButtons="auto"
-            sx={{
-              minHeight: { xs: 48, md: 48 },
-              '& .MuiTab-root': {
-                fontWeight: 800,
-                fontSize: isMobile ? '0.75rem' : '0.8rem',
-                minHeight: { xs: 48, md: 48 },
-                textTransform: 'none',
-                px: isMobile ? 2 : 3
-              },
-            }}
-          >
-            {activeOrders.map((ord) => (
-              <Tab 
-                key={ord.id} 
-                value={ord.id} 
-                label={ord.customer_name || `Order #${ord.id}`} 
-              />
-            ))}
-            {(table.current_occupancy || 0) < table.capacity && (
-              <Tab 
-                value="new" 
-                label="+ New Order" 
+        <Box sx={{ borderBottom: '1px solid #e8e4d8', bgcolor: '#fdfdfd', display: 'flex', alignItems: 'center' }}>
+          {activeOrders.length > 0 && (
+            <Tabs
+              value={selectedOrderId || false}
+              onChange={(_, val) => handleTabChange(val)}
+              variant="scrollable"
+              scrollButtons="auto"
+              sx={{
+                flexGrow: 1,
+                minHeight: 48,
+                '& .MuiTabs-indicator': { height: 3 },
+                '& .MuiTab-root': {
+                  fontWeight: 800,
+                  fontSize: '0.875rem',
+                  minHeight: 48,
+                  textTransform: 'none',
+                  px: 2,
+                  color: 'text.secondary',
+                  '&.Mui-selected': { color: 'primary.main' }
+                },
+              }}
+            >
+              {activeOrders.map((ord) => (
+                <Tab 
+                  key={ord.id} 
+                  value={ord.id} 
+                  label={ord.customer_name || `Order #${ord.id}`} 
+                />
+              ))}
+            </Tabs>
+          )}
+
+          {(table.current_occupancy || 0) < table.capacity && (
+            <>
+              {activeOrders.length > 0 && (
+                <Box sx={{ height: 24, width: '1px', bgcolor: '#e8e4d8', mx: 0.5 }} />
+              )}
+              <Button 
+                onClick={() => handleTabChange(null)}
+                startIcon={<AddIcon sx={{ fontSize: 20 }} />}
                 sx={{ 
-                  color: 'primary.main',
-                  '&.Mui-selected': { color: 'primary.dark' }
-                }} 
-              />
-            )}
-          </Tabs>
+                  height: 48, 
+                  px: { xs: 2, md: 3 }, 
+                  borderRadius: 0,
+                  fontWeight: 900,
+                  fontSize: '0.85rem',
+                  color: selectedOrderId === null ? 'primary.main' : 'text.secondary',
+                  borderBottom: selectedOrderId === null ? '3px solid' : 'none',
+                  borderColor: 'primary.main',
+                  bgcolor: selectedOrderId === null ? alpha(theme.palette.primary.main, 0.05) : 'transparent',
+                  textTransform: 'none',
+                  whiteSpace: 'nowrap',
+                  transition: 'all 0.2s',
+                  '&:hover': { bgcolor: alpha(theme.palette.primary.main, 0.08) }
+                }}
+              >
+                New Order
+              </Button>
+            </>
+          )}
         </Box>
       )}
 
@@ -1082,6 +1152,184 @@ const OrderDialog: React.FC<OrderDialogProps> = ({ open, onClose, table, initial
           onDownload={handleDownloadPDF} onPrint={() => setTimeout(handlePrint, 100)}
         />
       )}
+
+      {/* MOVE TABLE DIALOG */}
+      <Dialog
+        open={moveTableOpen}
+        onClose={() => setMoveTableOpen(false)}
+        maxWidth="xs"
+        fullWidth
+        slotProps={{
+          paper: { sx: { borderRadius: '16px' } }
+        }}
+      >
+        <DialogTitle sx={{ fontWeight: 900, pb: 0.5 }}>Move Order</DialogTitle>
+        <DialogContent>
+          <Typography variant="caption" color="text.secondary" sx={{ mb: 2, display: 'block' }}>
+            Move Order #{order?.id} (Table {table?.number})
+          </Typography>
+          
+          <Box sx={{ mb: 2 }}>
+             <Typography variant="overline" sx={{ fontWeight: 800, color: 'text.secondary', display: 'block', mb: 1 }}>GUESTS</Typography>
+             <Stack direction="row" spacing={2} sx={{ alignItems: 'center' }}>
+                <IconButton 
+                  size="small" 
+                  onClick={() => setMovePersons((p: number) => Math.max(1, p - 1))} 
+                  sx={{ 
+                    border: '1px solid #e8e4d8', 
+                    borderRadius: '50%', 
+                    p: 0.5,
+                    '&:hover': { bgcolor: alpha(theme.palette.primary.main, 0.05), borderColor: 'primary.main' }
+                  }}
+                >
+                  <RemoveIcon sx={{ fontSize: 16 }} />
+                </IconButton>
+                <Typography variant="h5" sx={{ fontWeight: 900, minWidth: 30, textAlign: 'center' }}>{movePersons}</Typography>
+                <IconButton 
+                  size="small" 
+                  onClick={() => setMovePersons((p: number) => p + 1)} 
+                  sx={{ 
+                    border: '1px solid #e8e4d8', 
+                    borderRadius: '50%', 
+                    p: 0.5,
+                    '&:hover': { bgcolor: alpha(theme.palette.primary.main, 0.05), borderColor: 'primary.main' }
+                  }}
+                >
+                  <AddIcon sx={{ fontSize: 16 }} />
+                </IconButton>
+             </Stack>
+          </Box>
+
+          <Typography variant="overline" sx={{ fontWeight: 800, color: 'text.secondary', display: 'block', mb: 0.5 }}>TARGET TABLE</Typography>
+          <Box 
+            sx={{ 
+              display: 'flex', 
+              gap: 1, 
+              overflowX: 'auto', 
+              pb: 1, 
+              pt: 0.5,
+              mx: -0.5,
+              px: 0.5,
+              '&::-webkit-scrollbar': { height: 4 },
+              '&::-webkit-scrollbar-thumb': { bgcolor: alpha(theme.palette.primary.main, 0.1), borderRadius: 2 }
+            }}
+          >
+            {allTables
+              .filter((t: RestaurantTable) => t.id !== table?.id && t.is_active)
+              .sort((a: RestaurantTable, b: RestaurantTable) => {
+                 const aNum = parseInt(a.number) || 0;
+                 const bNum = parseInt(b.number) || 0;
+                 return aNum - bNum;
+              })
+              .map((t: RestaurantTable) => {
+                const availableCapacity = t.capacity - (t.current_occupancy || 0);
+                const hasCapacity = availableCapacity >= movePersons;
+                const isSelected = selectedTargetTable?.id === t.id;
+                
+                return (
+                  <Paper
+                    key={t.id}
+                    elevation={isSelected ? 4 : 0}
+                    onClick={() => hasCapacity && setSelectedTargetTable(t)}
+                    sx={{
+                      flexShrink: 0,
+                      minWidth: 90,
+                      p: 1,
+                      borderRadius: '12px',
+                      border: '2px solid',
+                      borderColor: isSelected ? 'primary.main' : (hasCapacity ? '#e8e4d8' : alpha(theme.palette.error.main, 0.1)),
+                      cursor: hasCapacity ? 'pointer' : 'not-allowed',
+                      opacity: hasCapacity ? 1 : 0.6,
+                      bgcolor: isSelected ? alpha(theme.palette.primary.main, 0.05) : (hasCapacity ? 'white' : alpha(theme.palette.error.main, 0.02)),
+                      transform: isSelected ? 'translateY(-2px)' : 'none',
+                      transition: 'all 0.2s',
+                      textAlign: 'center',
+                      '&:hover': hasCapacity ? {
+                        borderColor: 'primary.main',
+                        bgcolor: alpha(theme.palette.primary.main, 0.02),
+                      } : {}
+                    }}
+                  >
+                    <Typography variant="subtitle2" sx={{ fontWeight: 900, color: hasCapacity ? 'text.primary' : 'text.disabled', lineHeight: 1.2 }}>
+                      T{t.number}
+                    </Typography>
+                    <Typography variant="caption" sx={{ display: 'block', fontWeight: 700, color: hasCapacity ? 'primary.main' : 'error.main', fontSize: '0.65rem' }}>
+                      {t.current_occupancy || 0}/{t.capacity}
+                    </Typography>
+                    {!hasCapacity && (
+                      <Typography variant="caption" sx={{ color: 'error.main', fontSize: '0.55rem', fontWeight: 900, display: 'block' }}>
+                        FULL
+                      </Typography>
+                    )}
+                  </Paper>
+                );
+              })}
+          </Box>
+        </DialogContent>
+        <DialogActions sx={{ p: 2, pt: 0, justifyContent: 'space-between' }}>
+          <Button size="small" onClick={() => setMoveTableOpen(false)} sx={{ fontWeight: 800, color: 'text.secondary', fontSize: '0.75rem' }}>CANCEL</Button>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+            {moving && <CircularProgress size={16} />}
+            <Button 
+              variant="contained" 
+              size="small" 
+              disabled={!selectedTargetTable || moving} 
+              onClick={() => setMoveFinalConfirmOpen(true)}
+              sx={{ 
+                fontWeight: 900, 
+                borderRadius: '8px',
+                px: 3
+              }}
+            >
+              MOVE ORDER
+            </Button>
+          </Box>
+        </DialogActions>
+      </Dialog>
+
+      {/* MOVE FINAL CONFIRMATION DIALOG */}
+      <Dialog
+        open={moveFinalConfirmOpen}
+        onClose={() => setMoveFinalConfirmOpen(false)}
+        maxWidth="xs"
+        fullWidth
+        slotProps={{
+          paper: { sx: { borderRadius: '16px', p: 1 } }
+        }}
+      >
+        <DialogTitle sx={{ fontWeight: 900, textAlign: 'center' }}>Confirm Move</DialogTitle>
+        <DialogContent sx={{ textAlign: 'center' }}>
+          <Typography variant="body1" sx={{ mb: 1 }}>
+            Are you sure you want to move this order?
+          </Typography>
+          <Box sx={{ bgcolor: alpha(theme.palette.primary.main, 0.05), p: 2, borderRadius: '12px', mb: 2 }}>
+            <Typography variant="body2" sx={{ fontWeight: 800 }}>
+              Table {table?.number} → Table {selectedTargetTable?.number}
+            </Typography>
+            <Typography variant="caption" color="text.secondary">
+              Order #{order?.id} • {movePersons} Guests
+            </Typography>
+          </Box>
+        </DialogContent>
+        <DialogActions sx={{ justifyContent: 'center', pb: 2, gap: 2 }}>
+          <Button 
+            onClick={() => setMoveFinalConfirmOpen(false)}
+            sx={{ fontWeight: 800, color: 'text.secondary' }}
+          >
+            CANCEL
+          </Button>
+          <Button 
+            variant="contained" 
+            color="primary"
+            onClick={handleMoveTable}
+            disabled={moving}
+            sx={{ fontWeight: 900, borderRadius: '10px', px: 4 }}
+          >
+            {moving ? <CircularProgress size={20} color="inherit" /> : 'CONFIRM MOVE'}
+          </Button>
+        </DialogActions>
+      </Dialog>
+
 
       {/* ITEM DETAIL DIALOG */}
       <Dialog

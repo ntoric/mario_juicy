@@ -266,9 +266,11 @@ export default function SettlementDialog({ open, onClose, order, onSuccess }: Se
                           </IconButton>
                         </Tooltip>
                         <Tooltip title="Download">
-                          <IconButton size="small" onClick={handleDownload} disabled={downloading} sx={{ color: '#E9762B', bgcolor: 'white', borderRadius: '8px' }}>
-                            {downloading ? <CircularProgress size={16} color="inherit" /> : <DownloadIcon fontSize="small" />}
-                          </IconButton>
+                          <span>
+                            <IconButton size="small" onClick={handleDownload} disabled={downloading} sx={{ color: '#E9762B', bgcolor: 'white', borderRadius: '8px' }}>
+                              {downloading ? <CircularProgress size={16} color="inherit" /> : <DownloadIcon fontSize="small" />}
+                            </IconButton>
+                          </span>
                         </Tooltip>
                       </Stack>
                     </Box>

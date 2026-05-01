@@ -44,11 +44,11 @@ import { useWebSocket } from '@/hooks/useWebSocket';
 const STATUS_CONFIG: Record<string, {
   bg: string; border: string; text: string; label: string; dot: string;
 }> = {
-  VACANT:             { bg: '#f1fcf1', border: '#4caf50', text: '#1b5e20', label: 'Available',   dot: '#4caf50' },
-  PARTIALLY_OCCUPIED: { bg: '#fff9e6', border: '#F2C94C', text: '#856404', label: 'Partial',     dot: '#F2C94C' },
-  OCCUPIED:           { bg: '#fff4f4', border: '#CF0F0F', text: '#910a0a', label: 'Occupied',    dot: '#CF0F0F' },
-  RESERVED:           { bg: '#fff9e6', border: '#E9762B', text: '#7d3e17', label: 'Reserved',    dot: '#E9762B' },
-  MAINTENANCE:        { bg: '#FCF9EA', border: '#D4C4A8', text: '#5d4037', label: 'Maintenance', dot: '#D4C4A8' },
+  VACANT:             { bg: '#f0fff0', border: '#22c55e', text: '#15803d', label: 'Available',   dot: '#22c55e' },
+  PARTIALLY_OCCUPIED: { bg: '#fffbeb', border: '#f59e0b', text: '#b45309', label: 'Partial',     dot: '#f59e0b' },
+  OCCUPIED:           { bg: '#fef2f2', border: '#ef4444', text: '#b91c1c', label: 'Occupied',    dot: '#ef4444' },
+  RESERVED:           { bg: '#fff7ed', border: '#f97316', text: '#c2410c', label: 'Reserved',    dot: '#f97316' },
+  MAINTENANCE:        { bg: '#f8fafc', border: '#64748b', text: '#334155', label: 'Maintenance', dot: '#64748b' },
 };
 
 // Add pulse animation for occupied tables
@@ -106,6 +106,13 @@ export default function TableMapPage() {
     try {
       const data = await restaurantService.getTables();
       setTables(data || []);
+      
+      // Update orderTable if it's currently open to ensure Dialog stays in sync
+      if (orderTable) {
+        const updated = data.find((t: Table) => t.id === orderTable.id);
+        if (updated) setOrderTable(updated);
+      }
+      
       setError(null);
     } catch (e: any) { setError(e.message || 'Failed to load tables'); }
     finally { setLoading(false); }
@@ -128,10 +135,38 @@ export default function TableMapPage() {
   }, [fetchTables]);
 
   useEffect(() => {
-    const handleClose = () => setOrderDialogOpen(false);
+    const handleClose = () => {
+      setOrderDialogOpen(false);
+      localStorage.removeItem('active_table_id');
+      localStorage.removeItem('order_dialog_open');
+    };
     window.addEventListener('close-dialogs', handleClose);
     return () => window.removeEventListener('close-dialogs', handleClose);
   }, []);
+
+  // Restore session on mount
+  useEffect(() => {
+    const savedTableId = localStorage.getItem('active_table_id');
+    const isDialogOpen = localStorage.getItem('order_dialog_open') === 'true';
+    
+    if (savedTableId && isDialogOpen && tables.length > 0) {
+      const t = tables.find(t => t.id === Number(savedTableId));
+      if (t) {
+        setOrderTable(t);
+        setOrderDialogOpen(true);
+      }
+    }
+  }, [tables.length]); // Wait until tables are loaded to find the matching table object
+
+  // Save session state
+  useEffect(() => {
+    if (orderTable && orderDialogOpen) {
+      localStorage.setItem('active_table_id', orderTable.id.toString());
+      localStorage.setItem('order_dialog_open', 'true');
+    } else if (!orderDialogOpen) {
+      localStorage.setItem('order_dialog_open', 'false');
+    }
+  }, [orderTable, orderDialogOpen]);
 
   const onPointerDown = (e: React.PointerEvent, table: Table) => {
     if (!editMode) return;

@@ -7,6 +7,7 @@ import CssBaseline from "@mui/material/CssBaseline";
 import { backofficeTheme } from "@/theme/backofficeTheme";
 import { WebSocketProvider } from '../../context/WebSocketContext';
 import { ToastProvider } from '../../context/ToastContext';
+import { AuthProvider } from '../../context/AuthContext';
 
 export function Providers({ children }: { children: React.ReactNode }) {
   return (
@@ -14,9 +15,11 @@ export function Providers({ children }: { children: React.ReactNode }) {
       <ThemeProvider theme={backofficeTheme}>
         <CssBaseline />
         <ToastProvider>
-          <WebSocketProvider>
-            {children}
-          </WebSocketProvider>
+          <AuthProvider>
+            <WebSocketProvider>
+              {children}
+            </WebSocketProvider>
+          </AuthProvider>
         </ToastProvider>
       </ThemeProvider>
     </AppRouterCacheProvider>

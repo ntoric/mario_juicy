@@ -1,6 +1,6 @@
 "use client";
 
-import { Box, Typography, Breadcrumbs, Link, Divider } from "@mui/material";
+import { Box, Typography, Breadcrumbs, Link, Divider, CircularProgress } from "@mui/material";
 import TaxConfiguration from "@/components/backoffice/settings/TaxConfiguration";
 import RestaurantSettings from "@/components/backoffice/settings/RestaurantSettings";
 import SystemReset from "@/components/backoffice/settings/SystemReset";
@@ -8,8 +8,16 @@ import NextLink from "next/link";
 import { useAuth } from "@/hooks/useAuth";
 
 export default function SettingsPage() {
-  const { isRole } = useAuth();
+  const { isRole, loading } = useAuth();
   const isSuperAdmin = isRole('SUPER_ADMIN');
+
+  if (loading) {
+    return (
+      <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '50vh' }}>
+        <CircularProgress />
+      </Box>
+    );
+  }
 
   return (
     <Box sx={{ p: { xs: 1.5, md: 2 } }}>

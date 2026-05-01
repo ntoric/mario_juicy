@@ -52,7 +52,10 @@ const TableCard: React.FC<TableCardProps> = ({ table, onOpenOrder, onViewDetails
               alignItems: 'center', 
               justifyContent: 'center',
               borderRadius: 2,
-              bgcolor: table.status === 'OCCUPIED' ? 'error.light' : 'primary.light',
+              bgcolor: 
+                table.status === 'OCCUPIED' ? 'error.main' : 
+                table.status === 'PARTIALLY_OCCUPIED' ? 'warning.main' : 
+                table.status === 'VACANT' ? 'success.main' : 'primary.light',
               color: 'white'
             }}
           >

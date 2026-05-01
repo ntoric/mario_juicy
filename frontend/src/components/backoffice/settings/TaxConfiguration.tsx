@@ -27,8 +27,8 @@ const TAX_TYPES = [
 ];
 
 export default function TaxConfiguration() {
-  const { activeStoreId } = useAuth();
-  const [loading, setLoading] = useState(true);
+  const { activeStoreId, loading: authLoading } = useAuth();
+  const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
@@ -53,19 +53,22 @@ export default function TaxConfiguration() {
   const fetchTaxConfig = async () => {
     try {
       setLoading(true);
-      const data = await fetcher("/core/tax-configuration/");
+      setError(null);
+      // Backend expects store_id as a query parameter
+      const data = await fetcher(`/core/tax-configuration/?store_id=${activeStoreId}`);
       setFormData({
-        name: data.name,
-        tax_type: data.tax_type,
-        is_gst_enabled: data.is_gst_enabled,
-        cgst_rate: data.cgst_rate.toString(),
-        sgst_rate: data.sgst_rate.toString(),
-        igst_rate: data.igst_rate.toString(),
-        is_cess_enabled: data.is_cess_enabled,
-        cess_rate: data.cess_rate.toString(),
+        name: data.name || "Default Tax Configuration",
+        tax_type: data.tax_type || "EXCLUSIVE",
+        is_gst_enabled: data.is_gst_enabled || false,
+        cgst_rate: data.cgst_rate ? data.cgst_rate.toString() : "0.00",
+        sgst_rate: data.sgst_rate ? data.sgst_rate.toString() : "0.00",
+        igst_rate: data.igst_rate ? data.igst_rate.toString() : "0.00",
+        is_cess_enabled: data.is_cess_enabled || false,
+        cess_rate: data.cess_rate ? data.cess_rate.toString() : "0.00",
       });
     } catch (err: any) {
-      setError(err.message);
+      console.error("Failed to fetch tax config:", err);
+      setError(err.message || "Failed to load tax configuration");
     } finally {
       setLoading(false);
     }
@@ -97,11 +100,19 @@ export default function TaxConfiguration() {
     }
   };
 
-  if (loading) {
+  if (authLoading || (activeStoreId && loading)) {
     return (
       <Box sx={{ display: 'flex', justifyContent: 'center', p: 4 }}>
-        <CircularProgress color="inherit" />
+        <CircularProgress color="primary" />
       </Box>
+    );
+  }
+
+  if (!activeStoreId && !authLoading) {
+    return (
+      <Alert severity="warning" sx={{ borderRadius: '7px' }}>
+        No active store selected. Please select a store to view tax configuration.
+      </Alert>
     );
   }
 

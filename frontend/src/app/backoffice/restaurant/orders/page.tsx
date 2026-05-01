@@ -155,7 +155,13 @@ export default function LiveOrdersPage() {
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [tab, setTab] = useState(0);
+  const [tab, setTab] = useState<number>(() => {
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('live_orders_active_tab');
+      return saved !== null ? parseInt(saved) : 0;
+    }
+    return 0;
+  });
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [drawerOpen, setDrawerOpen] = useState(false);
@@ -174,7 +180,11 @@ export default function LiveOrdersPage() {
     }
   }, []);
 
-  useEffect(() => { fetchOrders(); }, [fetchOrders]);
+  useEffect(() => { 
+    fetchOrders(); 
+    // Save session
+    localStorage.setItem('live_orders_active_tab', tab.toString());
+  }, [fetchOrders, tab]);
 
   useWebSocket('ORDER_CREATED', () => fetchOrders());
   useWebSocket('ORDER_UPDATED', () => fetchOrders());

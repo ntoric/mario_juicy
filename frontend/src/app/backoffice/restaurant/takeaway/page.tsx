@@ -116,7 +116,13 @@ export default function TakeAwayPage() {
   const [error, setError] = useState<string | null>(null);
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
   const [dialogOpen, setDialogOpen] = useState(false);
-  const [activeTab, setActiveTab] = useState(0);
+  const [activeTab, setActiveTab] = useState<number>(() => {
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('takeaway_active_tab');
+      return saved !== null ? parseInt(saved) : 0;
+    }
+    return 0;
+  });
 
   const fetchOrders = useCallback(async () => {
     setLoading(true);
@@ -141,7 +147,11 @@ export default function TakeAwayPage() {
     }
   }, []);
 
-  useEffect(() => { fetchOrders(); }, [fetchOrders]);
+  useEffect(() => { 
+    fetchOrders(); 
+    // Save session
+    localStorage.setItem('takeaway_active_tab', activeTab.toString());
+  }, [fetchOrders, activeTab]);
 
   useWebSocket('ORDER_CREATED', () => fetchOrders());
   useWebSocket('ORDER_UPDATED', () => fetchOrders());
@@ -155,10 +165,39 @@ export default function TakeAwayPage() {
   }, [fetchOrders]);
 
   useEffect(() => {
-    const handleClose = () => setDialogOpen(false);
+    const handleClose = () => {
+      setDialogOpen(false);
+      localStorage.removeItem('active_parcel_id');
+      localStorage.removeItem('parcel_dialog_open');
+    };
     window.addEventListener('close-dialogs', handleClose);
     return () => window.removeEventListener('close-dialogs', handleClose);
   }, []);
+
+  // Restore session
+  useEffect(() => {
+    const savedParcelId = localStorage.getItem('active_parcel_id');
+    const isDialogOpen = localStorage.getItem('parcel_dialog_open') === 'true';
+    
+    if (savedParcelId && isDialogOpen && activeOrders.length > 0) {
+      const order = activeOrders.find(o => o.id === Number(savedParcelId)) || 
+                    historyOrders.find(o => o.id === Number(savedParcelId));
+      if (order) {
+        setSelectedOrder(order);
+        setDialogOpen(true);
+      }
+    }
+  }, [activeOrders.length, historyOrders.length]);
+
+  // Save session state
+  useEffect(() => {
+    if (selectedOrder && dialogOpen) {
+      localStorage.setItem('active_parcel_id', selectedOrder.id.toString());
+      localStorage.setItem('parcel_dialog_open', 'true');
+    } else if (!dialogOpen) {
+      localStorage.setItem('parcel_dialog_open', 'false');
+    }
+  }, [selectedOrder, dialogOpen]);
   
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
 
