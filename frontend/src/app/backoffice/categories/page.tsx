@@ -39,7 +39,7 @@ import {
   Grid,
 } from "@mui/material";
 import { alpha } from "@mui/material/styles";
-import { toast } from 'sonner';
+import { useToast } from "@/context/ToastContext";
 import {
   Add as AddIcon,
   Edit as EditIcon,
@@ -58,6 +58,7 @@ import { getImageUrl } from "@/lib/getImageUrl";
 export default function CategoryPage() {
   const theme = useTheme();
   const { hasPermission } = useAuth();
+  const { showSuccess, showError } = useToast();
   const canAdd = hasPermission("catalogs.add_category");
   const canEdit = hasPermission("catalogs.change_category");
   const canDelete = hasPermission("catalogs.delete_category");
@@ -157,7 +158,7 @@ export default function CategoryPage() {
 
   const handleSubmit = async () => {
     if (!formData.name.trim()) {
-      toast.error("Name is required");
+      showError("Validation Error", "Name is required");
       return;
     }
 
@@ -171,15 +172,15 @@ export default function CategoryPage() {
     try {
       if (view === "create") {
         await categoryService.createCategory(data);
-        toast.success("Category created successfully");
+        showSuccess("Success", "Category created successfully");
       } else if (currentCategory) {
         await categoryService.updateCategory(currentCategory.id, data);
-        toast.success("Category updated successfully");
+        showSuccess("Success", "Category updated successfully");
       }
       handleCloseForm();
       fetchCategories();
     } catch (err: any) {
-      toast.error(err.message || "Operation failed");
+      showError("Operation failed", err.message || "Something went wrong");
     }
   };
 
@@ -187,9 +188,9 @@ export default function CategoryPage() {
     try {
       await categoryService.toggleStatus(category.id);
       fetchCategories();
-      toast.success(`Category ${!category.is_enabled ? 'enabled' : 'disabled'} successfully`);
+      showSuccess("Success", `Category ${!category.is_enabled ? 'enabled' : 'disabled'} successfully`);
     } catch (err: any) {
-      toast.error(err.message || "Failed to toggle status");
+      showError("Error", err.message || "Failed to toggle status");
     }
   };
 
@@ -198,9 +199,9 @@ export default function CategoryPage() {
       try {
         await categoryService.deleteCategory(deleteId);
         fetchCategories();
-        toast.success("Category deleted successfully");
+        showSuccess("Success", "Category deleted successfully");
       } catch (err: any) {
-        toast.error(err.message || "Failed to delete category");
+        showError("Error", err.message || "Failed to delete category");
       } finally {
         setOpenDeleteDialog(false);
         setDeleteId(null);

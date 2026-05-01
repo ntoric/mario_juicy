@@ -1,3 +1,4 @@
+import * as Sentry from '@sentry/react-native';
 import FontAwesome from '@expo/vector-icons/FontAwesome';
 import { DarkTheme, DefaultTheme, ThemeProvider } from '@react-navigation/native';
 import { useFonts } from 'expo-font';
@@ -9,6 +10,11 @@ import { Provider as PaperProvider, MD3LightTheme } from 'react-native-paper';
 
 import { useColorScheme } from '@/components/useColorScheme';
 import { AuthProvider } from '../src/context/AuthContext';
+
+Sentry.init({
+  dsn: 'https://placeholder@sentry.io/placeholder',
+  debug: __DEV__,
+});
 
 export {
   // Catch any errors thrown by the Layout component.
@@ -32,7 +38,7 @@ const theme = {
   },
 };
 
-export default function RootLayout() {
+function RootLayout() {
   const [loaded, error] = useFonts({
     SpaceMono: require('../assets/fonts/SpaceMono-Regular.ttf'),
     ...FontAwesome.font,
@@ -60,6 +66,8 @@ export default function RootLayout() {
     </PaperProvider>
   );
 }
+
+export default Sentry.wrap(RootLayout);
 
 function RootLayoutNav() {
   const colorScheme = useColorScheme();

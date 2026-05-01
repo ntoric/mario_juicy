@@ -11,6 +11,8 @@ import (
 
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
+	"github.com/getsentry/sentry-go"
+	sentrygin "github.com/getsentry/sentry-go/gin"
 	"go.uber.org/zap"
 )
 
@@ -18,6 +20,19 @@ func main() {
 	// Initialize Logger
 	utils.InitializeLogger()
 	defer utils.Log.Sync()
+
+	// Initialize Sentry
+	err := sentry.Init(sentry.ClientOptions{
+		Dsn: os.Getenv("SENTRY_DSN"),
+		EnableTracing: true,
+		// Set TracesSampleRate to 1.0 to capture 100%
+		// of transactions for performance monitoring.
+		// We recommend adjusting this value in production,
+		TracesSampleRate: 1.0,
+	})
+	if err != nil {
+		utils.Error("Sentry initialization failed", zap.Error(err))
+	}
 
 	// Initialize Config and Database
 	config.LoadConfig()
@@ -30,6 +45,9 @@ func main() {
 	// Global Middleware
 	r.Use(middleware.Logger())
 	r.Use(gin.Recovery())
+	r.Use(sentrygin.New(sentrygin.Options{
+		Repanic: true,
+	}))
 
 	r.Use(cors.New(cors.Config{
 		AllowOriginFunc: func(origin string) bool {

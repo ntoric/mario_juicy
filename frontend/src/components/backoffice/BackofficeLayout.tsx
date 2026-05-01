@@ -65,12 +65,11 @@ import {
 import Fab from "@mui/material/Fab";
 import { restaurantService, Table } from "@/services/restaurantService";
 import OrderDialog from "@/components/backoffice/restaurant/OrderDialog";
-import { toast } from "sonner";
 import Avatar from "@mui/material/Avatar";
 import Tooltip from "@mui/material/Tooltip";
 import { useAuth } from "@/hooks/useAuth";
 import { Pacifico } from "next/font/google";
-import { Toaster } from 'sonner';
+import { useToast } from "@/context/ToastContext";
 // import Preloader from "@/components/ui/Preloader";
 
 const pacifico = Pacifico({
@@ -301,6 +300,7 @@ export default function BackofficeLayout({ children }: { children: React.ReactNo
   const [profileAnchor, setProfileAnchor] = useState<null | HTMLElement>(null);
   const [stores, setStores] = useState<{ id: number, name: string }[]>([]);
   const { user, loading, error, hasPermission, isRole, activeStoreId, activeStore, setActiveStore } = useAuth();
+  const { showError, showInfo } = useToast();
 
   const [quickOrderOpen, setQuickOrderOpen] = useState(false);
   const [selectedTableForOrder, setSelectedTableForOrder] = useState<Table | null>(null);
@@ -314,7 +314,7 @@ export default function BackofficeLayout({ children }: { children: React.ReactNo
       const data = await restaurantService.getTables();
       setAvailableTables(data || []);
     } catch (e) {
-      toast.error("Failed to load tables");
+      showError("Error", "Failed to load tables");
     } finally {
       setFetchingTables(false);
     }
@@ -583,7 +583,6 @@ export default function BackofficeLayout({ children }: { children: React.ReactNo
   return (
     <Box sx={{ display: "flex", height: "100dvh", overflow: "hidden", backgroundColor: theme.palette.background.default }}>
       <CssBaseline />
-      <Toaster position="top-center" richColors closeButton duration={5000} />
       
 
 
@@ -860,7 +859,7 @@ export default function BackofficeLayout({ children }: { children: React.ReactNo
                             setSelectedTableForOrder(table);
                             setQuickOrderOpen(false);
                           } else {
-                            toast.info("Table Full", { description: `Table ${table.number} is already at full capacity.` });
+                            showInfo("Table Full", `Table ${table.number} is already at full capacity.`);
                           }
                         }}
                         sx={{

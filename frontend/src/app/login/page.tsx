@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { toast } from "sonner";
+import { useToast } from "@/context/ToastContext";
 import { LogIn, User, Lock, Loader2, Store } from "lucide-react";
 import { fetcher } from "@/lib/api";
 import { setTokens, isAuthenticated } from "@/lib/auth";
@@ -18,6 +18,7 @@ const pacifico = Pacifico({
 
 export default function LoginPage() {
   const router = useRouter();
+  const { showSuccess, showError } = useToast();
   const [isAuthenticating, setIsAuthenticating] = useState(false);
   const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState({
@@ -52,14 +53,10 @@ export default function LoginPage() {
       });
 
       setTokens(data.access, data.refresh);
-      toast.success("Welcome back!", {
-        description: "You have successfully logged in.",
-      });
+      showSuccess("Welcome back!", "You have successfully logged in.");
       router.push("/backoffice");
     } catch (error: any) {
-      toast.error("Login Failed", {
-        description: error.message || "Invalid username or password.",
-      });
+      showError("Login Failed", error.message || "Invalid username or password.");
     } finally {
       setLoading(false);
     }

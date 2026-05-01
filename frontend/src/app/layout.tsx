@@ -1,5 +1,4 @@
 import type { Metadata, Viewport } from "next";
-import { Toaster } from "sonner";
 import "./globals.css";
 import { Providers } from "@/components/providers/Providers";
 
@@ -36,7 +35,6 @@ export default function RootLayout({
         <link rel="manifest" href="/manifest.json" />
       </head>
       <body>
-        <Toaster position="top-center" richColors expand />
         <Providers>
           {children}
         </Providers>

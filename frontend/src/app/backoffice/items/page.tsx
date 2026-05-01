@@ -19,7 +19,7 @@ import {
   Refresh as RefreshIcon,
   Search as SearchIcon,
 } from "@mui/icons-material";
-import { toast } from "sonner";
+import { useToast } from "@/context/ToastContext";
 import { itemService, Item } from "@/services/itemService";
 import { useAuth } from "@/hooks/useAuth";
 import ItemTable from "@/components/backoffice/items/ItemTable";
@@ -29,6 +29,7 @@ import ItemDetails from "@/components/backoffice/items/ItemDetails";
 
 export default function ItemsPage() {
   const { hasPermission } = useAuth();
+  const { showSuccess, showError } = useToast();
   const canAdd = hasPermission("catalogs.add_item");
   const canEdit = hasPermission("catalogs.change_item");
   const canDelete = hasPermission("catalogs.delete_item");
@@ -88,15 +89,15 @@ export default function ItemsPage() {
     try {
       if (view === "create") {
         await itemService.createItem(formData);
-        toast.success("Item created successfully");
+        showSuccess("Success", "Item created successfully");
       } else if (selectedItem) {
         await itemService.updateItem(selectedItem.id, formData);
-        toast.success("Item updated successfully");
+        showSuccess("Success", "Item updated successfully");
       }
       setView('list');
       fetchItems();
     } catch (err: any) {
-      toast.error(err.message || "Operation failed");
+      showError("Operation failed", err.message || "Something went wrong");
       throw err;
     }
   };
@@ -105,9 +106,9 @@ export default function ItemsPage() {
     try {
       await itemService.toggleStatus(item.id);
       fetchItems();
-      toast.success(`Item ${item.is_enabled ? 'disabled' : 'enabled'} successfully`);
+      showSuccess("Success", `Item ${item.is_enabled ? 'disabled' : 'enabled'} successfully`);
     } catch (err: any) {
-      toast.error(err.message || "Failed to toggle status");
+      showError("Error", err.message || "Failed to toggle status");
     }
   };
 
@@ -228,10 +229,10 @@ export default function ItemsPage() {
           if (!itemToDelete) return;
           try {
             await itemService.deleteItem(itemToDelete.id);
-            toast.success("Item deleted successfully");
+            showSuccess("Success", "Item deleted successfully");
             fetchItems();
           } catch (err: any) {
-            toast.error(err.message || "Failed to delete item");
+            showError("Error", err.message || "Failed to delete item");
           } finally {
             setDeleteOpen(false);
             setItemToDelete(null);

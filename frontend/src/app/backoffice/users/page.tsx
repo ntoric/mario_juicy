@@ -16,7 +16,7 @@ import {
   Avatar,
   Stack,
 } from "@mui/material";
-import { toast } from 'sonner';
+import { useToast } from "@/context/ToastContext";
 import {
   Add as AddIcon,
   Refresh as RefreshIcon,
@@ -29,6 +29,7 @@ import ConfirmActionDialog from "@/components/backoffice/users/ConfirmActionDial
 import { alpha } from "@mui/material/styles";
 
 export default function UsersPage() {
+  const { showSuccess, showError } = useToast();
   const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -86,9 +87,9 @@ export default function UsersPage() {
       try {
         const updated = await userService.toggleStatus(userForStatusChange.id, userForStatusChange.is_active);
         setUsers(users.map(u => u.id === updated.id ? updated : u));
-        toast.success(`User ${updated.is_active ? 'enabled' : 'disabled'} successfully`);
+        showSuccess("Success", `User ${updated.is_active ? 'enabled' : 'disabled'} successfully`);
       } catch (err: any) {
-        toast.error(err.message || "Failed to update status");
+        showError("Error", err.message || "Failed to update status");
       } finally {
         setOpenStatusDialog(false);
         setUserForStatusChange(null);
@@ -101,9 +102,9 @@ export default function UsersPage() {
       try {
         await userService.deleteUser(userToDelete.id);
         setUsers(users.filter((u) => u.id !== userToDelete.id));
-        toast.success("User deleted successfully");
+        showSuccess("Success", "User deleted successfully");
       } catch (err: any) {
-        toast.error(err.message || "Failed to delete user");
+        showError("Error", err.message || "Failed to delete user");
       } finally {
         setOpenDeleteDialog(false);
         setUserToDelete(null);
@@ -115,15 +116,15 @@ export default function UsersPage() {
     try {
       if (view === "create") {
         await userService.createUser(userData);
-        toast.success("User created successfully");
+        showSuccess("Success", "User created successfully");
       } else if (currentUser) {
         await userService.updateUser(currentUser.id, userData);
-        toast.success("User updated successfully");
+        showSuccess("Success", "User updated successfully");
       }
       setView('list');
       fetchUsers();
     } catch (err: any) {
-      toast.error(err.message || "Operation failed");
+      showError("Operation failed", err.message || "Something went wrong");
       throw err;
     }
   };

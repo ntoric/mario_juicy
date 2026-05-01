@@ -31,10 +31,16 @@
       "favicon": "./assets/images/favicon.png"
     },
     "plugins": [
-      "expo-router"
+      "expo-router",
+      "@sentry/react-native"
     ],
     "experiments": {
       "typedRoutes": true
+    },
+    "extra": {
+      "sentry": {
+        "dsn": "https://placeholder@sentry.io/placeholder"
+      }
     }
   }
 }

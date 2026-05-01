@@ -4,7 +4,7 @@ import React, { useState, useEffect } from 'react';
 import {
   Dialog, DialogTitle, DialogContent, DialogActions, Button, alpha, Box, Typography, Grid, TextField, IconButton, Paper, Autocomplete, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, CircularProgress, useTheme, useMediaQuery, Stack, Tooltip, Select, MenuItem, FormControl, InputLabel, Divider, Alert, Chip, Card, CardContent, Container, Tabs, Tab, Drawer, Fab, Badge
 } from '@mui/material';
-import { toast } from 'sonner';
+import { useToast } from '@/context/ToastContext';
 import { useRouter } from 'next/navigation';
 import {
   Add as AddIcon,
@@ -55,6 +55,7 @@ const OrderDialog: React.FC<OrderDialogProps> = ({ open, onClose, table, initial
   const router = useRouter();
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('md'));
+  const { showSuccess, showError, showInfo } = useToast();
 
   const { hasPermission, user, isRole, activeStore } = useAuth();
   const canTakeOrder = hasPermission('access_to_take_order');
@@ -176,7 +177,7 @@ const OrderDialog: React.FC<OrderDialogProps> = ({ open, onClose, table, initial
       }
     } catch (e: any) {
       console.error('Failed to load data:', e);
-      toast.error('Failed to load data');
+      showError('Error', 'Failed to load data');
     } finally {
       setLoading(false);
     }
@@ -211,23 +212,20 @@ const OrderDialog: React.FC<OrderDialogProps> = ({ open, onClose, table, initial
   const handleCreateOrder = async (type: 'DINE_IN' | 'TAKE_AWAY' = 'DINE_IN') => {
     if (!table && type === 'DINE_IN') return;
     if (!canTakeOrder) {
-      toast.error('You do not have permission to take orders.');
+      showError('Permission Denied', 'You do not have permission to take orders.');
       return;
     }
     setLoading(true);
 
     if (type === 'TAKE_AWAY' && !customerMobile) {
-      toast.error('Customer mobile number is mandatory for Parcel orders.');
+      showError('Required Field', 'Customer mobile number is mandatory for Parcel orders.');
       setLoading(false);
       return;
     }
     try {
       const totalPersons = (table?.current_occupancy || 0) + (type === 'DINE_IN' ? numberOfPersons : 1);
       if (type === 'DINE_IN' && table && totalPersons > table.capacity) {
-          toast.info(`Table Capacity Limit`, {
-            description: `Table ${table.number} capacity is ${table.capacity}. Total guests (${totalPersons}) exceeds limit.`,
-            duration: 5000,
-          });
+          showInfo(`Table Capacity Limit`, `Table ${table.number} capacity is ${table.capacity}. Total guests (${totalPersons}) exceeds limit.`);
           setLoading(false);
           return;
       }
@@ -248,7 +246,7 @@ const OrderDialog: React.FC<OrderDialogProps> = ({ open, onClose, table, initial
       // Refresh local state
       await fetchData();
     } catch (e: any) {
-      toast.error('Failed to create order');
+      showError('Error', 'Failed to create order');
     } finally {
       setLoading(false);
     }
@@ -271,7 +269,7 @@ const OrderDialog: React.FC<OrderDialogProps> = ({ open, onClose, table, initial
       setOrderType(orderData.order_type);
       setDialogStage('ORDER_DETAILS');
     } catch (e) {
-      toast.error('Failed to load order');
+      showError('Error', 'Failed to load order');
     } finally {
       setLoading(false);
     }
@@ -286,7 +284,7 @@ const OrderDialog: React.FC<OrderDialogProps> = ({ open, onClose, table, initial
   const handleAddItem = async (item: Item) => {
     if (order?.invoice) return;
     if (!canTakeOrder) {
-      toast.error('You do not have permission to take orders.');
+      showError('Permission Denied', 'You do not have permission to take orders.');
       return;
     }
     
@@ -305,7 +303,7 @@ const OrderDialog: React.FC<OrderDialogProps> = ({ open, onClose, table, initial
         // Mobile number is now optional at item add stage, required at KOT stage
         // But if provided, we validate it
         if (customerMobile && !/^\d{10}$/.test(customerMobile)) {
-           toast.error("Invalid mobile number", { description: "Please enter a valid 10-digit mobile number" });
+           showError("Invalid mobile number", "Please enter a valid 10-digit mobile number");
            setLoading(false);
            return;
         }
@@ -347,7 +345,7 @@ const OrderDialog: React.FC<OrderDialogProps> = ({ open, onClose, table, initial
       onOrderUpdated();
     } catch (e: any) {
       console.error('Add Item Error:', e);
-      toast.error(e.message || 'Failed to add item to order');
+      showError('Error', e.message || 'Failed to add item to order');
     } finally {
       setLoading(false);
     }
@@ -365,7 +363,7 @@ const OrderDialog: React.FC<OrderDialogProps> = ({ open, onClose, table, initial
       const orderData = await restaurantService.getOrder(orderItem.order);
       setOrder(orderData);
       onOrderUpdated();
-    } catch (e) { toast.error('Failed to update quantity'); }
+    } catch (e) { showError('Error', 'Failed to update quantity'); }
     finally { setLoading(false); }
   };
 
@@ -388,9 +386,9 @@ const OrderDialog: React.FC<OrderDialogProps> = ({ open, onClose, table, initial
       const updatedOrder = await restaurantService.getOrder(order.id);
       setOrder(updatedOrder);
       onOrderUpdated();
-      toast.success("Order updated");
+      showSuccess("Success", "Order updated");
     } catch (e: any) {
-      toast.error(e.message || 'Failed to update order details');
+      showError('Error', e.message || 'Failed to update order details');
     } finally {
       setLoading(false);
     }
@@ -401,10 +399,7 @@ const OrderDialog: React.FC<OrderDialogProps> = ({ open, onClose, table, initial
 
     // Validation for Parcel - Mandatory Mobile Number at KOT stage
     if (order.order_type === 'TAKE_AWAY' && !order.customer_mobile) {
-      toast.info('Mobile Number Required', { 
-        description: 'Please provide Customer Mobile number for Parcel orders.',
-        duration: 5000 
-      });
+      showInfo('Mobile Number Required', 'Please provide Customer Mobile number for Parcel orders.');
       if (isMobile) {
         setMobileSummaryOpen(true);
       }
@@ -417,9 +412,9 @@ const OrderDialog: React.FC<OrderDialogProps> = ({ open, onClose, table, initial
       const orderData = await restaurantService.getOrder(order.id);
       setOrder(orderData);
       onOrderUpdated();
-      toast.success("Sent to Kitchen (KOT)");
+      showSuccess("Success", "Sent to Kitchen (KOT)");
     } catch (e: any) { 
-      toast.error(e.message || 'Failed to send to kitchen'); 
+      showError('Error', e.message || 'Failed to send to kitchen'); 
     }
     finally { setLoading(false); }
   };
@@ -432,8 +427,8 @@ const OrderDialog: React.FC<OrderDialogProps> = ({ open, onClose, table, initial
       const orderData = await restaurantService.getOrder(order.id);
       setOrder(orderData);
       onOrderUpdated();
-      toast.success("Items served");
-    } catch (e) { toast.error('Failed to serve items'); }
+      showSuccess("Success", "Items served");
+    } catch (e) { showError('Error', 'Failed to serve items'); }
     finally { setLoading(false); }
   };
 
@@ -450,8 +445,8 @@ const OrderDialog: React.FC<OrderDialogProps> = ({ open, onClose, table, initial
       if (newStatus === 'COMPLETED') {
         onClose();
       }
-      toast.success(`Order ${newStatus.toLowerCase()}`);
-    } catch (e) { toast.error('Failed to update order status'); }
+      showSuccess("Success", `Order ${newStatus.toLowerCase()}`);
+    } catch (e) { showError('Error', 'Failed to update order status'); }
     finally { setLoading(false); }
   };
 
@@ -463,8 +458,8 @@ const OrderDialog: React.FC<OrderDialogProps> = ({ open, onClose, table, initial
       const orderData = await restaurantService.getOrder(order.id);
       setOrder(orderData);
       onOrderUpdated();
-      toast.success("Bill generated successfully");
-    } catch (e) { toast.error('Failed to generate bill'); }
+      showSuccess("Success", "Bill generated successfully");
+    } catch (e) { showError('Error', 'Failed to generate bill'); }
     finally { setLoading(false); }
   };
 
@@ -476,8 +471,8 @@ const OrderDialog: React.FC<OrderDialogProps> = ({ open, onClose, table, initial
       await restaurantService.releaseTable(table.id);
       onOrderUpdated();
       onClose();
-      toast.success("Table cleared");
-    } catch (e) { toast.error('Failed to release table'); }
+      showSuccess("Success", "Table cleared");
+    } catch (e) { showError('Error', 'Failed to release table'); }
     finally { setLoading(false); }
   };
 
@@ -490,7 +485,7 @@ const OrderDialog: React.FC<OrderDialogProps> = ({ open, onClose, table, initial
       setOrder(orderData);
       onOrderUpdated();
       setCancelDialogOpen(false);
-    } catch (e) { toast.error('Failed to cancel order'); }
+    } catch (e) { showError('Error', 'Failed to cancel order'); }
     finally { setLoading(false); }
   };
 
@@ -502,7 +497,7 @@ const OrderDialog: React.FC<OrderDialogProps> = ({ open, onClose, table, initial
       setMoveTableOpen(false);
       onOrderUpdated();
       onClose();
-    } catch (e) { toast.error('Failed to move table'); }
+    } catch (e) { showError('Error', 'Failed to move table'); }
     finally { setMoving(false); }
   };
 
@@ -555,7 +550,7 @@ const OrderDialog: React.FC<OrderDialogProps> = ({ open, onClose, table, initial
       document.body.appendChild(link);
       link.click();
       link.remove();
-    } catch (e) { toast.error('Failed to download PDF'); }
+    } catch (e) { showError('Error', 'Failed to download PDF'); }
     finally { setDownloading(false); }
   };
 
