@@ -1,5 +1,20 @@
 import { withSentryConfig } from "@sentry/nextjs";
 import type { NextConfig } from "next";
+import withPWAInit from "@ducanh2912/next-pwa";
+
+const withPWA = withPWAInit({
+  dest: "public",
+  disable: process.env.NODE_ENV === "development",
+  register: true,
+  skipWaiting: true,
+  cacheOnFrontEndNav: true,
+  aggressiveFrontEndNavCaching: true,
+  reloadOnOnline: true,
+  swcMinify: true,
+  workboxOptions: {
+    disableDevLogs: true,
+  },
+});
 
 const nextConfig: NextConfig = {
   /* config options here */
@@ -23,7 +38,7 @@ const nextConfig: NextConfig = {
   // } as any,
 };
 
-export default withSentryConfig(nextConfig, {
+const config = withSentryConfig(nextConfig, {
   // For all available options, see:
   // https://github.com/getsentry/sentry-webpack-plugin#options
 
@@ -32,3 +47,5 @@ export default withSentryConfig(nextConfig, {
   org: "mario-pos",
   project: "frontend",
 });
+
+export default withPWA(config as any);

@@ -3,15 +3,20 @@ import "./globals.css";
 import { Providers } from "@/components/providers/Providers";
 
 export const metadata: Metadata = {
-  title: "POS Matrix | Premium Retail POS",
-  description: "Next-generation retail management system",
+  title: "Mario POS | Premium Retail POS",
+  description: "Next-generation retail management & POS system",
+  applicationName: "Mario POS",
   appleWebApp: {
     capable: true,
     statusBarStyle: "default",
-    title: "POS Matrix",
+    title: "Mario POS",
   },
   formatDetection: {
     telephone: false,
+  },
+  manifest: "/manifest.json",
+  icons: {
+    apple: "/mario_juicy_logo.png",
   },
 };
 
@@ -31,9 +36,6 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" suppressHydrationWarning>
-      <head>
-        <link rel="manifest" href="/manifest.json" />
-      </head>
       <body>
         <Providers>
           {children}
