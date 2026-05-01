@@ -26,3 +26,8 @@ android/*
 */.npm-cache-local
 .npm-cache-mobile
 */.npm-cache-mobile
+
+npm-cache-tmp
+*/npm-cache-tmp
+
+npm-cache
