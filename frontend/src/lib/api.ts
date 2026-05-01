@@ -1,7 +1,16 @@
 const getBaseUrl = () => {
+  if (typeof window !== 'undefined') {
+    const customUrl = localStorage.getItem('custom_api_url');
+    if (customUrl) return customUrl;
+  }
+
   let url = process.env.NEXT_PUBLIC_API_URL || 'https://mario-api.ntoric.com/api';
-  if (typeof window !== 'undefined' && window.location.hostname !== 'localhost' && url.includes('localhost')) {
-    return url.replace('localhost', window.location.hostname);
+  
+  if (typeof window !== 'undefined') {
+    // If we're on a mobile browser or Capacitor
+    if (window.location.hostname !== 'localhost' && url.includes('localhost')) {
+      return url.replace('localhost', window.location.hostname);
+    }
   }
   return url;
 };
