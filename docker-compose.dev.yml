@@ -1,0 +1,79 @@
+
+services:
+  db:
+    container_name: pos_db
+    image: postgres:15-alpine
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./backend/db-init:/docker-entrypoint-initdb.d
+    environment:
+      - POSTGRES_DB=${POSTGRES_DB:-posdb}
+      - POSTGRES_USER=${POSTGRES_USER:-posuser}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-pospassword}
+    networks:
+      - pos_network
+
+  redis:
+    container_name: pos_redis
+    image: redis:7-alpine
+    restart: always
+    networks:
+      - pos_network
+
+
+
+  go_backend:
+    container_name: pos_go_backend
+    image: ntoric/mario-backend:latest
+    restart: always
+    build:
+      context: ./go-backend
+      dockerfile: Dockerfile
+    ports:
+      - "8020:8000"
+    env_file:
+      - ./env/.env.backend
+    environment:
+      - PORT=8000
+    depends_on:
+      - db
+    networks:
+      - pos_network
+
+  adminer:
+    container_name: pos_adminer
+    image: adminer
+    profiles:
+      - tools
+    ports:
+      - "8021:8080"
+    depends_on:
+      - db
+    networks:
+      - pos_network
+
+  frontend:
+    image: pos_frontend:latest
+    container_name: pos_frontend
+    env_file:
+      - ./env/.env.frontend
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    ports:
+      - "3020:3000"
+    volumes:
+      - ./frontend:/app
+      - ./frontend/node_modules:/app/node_modules
+      - ./frontend/.next:/app/.next
+    networks:
+      - pos_network
+    profiles:
+      - frontend
+
+volumes:
+  postgres_data:
+
+networks:
+  pos_network:
+    driver: bridge
