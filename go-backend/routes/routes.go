@@ -15,106 +15,120 @@ func SetupRoutes(r *gin.Engine, hub *websocket.Hub) {
 		{
 			users.POST("/login/", controllers.Login)
 			users.GET("/profile/", middleware.AuthMiddleware(), controllers.GetProfile)
-			users.GET("/management/", middleware.AuthMiddleware(), controllers.GetUsers)
-			users.POST("/management/", middleware.AuthMiddleware(), controllers.CreateUser)
-			users.PATCH("/management/:id/", middleware.AuthMiddleware(), controllers.UpdateUser)
-			users.DELETE("/management/:id/", middleware.AuthMiddleware(), controllers.DeleteUser)
-			users.GET("/groups/", middleware.AuthMiddleware(), controllers.GetGroups)
-			users.GET("/menu-permissions/", middleware.AuthMiddleware(), controllers.GetMenuPermissions)
-			users.POST("/menu-permissions/", middleware.AuthMiddleware(), controllers.CreateMenuPermission)
-			users.PATCH("/menu-permissions/:id/", middleware.AuthMiddleware(), controllers.UpdateMenuPermission)
-		}
-
-		stores := api.Group("/stores")
-		{
-			stores.GET("/", controllers.GetStores)
-			stores.GET("/:id/", controllers.GetStore)
-			stores.POST("/", middleware.AuthMiddleware(), controllers.CreateStore)
-			stores.PATCH("/:id/", middleware.AuthMiddleware(), controllers.UpdateStore)
-			stores.DELETE("/:id/", middleware.AuthMiddleware(), controllers.DeleteStore)
-		}
-
-		catalogs := api.Group("/catalogs")
-		{
-			catalogs.GET("/categories/", controllers.GetCategories)
-			catalogs.POST("/categories/", middleware.AuthMiddleware(), controllers.CreateCategory)
-			catalogs.PATCH("/categories/:id/", middleware.AuthMiddleware(), controllers.UpdateCategory)
-			catalogs.DELETE("/categories/:id/", middleware.AuthMiddleware(), controllers.DeleteCategory)
-			catalogs.POST("/categories/:id/toggle_status/", middleware.AuthMiddleware(), controllers.ToggleCategoryStatus)
-
-			catalogs.GET("/items/", controllers.GetItems)
-			catalogs.GET("/items/:id/", controllers.GetItem)
-			catalogs.POST("/items/", middleware.AuthMiddleware(), controllers.CreateItem)
-			catalogs.PATCH("/items/:id/", middleware.AuthMiddleware(), controllers.UpdateItem)
-			catalogs.DELETE("/items/:id/", middleware.AuthMiddleware(), controllers.DeleteItem)
-			catalogs.POST("/items/:id/toggle_status/", middleware.AuthMiddleware(), controllers.ToggleItemStatus)
-		}
-
-		restaurants := api.Group("/restaurants")
-		{
-			restaurants.GET("/tables/", controllers.GetTables)
-			restaurants.POST("/tables/", middleware.AuthMiddleware(), controllers.CreateTable)
-			restaurants.PATCH("/tables/:id/", middleware.AuthMiddleware(), controllers.UpdateTable)
-			restaurants.DELETE("/tables/:id/", middleware.AuthMiddleware(), controllers.DeleteTable)
-			restaurants.PATCH("/tables/:id/update_position/", middleware.AuthMiddleware(), controllers.UpdateTablePosition)
-			restaurants.POST("/tables/:id/release/", middleware.AuthMiddleware(), controllers.ReleaseTable)
-			restaurants.POST("/tables/recalculate_all/", middleware.AuthMiddleware(), controllers.RecalculateAllTableStatuses)
-
-			restaurants.GET("/orders/", controllers.GetOrders)
-			restaurants.GET("/orders/:id/", controllers.GetOrder)
-			restaurants.PATCH("/orders/:id/", middleware.AuthMiddleware(), controllers.UpdateOrder)
-			restaurants.DELETE("/orders/:id/", middleware.AuthMiddleware(), controllers.DeleteOrder)
-			restaurants.POST("/orders/:id/add_item/", middleware.AuthMiddleware(), controllers.AddItemToOrder)
-			restaurants.POST("/orders/:id/send_to_kitchen/", middleware.AuthMiddleware(), controllers.SendToKitchen)
-			restaurants.POST("/orders/:id/serve_all_ready/", middleware.AuthMiddleware(), controllers.ServeAllReady)
-			restaurants.POST("/orders/:id/cancel_order/", middleware.AuthMiddleware(), controllers.CancelOrder)
-			restaurants.POST("/orders/:id/change_table/", middleware.AuthMiddleware(), controllers.ChangeOrderTable)
-			restaurants.POST("/orders/:id/recalculate_total/", middleware.AuthMiddleware(), controllers.RecalculateOrderTotal)
-			restaurants.POST("/orders/:id/update_payment_status/", middleware.AuthMiddleware(), controllers.UpdatePaymentStatus)
-			restaurants.POST("/orders/:id/checkout/", middleware.AuthMiddleware(), controllers.Checkout)
-
-			restaurants.GET("/orders/pending_settlements/", middleware.AuthMiddleware(), controllers.GetPendingSettlements)
-			restaurants.POST("/orders/", middleware.AuthMiddleware(), controllers.CreateOrder)
-			restaurants.GET("/invoices/", middleware.AuthMiddleware(), controllers.GetInvoices)
-
-			orderItems := restaurants.Group("/order-items")
+			
+			// Protected management routes
+			management := users.Group("/management", middleware.AuthMiddleware(), middleware.StoreMiddleware())
 			{
-				orderItems.PATCH("/:id/", middleware.AuthMiddleware(), controllers.UpdateOrderItem)
-				orderItems.DELETE("/:id/", middleware.AuthMiddleware(), controllers.DeleteOrderItem)
+				management.GET("/", controllers.GetUsers)
+				management.POST("/", controllers.CreateUser)
+				management.PATCH("/:id/", controllers.UpdateUser)
+				management.DELETE("/:id/", controllers.DeleteUser)
 			}
-
-			kitchen := restaurants.Group("/kitchen")
+			
+			perms := users.Group("/", middleware.AuthMiddleware(), middleware.StoreMiddleware())
 			{
-				kitchen.GET("/", middleware.AuthMiddleware(), controllers.GetKitchenItems)
-				kitchen.POST("/:id/attend/", middleware.AuthMiddleware(), controllers.AttendItem)
-				kitchen.POST("/:id/ready/", middleware.AuthMiddleware(), controllers.ReadyItem)
-				kitchen.POST("/:id/reject/", middleware.AuthMiddleware(), controllers.RejectItem)
-			}
-
-			reports := restaurants.Group("/reports")
-			{
-				reports.GET("/summary/", middleware.AuthMiddleware(), controllers.GetSummary)
-				reports.GET("/sales_by_type/", middleware.AuthMiddleware(), controllers.GetSalesByType)
-				reports.GET("/sales_by_payment/", middleware.AuthMiddleware(), controllers.GetSalesByPayment)
-				reports.GET("/daily_sales/", middleware.AuthMiddleware(), controllers.GetDailySales)
-				reports.GET("/sales_by_category/", middleware.AuthMiddleware(), controllers.GetSalesByCategory)
-				reports.GET("/sales_by_item/", middleware.AuthMiddleware(), controllers.GetSalesByItem)
-				reports.GET("/tax_report/", middleware.AuthMiddleware(), controllers.GetTaxReport)
+				perms.GET("/groups/", controllers.GetGroups)
+				perms.GET("/menu-permissions/", controllers.GetMenuPermissions)
+				perms.POST("/menu-permissions/", controllers.CreateMenuPermission)
+				perms.PATCH("/menu-permissions/:id/", controllers.UpdateMenuPermission)
 			}
 		}
 
-		core := api.Group("/core")
+		stores := api.Group("/stores", middleware.AuthMiddleware())
 		{
-			core.GET("/tax-configuration/", controllers.GetTaxConfiguration)
-			core.PUT("/tax-configuration/", middleware.AuthMiddleware(), controllers.UpdateTaxConfiguration)
-			core.POST("/system-reset/", middleware.AuthMiddleware(), controllers.SystemReset)
+			stores.GET("/", controllers.GetStores) // StoreMiddleware will handle isolation inside controller or here
+			stores.GET("/:id/", middleware.StoreMiddleware(), controllers.GetStore)
+			stores.POST("/", middleware.SuperuserMiddleware(), controllers.CreateStore)
+			stores.PATCH("/:id/", middleware.StoreMiddleware(), middleware.SuperuserMiddleware(), controllers.UpdateStore)
+			stores.DELETE("/:id/", middleware.SuperuserMiddleware(), controllers.DeleteStore)
 		}
 
-		reports := api.Group("/reports")
+		// Catalog, Restaurant, Core, Reports all need Store isolation
+		protected := api.Group("/", middleware.AuthMiddleware(), middleware.StoreMiddleware())
 		{
-			reports.GET("/dashboard/", middleware.AuthMiddleware(), controllers.GetDashboardStats)
+			catalogs := protected.Group("/catalogs")
+			{
+				catalogs.GET("/categories/", controllers.GetCategories)
+				catalogs.POST("/categories/", controllers.CreateCategory)
+				catalogs.PATCH("/categories/:id/", controllers.UpdateCategory)
+				catalogs.DELETE("/categories/:id/", controllers.DeleteCategory)
+				catalogs.POST("/categories/:id/toggle_status/", controllers.ToggleCategoryStatus)
+
+				catalogs.GET("/items/", controllers.GetItems)
+				catalogs.GET("/items/:id/", controllers.GetItem)
+				catalogs.POST("/items/", controllers.CreateItem)
+				catalogs.PATCH("/items/:id/", controllers.UpdateItem)
+				catalogs.DELETE("/items/:id/", controllers.DeleteItem)
+				catalogs.POST("/items/:id/toggle_status/", controllers.ToggleItemStatus)
+			}
+
+			restaurants := protected.Group("/restaurants")
+			{
+				restaurants.GET("/tables/", controllers.GetTables)
+				restaurants.POST("/tables/", controllers.CreateTable)
+				restaurants.PATCH("/tables/:id/", controllers.UpdateTable)
+				restaurants.DELETE("/tables/:id/", controllers.DeleteTable)
+				restaurants.PATCH("/tables/:id/update_position/", controllers.UpdateTablePosition)
+				restaurants.POST("/tables/:id/release/", controllers.ReleaseTable)
+				restaurants.POST("/tables/recalculate_all/", controllers.RecalculateAllTableStatuses)
+
+				restaurants.GET("/orders/", controllers.GetOrders)
+				restaurants.GET("/orders/:id/", controllers.GetOrder)
+				restaurants.PATCH("/orders/:id/", controllers.UpdateOrder)
+				restaurants.DELETE("/orders/:id/", controllers.DeleteOrder)
+				restaurants.POST("/orders/:id/add_item/", controllers.AddItemToOrder)
+				restaurants.POST("/orders/:id/send_to_kitchen/", controllers.SendToKitchen)
+				restaurants.POST("/orders/:id/serve_all_ready/", controllers.ServeAllReady)
+				restaurants.POST("/orders/:id/cancel_order/", controllers.CancelOrder)
+				restaurants.POST("/orders/:id/change_table/", controllers.ChangeOrderTable)
+				restaurants.POST("/orders/:id/recalculate_total/", controllers.RecalculateOrderTotal)
+				restaurants.POST("/orders/:id/update_payment_status/", controllers.UpdatePaymentStatus)
+				restaurants.POST("/orders/:id/checkout/", controllers.Checkout)
+
+				restaurants.GET("/orders/pending_settlements/", controllers.GetPendingSettlements)
+				restaurants.POST("/orders/", controllers.CreateOrder)
+				restaurants.GET("/invoices/", controllers.GetInvoices)
+
+				orderItems := restaurants.Group("/order-items")
+				{
+					orderItems.PATCH("/:id/", controllers.UpdateOrderItem)
+					orderItems.DELETE("/:id/", controllers.DeleteOrderItem)
+				}
+
+				kitchen := restaurants.Group("/kitchen")
+				{
+					kitchen.GET("/", controllers.GetKitchenItems)
+					kitchen.POST("/:id/attend/", controllers.AttendItem)
+					kitchen.POST("/:id/ready/", controllers.ReadyItem)
+					kitchen.POST("/:id/reject/", controllers.RejectItem)
+				}
+
+				rest_reports := restaurants.Group("/reports")
+				{
+					rest_reports.GET("/summary/", controllers.GetSummary)
+					rest_reports.GET("/sales_by_type/", controllers.GetSalesByType)
+					rest_reports.GET("/sales_by_payment/", controllers.GetSalesByPayment)
+					rest_reports.GET("/daily_sales/", controllers.GetDailySales)
+					rest_reports.GET("/sales_by_category/", controllers.GetSalesByCategory)
+					rest_reports.GET("/sales_by_item/", controllers.GetSalesByItem)
+					rest_reports.GET("/tax_report/", controllers.GetTaxReport)
+				}
+			}
+
+			core := protected.Group("/core")
+			{
+				core.GET("/tax-configuration/", controllers.GetTaxConfiguration)
+				core.PUT("/tax-configuration/", middleware.SuperuserMiddleware(), controllers.UpdateTaxConfiguration)
+				core.POST("/system-reset/", middleware.SuperuserMiddleware(), controllers.SystemReset)
+			}
+
+			reports := protected.Group("/reports")
+			{
+				reports.GET("/dashboard/", controllers.GetDashboardStats)
+			}
 		}
 
+		api.GET("/support/", controllers.GetSupportSettings)
 		api.GET("/ws", websocket.ServeWS(hub))
 	}
 }

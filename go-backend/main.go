@@ -42,7 +42,9 @@ func main() {
 	defer sentry.Flush(2 * time.Second)
 
 	config.ConnectDatabase()
-	config.DB.AutoMigrate(&models.User{}, &models.Group{}, &models.MenuPermission{})
+	config.DB.AutoMigrate(&models.User{}, &models.Group{}, &models.MenuPermission{}, &models.SupportSettings{})
+	seedGroups()
+	seedSupportSettings()
 
 	// Initialize Gin
 	r := gin.New()
@@ -87,4 +89,25 @@ func main() {
 
 	utils.Info("Server starting", zap.String("port", port))
 	r.Run(":" + port)
+}
+
+func seedGroups() {
+	roles := []string{"SUPER_ADMIN", "ADMIN", "MANAGER", "CASHIER", "STAFF"}
+	for _, role := range roles {
+		var group models.Group
+		if err := config.DB.Where("name = ?", role).First(&group).Error; err != nil {
+			config.DB.Create(&models.Group{Name: role})
+		}
+	}
+}
+
+func seedSupportSettings() {
+	var count int64
+	config.DB.Model(&models.SupportSettings{}).Count(&count)
+	if count == 0 {
+		config.DB.Create(&models.SupportSettings{
+			Email: "support@mario.com",
+			Phone: "+91 99999 99999",
+		})
+	}
 }

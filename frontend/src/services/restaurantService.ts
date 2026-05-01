@@ -161,7 +161,7 @@ export const restaurantService = {
     fetch(`/api/restaurants/invoices/${invoiceId}/download_pdf/`, {
       headers: {
         'Authorization': `Bearer ${localStorage.getItem('access_token')}`,
-        'X-Store-ID': localStorage.getItem('active_store_id') || '1'
+        'X-Store-ID': localStorage.getItem('activeStoreId') || '1'
       }
     }).then(res => res.blob()),
 

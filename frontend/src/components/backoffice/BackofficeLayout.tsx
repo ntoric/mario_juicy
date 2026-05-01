@@ -61,16 +61,17 @@ import {
   Search as SearchIcon,
   Notifications as NotificationsIcon,
   Add as AddIcon,
+  ContactSupport as SupportIcon,
 } from "@mui/icons-material";
 import Fab from "@mui/material/Fab";
 import { restaurantService, Table } from "@/services/restaurantService";
 import OrderDialog from "@/components/backoffice/restaurant/OrderDialog";
 import Avatar from "@mui/material/Avatar";
 import Tooltip from "@mui/material/Tooltip";
-import { useAuth } from "@/hooks/useAuth";
+import { useAuth } from "@/context/AuthContext";
 import { Pacifico } from "next/font/google";
 import { useToast } from "@/context/ToastContext";
-// import Preloader from "@/components/ui/Preloader";
+import StoreSwitcher from './StoreSwitcher';
 
 const pacifico = Pacifico({
   subsets: ["latin"],
@@ -230,7 +231,7 @@ function SidebarItem({
             backgroundColor: isActive ? theme.palette.primary.main : "transparent",
             color: isActive ? "#ffffff" : theme.palette.text.secondary,
             boxShadow: isActive ? `0 8px 16px ${alpha(theme.palette.primary.main, 0.2)}` : "none",
-            "&:hover": { 
+            "&:hover": {
               backgroundColor: isActive ? theme.palette.primary.main : alpha(theme.palette.primary.main, 0.08),
             },
             transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
@@ -253,9 +254,9 @@ function SidebarItem({
             sx={{
               display: expanded ? "block" : "none",
               opacity: expanded ? 1 : 0,
-              '& .MuiListItemText-primary': { 
-                fontSize: '0.85rem', 
-                fontWeight: isActive ? 800 : 700 
+              '& .MuiListItemText-primary': {
+                fontSize: '0.85rem',
+                fontWeight: isActive ? 800 : 700
               },
             }}
           />
@@ -298,7 +299,6 @@ export default function BackofficeLayout({ children }: { children: React.ReactNo
   const [mobileOpen, setMobileOpen] = useState(false);
   const sidebarRef = useRef<HTMLDivElement>(null);
   const [profileAnchor, setProfileAnchor] = useState<null | HTMLElement>(null);
-  const [stores, setStores] = useState<{ id: number, name: string }[]>([]);
   const { user, loading, error, hasPermission, isRole, activeStoreId, activeStore, setActiveStore } = useAuth();
   const { showError, showInfo } = useToast();
 
@@ -320,13 +320,6 @@ export default function BackofficeLayout({ children }: { children: React.ReactNo
     }
   };
 
-  useEffect(() => {
-    if (isRole('ADMIN')) {
-      const { storeService } = require('@/services/storeService');
-      storeService.getStores().then(setStores).catch(console.error);
-    }
-  }, [user]);
-
   const pathname = usePathname();
   const router = useRouter();
   const expanded = open || isMobile;
@@ -335,8 +328,6 @@ export default function BackofficeLayout({ children }: { children: React.ReactNo
     if (isMobile) setMobileOpen(!mobileOpen);
     else setOpen(!open);
   };
-
-  const handleDrawerClose = () => setOpen(false);
 
   // Redirection Logic: If dashboard is disabled, redirect to Table Map
   useEffect(() => {
@@ -351,20 +342,16 @@ export default function BackofficeLayout({ children }: { children: React.ReactNo
   // Click Away logic for sidebar
   useEffect(() => {
     if (isMobile) return;
-    
+
     function handleClickOutside(event: MouseEvent) {
       if (open && sidebarRef.current && !sidebarRef.current.contains(event.target as Node)) {
         setOpen(false);
       }
     }
-    
+
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, [open, isMobile]);
-
-  // if (loading) {
-  //   return <Preloader message="Verifying session..." />;
-  // }
 
   if (error) {
     return (
@@ -377,20 +364,20 @@ export default function BackofficeLayout({ children }: { children: React.ReactNo
           </Box>
           <Typography variant="h5" sx={{ fontWeight: 800, mb: 2, color: theme.palette.text.primary }}>Connection Issue</Typography>
           <Typography variant="body1" color="text.secondary" sx={{ mb: 4, lineHeight: 1.6 }}>
-            {error.includes('Failed to fetch') 
-              ? "We're having trouble connecting to the server. Please check your internet connection or try again in a few moments." 
+            {error.includes('Failed to fetch')
+              ? "We're having trouble connecting to the server. Please check your internet connection or try again in a few moments."
               : error}
           </Typography>
           <Stack direction="row" spacing={2} sx={{ justifyContent: 'center' }}>
-            <Button 
-              variant="outlined" 
+            <Button
+              variant="outlined"
               onClick={() => logout()}
               sx={{ borderRadius: '7px', px: 4 }}
             >
               Back to Login
             </Button>
-            <Button 
-              variant="contained" 
+            <Button
+              variant="contained"
               onClick={() => window.location.reload()}
               sx={{ borderRadius: '7px', px: 4, boxShadow: `0 8px 20px ${alpha(theme.palette.primary.main, 0.3)}` }}
             >
@@ -440,6 +427,7 @@ export default function BackofficeLayout({ children }: { children: React.ReactNo
         { text: "Users", icon: <PeopleIcon />, path: "/backoffice/users", permission: "users.view_user", menuKey: "users" },
         { text: "Menu Permissions", icon: <LockPersonIcon />, path: "/backoffice/settings/menu-permissions", permission: "SUPER_ADMIN", menuKey: "menu_permissions" },
         { text: "Settings", icon: <SettingsIcon />, path: "/backoffice/settings", permission: "core.view_taxconfiguration", menuKey: "settings" },
+        { text: "Support", icon: <SupportIcon />, path: "/backoffice/support", menuKey: "support" },
       ],
     },
   ];
@@ -448,7 +436,10 @@ export default function BackofficeLayout({ children }: { children: React.ReactNo
     ...section,
     items: section.items.filter(item => {
       // 1. Absolute Store-level toggles (Applies to ALL users)
-      if (activeStore) {
+      // If store is still loading or not found, we hide these feature-dependent items by default
+      if (['parcel', 'reservations', 'kitchen_display'].includes(item.menuKey || '')) {
+        if (!activeStore) return false; // Hide if store settings not yet loaded
+
         if (item.menuKey === 'parcel' && !activeStore.is_take_away_enabled) return false;
         if (item.menuKey === 'reservations' && !activeStore.is_reservations_enabled) return false;
         if (item.menuKey === 'kitchen_display' && !activeStore.is_kitchen_step_enabled) return false;
@@ -456,7 +447,7 @@ export default function BackofficeLayout({ children }: { children: React.ReactNo
 
       // 2. Role/Permission based filtering
       if (item.permission === "SUPER_ADMIN") return isRole("SUPER_ADMIN");
-      
+
       if (item.menuKey && user?.allowed_menus) {
         if (!user.allowed_menus.includes(item.menuKey)) return false;
       }
@@ -468,23 +459,23 @@ export default function BackofficeLayout({ children }: { children: React.ReactNo
   const drawerContent = (
     <Box ref={sidebarRef} sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
       {!isMobile && (
-        <Box sx={{ 
-          height: HeaderHeight, 
-          display: 'flex', 
-          alignItems: 'center', 
+        <Box sx={{
+          height: HeaderHeight,
+          display: 'flex',
+          alignItems: 'center',
           px: expanded ? 2.5 : 0,
           justifyContent: expanded ? 'flex-start' : 'center',
           borderBottom: '1px solid rgba(44, 24, 16, 0.05)',
           bgcolor: 'white'
         }}>
-          <Box sx={{ 
-            width: 42, 
-            height: 42, 
+          <Box sx={{
+            width: 42,
+            height: 42,
             minWidth: 42,
-            bgcolor: 'white', 
-            borderRadius: '7px', 
-            display: 'flex', 
-            alignItems: 'center', 
+            bgcolor: 'white',
+            borderRadius: '7px',
+            display: 'flex',
+            alignItems: 'center',
             justifyContent: 'center',
             boxShadow: '0 2px 10px rgba(0,0,0,0.05)',
             border: '1.5px solid #E9762B'
@@ -492,11 +483,11 @@ export default function BackofficeLayout({ children }: { children: React.ReactNo
             <img src="/mario_juicy_logo.png" alt="Mario Logo" style={{ width: '32px', height: '32px', objectFit: 'contain' }} />
           </Box>
           {expanded && (
-            <Typography 
-              variant="h6" 
-              sx={{ 
-                ml: 2, 
-                fontWeight: 900, 
+            <Typography
+              variant="h6"
+              sx={{
+                ml: 2,
+                fontWeight: 900,
                 color: theme.palette.primary.main,
                 fontFamily: pacifico.style.fontFamily,
                 fontSize: '1.2rem'
@@ -508,20 +499,19 @@ export default function BackofficeLayout({ children }: { children: React.ReactNo
         </Box>
       )}
       {isMobile && <Box sx={{ height: HeaderHeight }} />}
-      <Box sx={{ 
-        overflowY: "auto", 
-        overflowX: "hidden", 
-        flexGrow: 1, 
-        minHeight: 0, // Critical for scrolling in flex column
+      <Box sx={{
+        overflowY: "auto",
+        overflowX: "hidden",
+        flexGrow: 1,
+        minHeight: 0,
         py: 2,
-        /* Custom scrollbar for premium look */
         '&::-webkit-scrollbar': { width: '4px' },
         '&::-webkit-scrollbar-track': { background: 'transparent' },
-        '&::-webkit-scrollbar-thumb': { 
+        '&::-webkit-scrollbar-thumb': {
           background: alpha(theme.palette.text.primary, 0.05),
           borderRadius: '10px',
         },
-        '&:hover::-webkit-scrollbar-thumb': { 
+        '&:hover::-webkit-scrollbar-thumb': {
           background: alpha(theme.palette.text.primary, 0.1),
         }
       }}>
@@ -568,9 +558,9 @@ export default function BackofficeLayout({ children }: { children: React.ReactNo
               </ListItemIcon>
               <ListItemText
                 primary="Logout"
-                sx={{ 
+                sx={{
                   display: expanded ? "block" : "none",
-                  '& .MuiListItemText-primary': { fontWeight: 800, fontSize: '0.9rem' } 
+                  '& .MuiListItemText-primary': { fontWeight: 800, fontSize: '0.9rem' }
                 }}
               />
             </ListItemButton>
@@ -583,18 +573,63 @@ export default function BackofficeLayout({ children }: { children: React.ReactNo
   return (
     <Box sx={{ display: "flex", height: "100dvh", overflow: "hidden", backgroundColor: theme.palette.background.default }}>
       <CssBaseline />
-      
 
+      {/* Inactive Store Overlay */}
+      {activeStore && !activeStore.is_active && !isRole('SUPER_ADMIN') && !pathname.includes('/support') && (
+        <Box sx={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          zIndex: 9999,
+          bgcolor: 'rgba(255,255,255,0.95)',
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          justifyContent: 'center',
+          textAlign: 'center',
+          p: 3
+        }}>
+          <Box sx={{
+            width: 100,
+            height: 100,
+            bgcolor: alpha(theme.palette.error.main, 0.1),
+            borderRadius: '50%',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            mb: 3
+          }}>
+            <StoreIcon sx={{ fontSize: 60, color: 'error.main' }} />
+          </Box>
+          <Typography variant="h3" sx={{ fontWeight: 900, mb: 2, color: 'error.main' }}>
+            Store Inactive
+          </Typography>
+          <Typography variant="h6" sx={{ color: 'text.secondary', mb: 4, maxWidth: 600 }}>
+            This store is currently inactive. You cannot perform any operations at this time.
+            Please contact your administrator or support for more details.
+          </Typography>
+          <Box sx={{ display: 'flex', gap: 2 }}>
+            <Button variant="contained" size="large" onClick={logout} sx={{ fontWeight: 800, px: 4, py: 1.5 }}>
+              Sign Out
+            </Button>
+            <Button variant="outlined" size="large" href="/backoffice/support" sx={{ fontWeight: 800, px: 4, py: 1.5 }}>
+              Contact Support
+            </Button>
+          </Box>
+        </Box>
+      )}
 
       <Drawer
         variant={isMobile ? "temporary" : "permanent"}
         open={isMobile ? mobileOpen : open}
         onClose={handleDrawerToggle}
-        sx={{ 
+        sx={{
           zIndex: isMobile ? 3000 : 'inherit',
-          '& .MuiDrawer-paper': { 
-            width: isMobile ? drawerWidth : 'inherit', 
-            height: '100vh', 
+          '& .MuiDrawer-paper': {
+            width: isMobile ? drawerWidth : 'inherit',
+            height: '100vh',
             marginTop: 0,
             zIndex: isMobile ? 3000 : 'inherit',
             overflow: 'hidden',
@@ -623,20 +658,20 @@ export default function BackofficeLayout({ children }: { children: React.ReactNo
           <Toolbar sx={{ justifyContent: 'space-between', px: { xs: 1, sm: 2 } }}>
             <Box sx={{ display: 'flex', alignItems: 'center' }}>
               {isMobile && (
-                <Box sx={{ 
+                <Box sx={{
                   mr: 2,
-                  display: 'flex', 
-                  alignItems: 'center', 
+                  display: 'flex',
+                  alignItems: 'center',
                   justifyContent: 'center',
                 }}>
-                  <Box sx={{ 
-                    width: 42, 
-                    height: 42, 
+                  <Box sx={{
+                    width: 42,
+                    height: 42,
                     minWidth: 42,
-                    bgcolor: 'white', 
-                    borderRadius: '7px', 
-                    display: 'flex', 
-                    alignItems: 'center', 
+                    bgcolor: 'white',
+                    borderRadius: '7px',
+                    display: 'flex',
+                    alignItems: 'center',
                     justifyContent: 'center',
                     boxShadow: '0 2px 10px rgba(0,0,0,0.05)',
                     border: '1.5px solid rgba(255,255,255,0.3)'
@@ -645,8 +680,6 @@ export default function BackofficeLayout({ children }: { children: React.ReactNo
                   </Box>
                 </Box>
               )}
-
-
 
               {!isMobile && (
                 <SearchArea>
@@ -657,21 +690,23 @@ export default function BackofficeLayout({ children }: { children: React.ReactNo
             </Box>
 
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
-              <IconButton sx={{ 
-                bgcolor: { xs: alpha('#ffffff', 0.15), md: theme.palette.background.default }, 
-                borderRadius: '7px', 
+              <StoreSwitcher />
+
+              <IconButton sx={{
+                bgcolor: { xs: alpha('#ffffff', 0.15), md: theme.palette.background.default },
+                borderRadius: '7px',
                 border: { xs: '1px solid rgba(255,255,255,0.1)', md: '1px solid rgba(0,0,0,0.03)' },
                 '&:hover': { bgcolor: { xs: alpha('#ffffff', 0.25), md: alpha(theme.palette.primary.main, 0.08) } }
               }}>
                 <NotificationsIcon sx={{ color: { xs: '#ffffff', md: '#94a3b8' }, fontSize: 22 }} />
               </IconButton>
-              
-              <Box 
+
+              <Box
                 onClick={(e) => setProfileAnchor(e.currentTarget)}
-                sx={{ 
-                  display: 'flex', 
-                  alignItems: 'center', 
-                  gap: 1, 
+                sx={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 1,
                   cursor: 'pointer',
                   p: 0.5,
                   pr: 1.5,
@@ -679,11 +714,11 @@ export default function BackofficeLayout({ children }: { children: React.ReactNo
                   '&:hover': { bgcolor: alpha('#000', 0.03) }
                 }}
               >
-                <Avatar 
-                  sx={{ 
-                    width: 38, 
-                    height: 38, 
-                    fontSize: '0.9rem', 
+                <Avatar
+                  sx={{
+                    width: 38,
+                    height: 38,
+                    fontSize: '0.9rem',
                     fontWeight: 900,
                     bgcolor: { xs: '#ffffff', md: alpha(theme.palette.primary.main, 0.1) },
                     color: { xs: theme.palette.primary.main, md: theme.palette.primary.main },
@@ -726,9 +761,6 @@ export default function BackofficeLayout({ children }: { children: React.ReactNo
                 }
               }}
             >
-              <MenuItem onClick={() => { setProfileAnchor(null); router.push('/backoffice/settings'); }}>
-                Profile Settings
-              </MenuItem>
               <MenuItem onClick={() => { setProfileAnchor(null); logout(); }} sx={{ color: 'error.main' }}>
                 Sign Out
               </MenuItem>
@@ -736,10 +768,10 @@ export default function BackofficeLayout({ children }: { children: React.ReactNo
           </Toolbar>
         </AppBar>
 
-        <Box 
-          sx={{ 
+        <Box
+          sx={{
             position: "relative",
-            flexGrow: 1, 
+            flexGrow: 1,
             overflowY: "auto",
             overflowX: "hidden",
             p: { xs: 1, sm: 2, md: 3 },
@@ -751,19 +783,18 @@ export default function BackofficeLayout({ children }: { children: React.ReactNo
         >
           {children}
         </Box>
-        
-        {/* Mobile Bottom Navigation & FAB */}
+
         {isMobile && (
           <>
-            <Fab 
-              color="primary" 
+            <Fab
+              color="primary"
               aria-label="add"
               onClick={handleOpenQuickOrder}
-              sx={{ 
-                position: 'fixed', 
-                bottom: 'calc(10px + env(safe-area-inset-bottom))', 
-                left: '50%', 
-                transform: 'translateX(-50%)', 
+              sx={{
+                position: 'fixed',
+                bottom: 'calc(10px + env(safe-area-inset-bottom))',
+                left: '50%',
+                transform: 'translateX(-50%)',
                 zIndex: 2001,
                 width: 54,
                 height: 54,
@@ -776,14 +807,14 @@ export default function BackofficeLayout({ children }: { children: React.ReactNo
               <AddIcon sx={{ fontSize: 28, color: 'white' }} />
             </Fab>
 
-            <Paper 
-              sx={{ 
-                position: 'relative', 
+            <Paper
+              sx={{
+                position: 'relative',
                 flexShrink: 0,
-                zIndex: 2000, 
-                borderTop: '1px solid #f1f5f9', 
-                borderRadius: 0 
-              }} 
+                zIndex: 2000,
+                borderTop: '1px solid #f1f5f9',
+                borderRadius: 0
+              }}
               elevation={4}
             >
               <BottomNavigation
@@ -800,116 +831,91 @@ export default function BackofficeLayout({ children }: { children: React.ReactNo
                 }}
                 sx={{ height: 'calc(64px + env(safe-area-inset-bottom))', pb: 'env(safe-area-inset-bottom)' }}
               >
-                <BottomNavigationAction 
-                  label="Tables" 
-                  value="/backoffice/restaurant/tables" 
-                  icon={<TableIcon />} 
+                <BottomNavigationAction
+                  label="Tables"
+                  value="/backoffice/restaurant/tables"
+                  icon={<TableIcon />}
                   onClick={() => { if (pathname === "/backoffice/restaurant/tables") window.dispatchEvent(new CustomEvent('close-dialogs')); }}
                 />
-                <BottomNavigationAction 
-                  label="Orders" 
-                  value="/backoffice/restaurant/orders" 
-                  icon={<OrdersIcon />} 
+                <BottomNavigationAction
+                  label="Orders"
+                  value="/backoffice/restaurant/orders"
+                  icon={<OrdersIcon />}
                   onClick={() => { if (pathname === "/backoffice/restaurant/orders") window.dispatchEvent(new CustomEvent('close-dialogs')); }}
                   sx={{ mr: 4 }}
                 />
-                <BottomNavigationAction 
-                  label="Parcel" 
-                  value="/backoffice/restaurant/takeaway" 
-                  icon={<ShoppingBagIcon />} 
+                <BottomNavigationAction
+                  label="Parcel"
+                  value="/backoffice/restaurant/takeaway"
+                  icon={<ShoppingBagIcon />}
                   onClick={() => { if (pathname === "/backoffice/restaurant/takeaway") window.dispatchEvent(new CustomEvent('close-dialogs')); }}
                   sx={{ ml: 4 }}
                 />
-                <BottomNavigationAction 
-                  label="More" 
-                  value="more" 
-                  icon={<MenuIcon />} 
-                  onClick={handleDrawerToggle} 
+                <BottomNavigationAction
+                  label="More"
+                  value="more"
+                  icon={<MenuIcon />}
+                  onClick={handleDrawerToggle}
                 />
               </BottomNavigation>
             </Paper>
           </>
         )}
 
-        {/* Quick Table Selection Dialog */}
-        <Dialog 
-          open={quickOrderOpen} 
+        <Dialog
+          open={quickOrderOpen}
           onClose={() => setQuickOrderOpen(false)}
-          maxWidth="sm"
           fullWidth
-          slotProps={{ paper: { sx: { borderRadius: '24px', p: 1 } } }}
+          maxWidth="sm"
+          slotProps={{
+            paper: {
+              sx: { borderRadius: '16px' }
+            }
+          }}
         >
-          <DialogTitle sx={{ fontWeight: 900, pb: 1 }}>Select Table</DialogTitle>
+          <DialogTitle sx={{ fontWeight: 900 }}>Select Table</DialogTitle>
           <DialogContent>
-            <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
-              Choose an available table to start a new order.
-            </Typography>
-            
             {fetchingTables ? (
-              <Box sx={{ display: 'flex', justifyContent: 'center', py: 4 }}><CircularProgress /></Box>
+              <Box sx={{ display: 'flex', justifyContent: 'center', p: 4 }}>
+                <CircularProgress />
+              </Box>
             ) : (
-              <Grid container spacing={1.5}>
-                {availableTables.map((table) => {
-                  const isFull = (table.current_occupancy || 0) >= table.capacity;
-                  return (
-                    <Grid size={{ xs: 4 }} key={table.id}>
-                      <Paper
-                        onClick={() => {
-                          if (!isFull) {
-                            setSelectedTableForOrder(table);
-                            setQuickOrderOpen(false);
-                          } else {
-                            showInfo("Table Full", `Table ${table.number} is already at full capacity.`);
-                          }
-                        }}
-                        sx={{
-                          p: 2,
-                          borderRadius: '16px',
-                          border: '2px solid',
-                          borderColor: isFull ? '#f1f5f9' : (table.status === 'VACANT' ? '#4caf50' : '#e9762b'),
-                          bgcolor: isFull ? '#f8fafc' : 'white',
-                          textAlign: 'center',
-                          cursor: isFull ? 'not-allowed' : 'pointer',
-                          opacity: isFull ? 0.6 : 1,
-                          transition: 'all 0.2s',
-                          '&:hover': !isFull ? { borderColor: 'primary.main', transform: 'translateY(-2px)' } : {}
-                        }}
-                      >
-                        <Typography sx={{ fontWeight: 900, fontSize: '1.1rem' }}>{table.number}</Typography>
-                        <Typography variant="caption" sx={{ fontWeight: 700, color: 'text.secondary' }}>
-                          {table.current_occupancy || 0}/{table.capacity}
-                        </Typography>
-                      </Paper>
-                    </Grid>
-                  );
-                })}
-                {availableTables.length === 0 && (
-                  <Grid size={{ xs: 12 }}>
-                    <Typography sx={{ textAlign: 'center', py: 4, color: 'text.secondary' }}>No tables available</Typography>
+              <Grid container spacing={2} sx={{ mt: 1 }}>
+                {availableTables.map(table => (
+                  <Grid key={table.id} size={{ xs: 4 }}>
+                    <Button
+                      variant={selectedTableForOrder?.id === table.id ? "contained" : "outlined"}
+                      fullWidth
+                      onClick={() => setSelectedTableForOrder(table)}
+                      sx={{
+                        height: 60,
+                        fontWeight: 800,
+                        borderRadius: '12px'
+                      }}
+                    >
+                      {table.number}
+                    </Button>
                   </Grid>
-                )}
+                ))}
               </Grid>
             )}
           </DialogContent>
-          <DialogActions sx={{ p: 2, pt: 0 }}>
-            <Button fullWidth onClick={() => setQuickOrderOpen(false)} sx={{ fontWeight: 800 }}>CANCEL</Button>
+          <DialogActions sx={{ p: 3 }}>
+            <Button onClick={() => setQuickOrderOpen(false)} sx={{ fontWeight: 800 }}>Cancel</Button>
+            <Button
+              disabled={!selectedTableForOrder}
+              variant="contained"
+              onClick={() => {
+                setQuickOrderOpen(false);
+                // logic to open OrderDialog with table
+              }}
+              sx={{ fontWeight: 800, borderRadius: '8px' }}
+            >
+              Continue
+            </Button>
           </DialogActions>
         </Dialog>
-
-        {/* Actual Order Dialog */}
-        {selectedTableForOrder && (
-          <OrderDialog 
-            open={Boolean(selectedTableForOrder)} 
-            onClose={() => setSelectedTableForOrder(null)} 
-            table={selectedTableForOrder} 
-            onOrderUpdated={() => {
-              // Refresh logic if needed
-            }} 
-          />
-        )}
       </Box>
     </Box>
   );
 }
-
-

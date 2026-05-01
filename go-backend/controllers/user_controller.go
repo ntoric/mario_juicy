@@ -99,6 +99,22 @@ func GetProfile(c *gin.Context) {
 	permissions := []string{}
 	if user.IsSuperuser {
 		permissions = []string{"*"}
+	} else {
+		// Fetch permissions from auth_permission table
+		config.DB.Raw(`
+			SELECT DISTINCT ct.app_label || '.' || p.codename
+			FROM auth_permission p
+			JOIN django_content_type ct ON ct.id = p.content_type_id
+			JOIN auth_group_permissions gp ON gp.permission_id = p.id
+			JOIN users_user_groups ug ON ug.group_id = gp.group_id
+			WHERE ug.user_id = ?
+			UNION
+			SELECT DISTINCT ct.app_label || '.' || p.codename
+			FROM auth_permission p
+			JOIN django_content_type ct ON ct.id = p.content_type_id
+			JOIN users_user_user_permissions up ON up.permission_id = p.id
+			WHERE up.user_id = ?
+		`, user.ID, user.ID).Scan(&permissions)
 	}
 
 	// Allowed menus logic
@@ -205,9 +221,15 @@ func HashDjangoPassword(password string) string {
 
 func GetUsers(c *gin.Context) {
 	var users []models.User
-	config.DB.Preload("Store").Preload("Groups").Find(&users)
+	storeID, _ := c.Get("active_store_id")
+	
+	query := config.DB.Preload("Store").Preload("Groups")
+	if storeID != nil {
+		query = query.Where("store_id = ?", storeID)
+	}
+	query.Find(&users)
 
-	var response []gin.H
+	response := make([]gin.H, 0)
 	for _, u := range users {
 		groups := []string{}
 		for _, g := range u.Groups {
@@ -253,12 +275,21 @@ func CreateUser(c *gin.Context) {
 		return
 	}
 
+	// Enforce store ID for non-superusers
+	storeID, _ := c.Get("active_store_id")
+	isSuperuser, _ := c.Get("is_superuser")
+
+	if isSuperuser == false && storeID != nil {
+		sid := storeID.(uint)
+		input.StoreID = &sid
+	}
+
 	user := models.User{
-		Username:  input.Username,
-		Email:     input.Email,
-		Password:  HashDjangoPassword(input.Password),
-		StoreID:   input.StoreID,
-		IsActive:  true,
+		Username:   input.Username,
+		Email:      input.Email,
+		Password:   HashDjangoPassword(input.Password),
+		StoreID:    input.StoreID,
+		IsActive:   true,
 		DateJoined: time.Now(),
 	}
 
@@ -281,8 +312,16 @@ func CreateUser(c *gin.Context) {
 func UpdateUser(c *gin.Context) {
 	id := c.Param("id")
 	var user models.User
-	if err := config.DB.First(&user, id).Error; err != nil {
-		utils.ErrorResponse(c, http.StatusNotFound, "User not found")
+	activeStoreID, _ := c.Get("active_store_id")
+	isSuperuser, _ := c.Get("is_superuser")
+
+	query := config.DB
+	if isSuperuser == false && activeStoreID != nil {
+		query = query.Where("store_id = ?", activeStoreID)
+	}
+
+	if err := query.First(&user, id).Error; err != nil {
+		utils.ErrorResponse(c, http.StatusNotFound, "User not found or access denied")
 		return
 	}
 
@@ -301,7 +340,10 @@ func UpdateUser(c *gin.Context) {
 	}
 	if val, ok := input["store"]; ok && val != nil {
 		storeID := uint(val.(float64))
-		user.StoreID = &storeID
+		// Only superuser can change store
+		if isSuperuser == true {
+			user.StoreID = &storeID
+		}
 	}
 
 	config.DB.Save(&user)
@@ -321,11 +363,19 @@ func UpdateUser(c *gin.Context) {
 
 func DeleteUser(c *gin.Context) {
 	id := c.Param("id")
-	if err := config.DB.Delete(&models.User{}, id).Error; err != nil {
-		utils.ErrorResponse(c, http.StatusInternalServerError, err.Error())
+	activeStoreID, _ := c.Get("active_store_id")
+	isSuperuser, _ := c.Get("is_superuser")
+
+	query := config.DB.Model(&models.User{})
+	if isSuperuser == false && activeStoreID != nil {
+		query = query.Where("store_id = ?", activeStoreID)
+	}
+
+	if err := query.Delete(&models.User{}, id).Error; err != nil {
+		utils.ErrorResponse(c, http.StatusInternalServerError, "Failed to delete user or access denied")
 		return
 	}
-	utils.SuccessResponse(c, http.StatusOK, gin.H{"message": "User deleted"})
+	utils.SuccessResponse(c, http.StatusOK, gin.H{"message": "User deleted successfully"})
 }
 
 func GetGroups(c *gin.Context) {

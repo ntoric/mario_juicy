@@ -24,3 +24,14 @@ type TaxConfiguration struct {
 func (TaxConfiguration) TableName() string {
 	return "core_taxconfiguration"
 }
+
+type SupportSettings struct {
+	ID        uint      `gorm:"primaryKey" json:"id"`
+	Email     string    `gorm:"size:254;default:'support@mario.com'" json:"email"`
+	Phone     string    `gorm:"size:20;default:'+91 99999 99999'" json:"phone"`
+	UpdatedAt time.Time `json:"updated_at"`
+}
+
+func (SupportSettings) TableName() string {
+	return "core_supportsettings"
+}

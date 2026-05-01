@@ -114,7 +114,8 @@ export default function UserTable({
         </TableHead>
         <TableBody>
           {users.map((user) => {
-            const role = user.groups[0] || 'CASHIER';
+            const roleObj = user.groups && user.groups.length > 0 ? user.groups[0] : null;
+            const role = (roleObj && typeof roleObj === 'object' ? roleObj.name : roleObj) || 'CASHIER';
             const roleStyle = getRoleColor(role);
             
             return (

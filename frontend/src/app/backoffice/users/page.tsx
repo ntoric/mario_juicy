@@ -65,8 +65,9 @@ export default function UsersPage() {
   }, [fetchUsers]);
 
   const filteredUsers = useMemo(() => {
+    if (!users || !Array.isArray(users)) return [];
     return users.filter((u) =>
-      u.username.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      u.username?.toLowerCase().includes(searchQuery.toLowerCase()) ||
       (u.email && u.email.toLowerCase().includes(searchQuery.toLowerCase())) ||
       (u.groups && u.groups.some(g => g.toLowerCase().includes(searchQuery.toLowerCase())))
     );

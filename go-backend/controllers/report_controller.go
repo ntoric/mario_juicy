@@ -12,7 +12,14 @@ import (
 )
 
 func GetDashboardStats(c *gin.Context) {
-	storeID := c.Query("store_id")
+	activeStoreID, _ := c.Get("active_store_id")
+	
+	// If it's a superuser, they might want to filter by a specific store via query
+	// but for regular admins, StoreMiddleware already locked active_store_id.
+	storeID := activeStoreID
+	if storeID == nil {
+		storeID = c.Query("store_id")
+	}
 	
 	now := time.Now()
 	startOfDay := time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, now.Location())
@@ -112,10 +119,10 @@ func GetDashboardStats(c *gin.Context) {
 }
 
 func getFilteredInvoices(c *gin.Context) *gorm.DB {
-	storeID := c.Query("store_id")
-	if storeID == "" {
-		// Try to get from header if query is empty
-		storeID = c.GetHeader("X-Store-ID")
+	activeStoreID, _ := c.Get("active_store_id")
+	storeID := activeStoreID
+	if storeID == nil {
+		storeID = c.Query("store_id")
 	}
 	
 	startDateStr := c.Query("start_date")

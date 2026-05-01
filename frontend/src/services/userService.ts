@@ -4,7 +4,7 @@ export interface User {
   id: number;
   username: string;
   email?: string;
-  groups: string[];
+  groups: Array<{ id: number; name: string } | string>;
   role?: string;
   is_active: boolean;
   store?: {

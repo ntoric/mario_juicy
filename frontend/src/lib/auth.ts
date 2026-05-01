@@ -8,6 +8,7 @@ export const setTokens = (access: string, refresh: string) => {
 export const clearTokens = () => {
   localStorage.removeItem('access_token');
   localStorage.removeItem('refresh_token');
+  localStorage.removeItem('activeStoreId');
 };
 
 export const isAuthenticated = () => {

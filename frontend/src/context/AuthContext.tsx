@@ -49,21 +49,23 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       console.log('AuthContext: Profile fetched successfully', data);
       setUser(data);
       
-      const isGlobalAdmin = data.primary_role === 'SUPER_ADMIN' || data.primary_role === 'ADMIN';
+      const isSuperAdmin = data.primary_role === 'SUPER_ADMIN';
       const savedStoreId = localStorage.getItem('activeStoreId');
       
-      if (isGlobalAdmin) {
+      if (isSuperAdmin) {
         if (savedStoreId) {
           setActiveStoreId(parseInt(savedStoreId));
         } else if (data.store) {
           setActiveStoreId(data.store.id);
           localStorage.setItem('activeStoreId', data.store.id.toString());
         } else {
-          setActiveStoreId(1);
+          setActiveStoreId(1); // Default to store 1 if nothing else
           localStorage.setItem('activeStoreId', '1');
         }
       } else if (data.store) {
+        // Force Store Admin or other roles to their assigned store
         setActiveStoreId(data.store.id);
+        localStorage.setItem('activeStoreId', data.store.id.toString());
       }
     } catch (err: any) {
       console.error('AuthContext: Failed to fetch user profile:', err);
@@ -118,14 +120,21 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const hasPermission = (permission: string) => {
     if (!user) return false;
-    if (user.primary_role === 'SUPER_ADMIN' || user.primary_role === 'ADMIN') return true;
+    const role = user.primary_role?.toUpperCase();
+    if (role === 'SUPER_ADMIN' || role === 'ADMIN' || role === 'STORE_ADMIN' || role === 'STORE ADMIN') return true;
     return user.permissions.includes(permission) || user.permissions.includes(`users.${permission}`);
   };
 
   const isRole = (role: string) => {
+    if (!user) return false;
     const r = role.toUpperCase();
-    if (r === 'ADMIN') return user?.primary_role === 'ADMIN' || user?.primary_role === 'SUPER_ADMIN';
-    return user?.primary_role === r;
+    const userRole = user.primary_role?.toUpperCase();
+    
+    if (r === 'ADMIN') {
+      return userRole === 'ADMIN' || userRole === 'SUPER_ADMIN' || userRole === 'STORE_ADMIN' || userRole === 'STORE ADMIN';
+    }
+    
+    return userRole === r || userRole?.replace(' ', '_') === r || userRole?.replace('_', ' ') === r;
   };
 
   const refreshActiveStore = async () => {

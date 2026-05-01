@@ -35,7 +35,20 @@ type StoreResponse struct {
 
 func GetStores(c *gin.Context) {
 	var stores []models.Store
-	config.DB.Find(&stores)
+	isSuperuser, _ := c.Get("is_superuser")
+	userStoreID, _ := c.Get("user_store_id")
+
+	query := config.DB
+	if isSuperuser == false {
+		if userStoreID != nil {
+			query = query.Where("id = ?", userStoreID)
+		} else {
+			// If not superuser and no store assigned, return empty list or error
+			utils.SuccessResponse(c, http.StatusOK, []StoreResponse{})
+			return
+		}
+	}
+	query.Find(&stores)
 
 	response := []StoreResponse{}
 	for _, s := range stores {
@@ -103,6 +116,12 @@ func GetStore(c *gin.Context) {
 }
 
 func CreateStore(c *gin.Context) {
+	isSuperuser, _ := c.Get("is_superuser")
+	if isSuperuser == false {
+		utils.ErrorResponse(c, http.StatusForbidden, "Only Super Admins can create stores")
+		return
+	}
+
 	var store models.Store
 	if err := c.ShouldBindJSON(&store); err != nil {
 		utils.ErrorResponse(c, http.StatusBadRequest, err.Error())
@@ -113,6 +132,12 @@ func CreateStore(c *gin.Context) {
 }
 
 func UpdateStore(c *gin.Context) {
+	isSuperuser, _ := c.Get("is_superuser")
+	if isSuperuser == false {
+		utils.ErrorResponse(c, http.StatusForbidden, "Only Super Admins can update store settings")
+		return
+	}
+
 	id := c.Param("id")
 	var store models.Store
 	if err := config.DB.First(&store, id).Error; err != nil {
@@ -128,6 +153,12 @@ func UpdateStore(c *gin.Context) {
 }
 
 func DeleteStore(c *gin.Context) {
+	isSuperuser, _ := c.Get("is_superuser")
+	if isSuperuser == false {
+		utils.ErrorResponse(c, http.StatusForbidden, "Only Super Admins can delete stores")
+		return
+	}
+
 	id := c.Param("id")
 	if err := config.DB.Delete(&models.Store{}, id).Error; err != nil {
 		utils.ErrorResponse(c, http.StatusInternalServerError, "Failed to delete store")

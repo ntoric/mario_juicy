@@ -25,14 +25,14 @@ type CategoryResponse struct {
 
 func GetCategories(c *gin.Context) {
 	var categories []models.Category
-	storeID := c.Query("store_id")
-	utils.Debug("Fetching categories", zap.String("storeID", storeID))
+	storeID, _ := c.Get("active_store_id")
+	utils.Debug("Fetching categories", zap.Any("storeID", storeID))
 	query := config.DB
-	if storeID != "" {
+	if storeID != nil {
 		query = query.Where("store_id = ?", storeID)
 	}
 	if err := query.Find(&categories).Error; err != nil {
-		utils.Error("Failed to fetch categories", zap.Error(err), zap.String("storeID", storeID))
+		utils.Error("Failed to fetch categories", zap.Error(err), zap.Any("storeID", storeID))
 	}
 	
 	response := []CategoryResponse{}
@@ -65,11 +65,11 @@ type ItemResponse struct {
 
 func GetItems(c *gin.Context) {
 	var items []models.Item
-	storeID := c.Query("store_id")
+	storeID, _ := c.Get("active_store_id")
 	categoryID := c.Query("category_id")
-	utils.Debug("Fetching items", zap.String("storeID", storeID), zap.String("categoryID", categoryID))
+	utils.Debug("Fetching items", zap.Any("storeID", storeID), zap.String("categoryID", categoryID))
 	query := config.DB.Preload("Category")
-	if storeID != "" {
+	if storeID != nil {
 		query = query.Where("store_id = ?", storeID)
 	}
 	if categoryID != "" {
@@ -149,12 +149,10 @@ func CreateCategory(c *gin.Context) {
 		}
 	}
 
-	// Set StoreID from header
-	storeIDStr := c.GetHeader("X-Store-ID")
-	if storeIDStr != "" {
-		id, _ := strconv.ParseUint(storeIDStr, 10, 32)
-		uID := uint(id)
-		category.StoreID = &uID
+	// Set StoreID from context
+	if storeID, exists := c.Get("active_store_id"); exists {
+		sid := storeID.(uint)
+		category.StoreID = &sid
 	}
 
 	if err := config.DB.Create(&category).Error; err != nil {
@@ -245,12 +243,10 @@ func CreateItem(c *gin.Context) {
 		}
 	}
 
-	// Set StoreID from header
-	storeIDStr := c.GetHeader("X-Store-ID")
-	if storeIDStr != "" {
-		id, _ := strconv.ParseUint(storeIDStr, 10, 32)
-		uID := uint(id)
-		item.StoreID = &uID
+	// Set StoreID from context
+	if storeID, exists := c.Get("active_store_id"); exists {
+		sid := storeID.(uint)
+		item.StoreID = &sid
 	}
 
 	if err := config.DB.Create(&item).Error; err != nil {

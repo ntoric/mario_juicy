@@ -35,9 +35,10 @@ type TableResponse struct {
 
 func GetTables(c *gin.Context) {
 	var tables []models.Table
-	storeID := c.Query("store_id")
+	storeID, _ := c.Get("active_store_id")
+	
 	query := config.DB.Preload("Store")
-	if storeID != "" {
+	if storeID != nil {
 		query = query.Where("store_id = ?", storeID)
 	}
 	query.Find(&tables)
@@ -95,15 +96,11 @@ func CreateTable(c *gin.Context) {
 		return
 	}
 
-	// Set StoreID from header if not provided
-	if table.StoreID == nil {
-		storeIDStr := c.GetHeader("X-Store-ID")
-		if storeIDStr != "" {
-			if sid, err := strconv.ParseUint(storeIDStr, 10, 32); err == nil {
-				sidUint := uint(sid)
-				table.StoreID = &sidUint
-			}
-		}
+	// Set StoreID from context
+	storeID, _ := c.Get("active_store_id")
+	if storeID != nil {
+		sid := storeID.(uint)
+		table.StoreID = &sid
 	}
 
 	table.Shape = "RECT"
@@ -230,10 +227,10 @@ type OrderResponse struct {
 
 func GetOrders(c *gin.Context) {
 	var orders []models.Order
-	storeID := c.Query("store_id")
+	storeID, _ := c.Get("active_store_id")
 	status := c.Query("status")
 	query := config.DB.Preload("Table").Preload("Items.Item").Preload("Waiter")
-	if storeID != "" {
+	if storeID != nil {
 		query = query.Where("store_id = ?", storeID)
 	}
 	if status != "" {
@@ -321,7 +318,7 @@ func MapOrdersToResponse(orders []models.Order) []OrderResponse {
 
 func GetPendingSettlements(c *gin.Context) {
 	var orders []models.Order
-	storeID := c.Query("store_id")
+	storeID, _ := c.Get("active_store_id")
 
 	// Filter logic:
 	// 1. DINE_IN: Show if COMPLETED OR has an Invoice (Checkout)
@@ -349,13 +346,11 @@ func CreateOrder(c *gin.Context) {
 		return
 	}
 
-	// Set StoreID from header
-	storeIDStr := c.GetHeader("X-Store-ID")
-	if storeIDStr != "" {
-		if sid, err := strconv.ParseUint(storeIDStr, 10, 32); err == nil {
-			sidUint := uint(sid)
-			order.StoreID = &sidUint
-		}
+	// Set StoreID from context
+	storeID, _ := c.Get("active_store_id")
+	if storeID != nil {
+		sid := storeID.(uint)
+		order.StoreID = &sid
 	}
 
 	// Set WaiterID from context

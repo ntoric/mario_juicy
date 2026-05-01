@@ -37,6 +37,11 @@ export default function SettingsPage() {
           <Box sx={{ mb: 6 }}>
             <Typography variant="h5" sx={{ fontWeight: 700, mb: 3 }}>Restaurant Settings</Typography>
             <RestaurantSettings />
+          </Box>
+        )}
+
+        {isSuperAdmin && (
+          <Box sx={{ mb: 6 }}>
             <Divider sx={{ my: 6 }} />
             <Typography variant="h5" sx={{ fontWeight: 700, mb: 3, color: 'error.main' }}>
               Advanced System Operations
