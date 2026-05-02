@@ -1,8 +1,10 @@
 package printer
 
 type PrinterConfig struct {
-	VendorID   string `json:"vendor_id"`
-	ProductID  string `json:"product_id"`
+	Type       string `json:"type"` // "usb", "bluetooth", "network"
+	VendorID   string `json:"vendor_id,omitempty"`
+	ProductID  string `json:"product_id,omitempty"`
+	Address    string `json:"address,omitempty"` // MAC address for Bluetooth, IP for Network
 	PaperWidth string `json:"paper_width"` // "2inch" or "3inch"
 }
 
@@ -73,6 +75,8 @@ type PrintJob struct {
 
 type Device struct {
 	Name      string `json:"name"`
-	VendorID  string `json:"vendor_id"`
-	ProductID string `json:"product_id"`
+	Type      string `json:"type"` // "USB", "Bluetooth"
+	VendorID  string `json:"vendor_id,omitempty"`
+	ProductID string `json:"product_id,omitempty"`
+	Address   string `json:"address,omitempty"`
 }

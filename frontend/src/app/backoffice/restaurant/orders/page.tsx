@@ -150,7 +150,7 @@ export default function LiveOrdersPage() {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
   const { hasPermission, isRole } = useAuth();
-  const canDelete = isRole('ADMIN') || isRole('MANAGER') || hasPermission('access_to_delete_order');
+  const canDelete = hasPermission('live_order');
 
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);

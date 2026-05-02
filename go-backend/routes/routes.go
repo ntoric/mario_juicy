@@ -118,7 +118,7 @@ func SetupRoutes(r *gin.Engine, hub *websocket.Hub) {
 			core := protected.Group("/core")
 			{
 				core.GET("/tax-configuration/", controllers.GetTaxConfiguration)
-				core.PUT("/tax-configuration/", middleware.SuperuserMiddleware(), controllers.UpdateTaxConfiguration)
+				core.PUT("/tax-configuration/", middleware.PermissionMiddleware("store_settings"), controllers.UpdateTaxConfiguration)
 				core.POST("/system-reset/", middleware.SuperuserMiddleware(), controllers.SystemReset)
 			}
 

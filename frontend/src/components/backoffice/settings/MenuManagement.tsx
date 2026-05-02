@@ -24,26 +24,16 @@ import {
 import { fetcher } from "@/lib/api";
 
 const ALL_MENUS = [
-  { key: 'dashboard', label: 'Dashboard' },
-  { key: 'table_map', label: 'Table Map' },
-  { key: 'take_order', label: 'Take Order' },
-  { key: 'update_table_status', label: 'Update Table Status' },
-  { key: 'manage_tables', label: 'Manage Table Layout' },
-  { key: 'parcel', label: 'Parcel' },
-  { key: 'reservations', label: 'Reservations' },
-  { key: 'live_orders', label: 'Live Orders' },
-  { key: 'kitchen_display', label: 'Kitchen Display' },
-  { key: 'manage_kitchen', label: 'Manage Kitchen Queue' },
-  { key: 'billing', label: 'Invoices/Billing' },
-  { key: 'payment_management', label: 'Checkout/Payment' },
+  { key: 'parcel_order', label: 'Parcel Order' },
+  { key: 'billing', label: 'Billing' },
+  { key: 'reservation', label: 'Reservation' },
+  { key: 'live_order', label: 'Live order' },
+  { key: 'users_management', label: 'Users Management' },
+  { key: 'store_settings', label: 'Store Settings' },
+  { key: 'tables_access', label: 'Tables Access' },
+  { key: 'table_layout', label: 'Table Layout' },
   { key: 'categories', label: 'Categories' },
   { key: 'items', label: 'Items' },
-  { key: 'reports', label: 'Reports' },
-  { key: 'stores', label: 'Stores' },
-  { key: 'users', label: 'Users/Roles' },
-  { key: 'manage_users', label: 'Add/Manage Users' },
-  { key: 'delete_order', label: 'Delete Orders' },
-  { key: 'settings', label: 'Global Settings' },
 ];
 
 interface Group {

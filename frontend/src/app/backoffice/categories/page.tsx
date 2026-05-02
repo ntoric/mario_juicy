@@ -59,9 +59,9 @@ export default function CategoryPage() {
   const theme = useTheme();
   const { hasPermission } = useAuth();
   const { showSuccess, showError } = useToast();
-  const canAdd = hasPermission("catalogs.add_category");
-  const canEdit = hasPermission("catalogs.change_category");
-  const canDelete = hasPermission("catalogs.delete_category");
+  const canAdd = hasPermission("categories");
+  const canEdit = hasPermission("categories");
+  const canDelete = hasPermission("categories");
 
   const [categories, setCategories] = useState<Category[]>([]);
   const [loading, setLoading] = useState(true);

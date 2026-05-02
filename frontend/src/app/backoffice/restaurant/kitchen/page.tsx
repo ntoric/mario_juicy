@@ -167,7 +167,7 @@ function OrderTicket({ group, onAttend, onReady, onReject, canManage }: {
                     textDecoration: (item.status === 'REJECTED' || item.status === 'CANCELLED') ? 'line-through' : 'none',
                   }}
                 >
-                  {item.quantity}× {item.item_details.name.toUpperCase()}
+                  {item.quantity}× {(item.item_details?.name || 'Unknown Item').toUpperCase()}
                 </Typography>
                 {item.notes && (
                   <Box sx={{ mt: 0.5, p: 0.5, bgcolor: alpha(theme.palette.error.main, 0.05), border: `1px solid ${alpha(theme.palette.error.main, 0.1)}`, borderRadius: '4px' }}>
@@ -258,8 +258,8 @@ export default function KitchenDisplayPage() {
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
   const { hasPermission } = useAuth();
   
-  const canViewKDS = hasPermission('access_to_view_kitchen_display');
-  const canManageKDS = hasPermission('access_to_manage_kitchen_queue');
+  const canViewKDS = hasPermission('live_order');
+  const canManageKDS = hasPermission('live_order');
 
   const [items, setItems] = useState<OrderItem[]>([]);
   const [loading, setLoading] = useState(true);
@@ -399,7 +399,7 @@ export default function KitchenDisplayPage() {
       {(preparingCount > 0 || orderedCount > 0) && (
         <Grid container spacing={1.5} sx={{ mb: 2 }}>
           {orderedCount > 0 && (
-            <Grid size={{ xs: 12, sm: 6 }}>
+            <Grid key="alert-ordered" size={{ xs: 12, sm: 6 }}>
               <Box sx={{ p: 1.5, bgcolor: alpha(theme.palette.error.main, 0.05), border: `1px solid ${alpha(theme.palette.error.main, 0.1)}`, borderRadius: '7px', display: 'flex', alignItems: 'center', gap: 1.5 }}>
                 <AlertIcon sx={{ color: 'error.main', fontSize: 20 }} />
                 <Typography sx={{ fontWeight: 800, color: 'error.main', fontSize: '0.8rem' }}>
@@ -409,7 +409,7 @@ export default function KitchenDisplayPage() {
             </Grid>
           )}
           {preparingCount > 0 && (
-            <Grid size={{ xs: 12, sm: 6 }}>
+            <Grid key="alert-preparing" size={{ xs: 12, sm: 6 }}>
               <Box sx={{ p: 1.5, bgcolor: alpha(theme.palette.warning.main, 0.05), border: `1px solid ${alpha(theme.palette.warning.main, 0.1)}`, borderRadius: '7px', display: 'flex', alignItems: 'center', gap: 1.5 }}>
                 <StartIcon sx={{ color: 'warning.main', fontSize: 20 }} />
                 <Typography sx={{ fontWeight: 800, color: 'warning.dark', fontSize: '0.8rem' }}>

@@ -37,6 +37,7 @@ import {
 } from '@mui/icons-material';
 import { restaurantService, Reservation, Table as RestaurantTable } from '@/services/restaurantService';
 import ReservationForm from '@/components/backoffice/restaurant/ReservationForm';
+import { useAuth } from '@/hooks/useAuth';
 
 function formatDate(iso: string) {
   if (!iso) return '';
@@ -60,6 +61,18 @@ const STATUS_COLORS: Record<string, 'primary' | 'success' | 'error'> = {
 export default function ReservationsPage() {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
+  const { hasPermission } = useAuth();
+  const canManage = hasPermission('reservation');
+
+  if (!canManage) {
+    return (
+      <Box sx={{ p: 5, textAlign: 'center' }}>
+        <Alert severity="error" sx={{ mx: 'auto', maxWidth: 500 }}>
+          You do not have permission to access Reservations.
+        </Alert>
+      </Box>
+    );
+  }
 
   const [reservations, setReservations] = useState<Reservation[]>([]);
   const [tables, setTables] = useState<RestaurantTable[]>([]);

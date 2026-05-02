@@ -78,7 +78,7 @@ export default function TableMapPage() {
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
   const canvasRef = useRef<HTMLDivElement>(null);
   const { hasPermission } = useAuth();
-  const canManageLayout = hasPermission('manage_table_layout_access');
+  const canManageLayout = hasPermission('table_layout');
 
   const [tables, setTables] = useState<Table[]>([]);
   const [loading, setLoading] = useState(true);

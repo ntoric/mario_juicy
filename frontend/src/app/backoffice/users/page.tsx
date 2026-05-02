@@ -69,7 +69,10 @@ export default function UsersPage() {
     return users.filter((u) =>
       u.username?.toLowerCase().includes(searchQuery.toLowerCase()) ||
       (u.email && u.email.toLowerCase().includes(searchQuery.toLowerCase())) ||
-      (u.groups && u.groups.some(g => g.toLowerCase().includes(searchQuery.toLowerCase())))
+      (u.groups && u.groups.some(g => {
+        const groupName = typeof g === 'string' ? g : g.name;
+        return groupName.toLowerCase().includes(searchQuery.toLowerCase());
+      }))
     );
   }, [users, searchQuery]);
 

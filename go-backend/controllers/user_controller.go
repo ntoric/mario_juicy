@@ -122,10 +122,9 @@ func GetProfile(c *gin.Context) {
 	if user.IsSuperuser {
 		// Super Admin gets everything
 		allowedMenus = []string{
-			"dashboard", "table_map", "take_order", "update_table_status", "manage_tables", 
-			"parcel", "reservations", "live_orders", "kitchen_display", "manage_kitchen", 
-			"billing", "payment_management", "categories", "items", "reports", "stores", 
-			"users", "manage_users", "delete_order", "settings", "menu_permissions",
+			"dashboard", "parcel_order", "billing", "reservation", "live_order",
+			"users_management", "store_settings", "tables_access", "table_layout",
+			"categories", "items", "reports", "stores", "menu_permissions",
 		}
 	} else {
 		// Fetch from MenuPermission table for user's groups

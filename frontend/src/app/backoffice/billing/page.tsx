@@ -199,22 +199,8 @@ export default function BillingPage() {
       }
 
       const { printInvoice } = await import('@/utils/printerService');
-      const success = await printInvoice(invoice, invoice.items || [], user?.store);
+      await printInvoice(invoice, invoice.items || [], user?.store);
       
-      if (!success) {
-        // Final fallback to system print
-        if (typeof window !== 'undefined' && (window as any).api?.print) {
-          const store = invoice?.store_details || user?.store;
-          await (window as any).api.print({ 
-            html: invoiceEl.innerHTML, 
-            printerName: store?.thermal_printer_name || undefined,
-            paperSize: store?.thermal_printer_size || '3_INCH'
-          });
-        } else {
-          fallbackPrint(invoiceEl.innerHTML);
-        }
-      }
-
       setPrintingInvoice(null);
     }, 100);
   };

@@ -58,6 +58,7 @@ type OrderItem struct {
 	Status        string    `gorm:"size:20;default:'ORDERED'" json:"status"`
 	Notes         string    `gorm:"size:255" json:"notes"`
 	RejectionNote string    `gorm:"column:rejection_note;type:text" json:"rejection_note"`
+	Order         Order     `gorm:"foreignKey:OrderID" json:"order,omitempty"`
 	CreatedAt     time.Time `json:"created_at"`
 	UpdatedAt     time.Time `json:"updated_at"`
 }

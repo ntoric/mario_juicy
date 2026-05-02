@@ -1,8 +1,12 @@
+import { toast } from 'sonner';
+
 export interface PrinterServiceData {
   type: "invoice";
   printer: {
+    type: string;
     vendor_id: string;
     product_id: string;
+    address: string;
     paper_width: "2inch" | "3inch";
   };
   invoice: {
@@ -85,8 +89,10 @@ export const mapToPrinterServiceData = (invoice: any, orderItems: any[], storeOv
   const data: PrinterServiceData = {
     type: "invoice",
     printer: {
+      type: (store?.thermal_printer_type || 'usb').toLowerCase(),
       vendor_id: store?.thermal_printer_vendor_id || "0x0fe6",
       product_id: store?.thermal_printer_product_id || "0x811e",
+      address: store?.thermal_printer_address || "",
       paper_width: (store?.thermal_printer_size === '2_INCH' ? '2inch' : '3inch') as "2inch" | "3inch"
     },
     invoice: {
@@ -150,9 +156,17 @@ export const mapToPrinterServiceData = (invoice: any, orderItems: any[], storeOv
 export const printInvoice = async (invoice: any, items: any[], storeOverride?: any): Promise<boolean> => {
   if (!invoice) return false;
   
-  // Prepare data
   const { mapToPrinterServiceData } = await import('./printerService');
   const printData = mapToPrinterServiceData(invoice, items || [], storeOverride);
+  const store = storeOverride || invoice.store_details || invoice.store;
+
+  // CHECK: If printer is not selected
+  if (!store?.thermal_printer_name) {
+    toast.info("Printer not selected", {
+      description: "Please configure a thermal printer in Store Settings to print invoices."
+    });
+    return true; // Return true to prevent error fallbacks or system print
+  }
   
   console.log('Printing Invoice Data:', JSON.stringify(printData, null, 2));
 

@@ -8,8 +8,9 @@ import NextLink from "next/link";
 import { useAuth } from "@/hooks/useAuth";
 
 export default function SettingsPage() {
-  const { isRole, loading } = useAuth();
+  const { isRole, hasPermission, loading } = useAuth();
   const isSuperAdmin = isRole('SUPER_ADMIN');
+  const canManageSettings = hasPermission('store_settings');
 
   if (loading) {
     return (
@@ -33,7 +34,7 @@ export default function SettingsPage() {
           <TaxConfiguration />
         </Box>
 
-        {isSuperAdmin && (
+        {canManageSettings && (
           <Box sx={{ mb: 6 }}>
             <Typography variant="h5" sx={{ fontWeight: 700, mb: 3 }}>Restaurant Settings</Typography>
             <RestaurantSettings />

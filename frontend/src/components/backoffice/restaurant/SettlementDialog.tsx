@@ -130,12 +130,7 @@ export default function SettlementDialog({ open, onClose, order, onSuccess }: Se
     if (!invoiceEl) return;
 
     const { printInvoice } = await import('@/utils/printerService');
-    const success = await printInvoice(activeInvoice, order.items || [], activeInvoice?.store_details || activeInvoice?.store);
-
-    if (!success) {
-      // FALLBACK: Standard Browser Print
-      fallbackPrint(invoiceEl.innerHTML);
-    }
+    await printInvoice(activeInvoice, order.items || [], activeInvoice?.store_details || activeInvoice?.store);
   };
 
   const fallbackPrint = (html: string) => {

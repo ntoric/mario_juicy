@@ -303,11 +303,15 @@ export default function BackofficeLayout({ children }: { children: React.ReactNo
   const { showError, showInfo } = useToast();
 
   const [quickOrderOpen, setQuickOrderOpen] = useState(false);
+  const [orderDialogOpen, setOrderDialogOpen] = useState(false);
   const [selectedTableForOrder, setSelectedTableForOrder] = useState<Table | null>(null);
   const [availableTables, setAvailableTables] = useState<Table[]>([]);
   const [fetchingTables, setFetchingTables] = useState(false);
+  const [isParcel, setIsParcel] = useState(false);
 
   const handleOpenQuickOrder = async () => {
+    setIsParcel(false);
+    setSelectedTableForOrder(null);
     setQuickOrderOpen(true);
     setFetchingTables(true);
     try {
@@ -399,34 +403,34 @@ export default function BackofficeLayout({ children }: { children: React.ReactNo
     {
       label: "Restaurant",
       items: [
-        { text: "Table Map", icon: <TableIcon />, path: "/backoffice/restaurant/tables", permission: "users.view_table_layout_access", menuKey: "table_map" },
-        { text: "Parcel", icon: <ShoppingBagIcon />, path: "/backoffice/restaurant/takeaway", permission: "restaurants.view_order", menuKey: "parcel" },
-        { text: "Reservations", icon: <ReservationIcon />, path: "/backoffice/restaurant/reservations", permission: "restaurants.view_reservation", menuKey: "reservations" },
-        { text: "Live Orders", icon: <OrdersIcon />, path: "/backoffice/restaurant/orders", permission: "restaurants.view_order", menuKey: "live_orders" },
-        { text: "Kitchen Display", icon: <KitchenIcon />, path: "/backoffice/restaurant/kitchen", permission: "restaurants.view_orderitem", menuKey: "kitchen_display" },
-        { text: "Billing", icon: <ReceiptIcon />, path: "/backoffice/billing", permission: "restaurants.view_invoice", menuKey: "billing" },
+        { text: "Table Map", icon: <TableIcon />, path: "/backoffice/restaurant/tables", menuKey: "tables_access" },
+        { text: "Parcel", icon: <ShoppingBagIcon />, path: "/backoffice/restaurant/takeaway", menuKey: "parcel_order" },
+        { text: "Reservations", icon: <ReservationIcon />, path: "/backoffice/restaurant/reservations", menuKey: "reservation" },
+        { text: "Live Orders", icon: <OrdersIcon />, path: "/backoffice/restaurant/orders", menuKey: "live_order" },
+        { text: "Kitchen Display", icon: <KitchenIcon />, path: "/backoffice/restaurant/kitchen", menuKey: "live_order" },
+        { text: "Billing", icon: <ReceiptIcon />, path: "/backoffice/billing", menuKey: "billing" },
       ],
     },
     {
       label: "Catalog",
       items: [
-        { text: "Categories", icon: <CategoryIcon />, path: "/backoffice/categories", permission: "catalogs.view_category", menuKey: "categories" },
-        { text: "Items", icon: <InventoryIcon />, path: "/backoffice/items", permission: "catalogs.view_item", menuKey: "items" },
+        { text: "Categories", icon: <CategoryIcon />, path: "/backoffice/categories", menuKey: "categories" },
+        { text: "Items", icon: <InventoryIcon />, path: "/backoffice/items", menuKey: "items" },
       ],
     },
     {
       label: "Analytics",
       items: [
-        { text: "Reports", icon: <BarChartIcon />, path: "/backoffice/reports", permission: "users.view_reports", menuKey: "reports" },
+        { text: "Reports", icon: <BarChartIcon />, path: "/backoffice/reports", menuKey: "reports", permission: "SUPER_ADMIN" },
       ],
     },
     {
       label: "System",
       items: [
-        { text: "Stores", icon: <StoreIcon />, path: "/backoffice/stores", permission: "stores.view_store", menuKey: "stores" },
-        { text: "Users", icon: <PeopleIcon />, path: "/backoffice/users", permission: "users.view_user", menuKey: "users" },
-        { text: "Menu Permissions", icon: <LockPersonIcon />, path: "/backoffice/settings/menu-permissions", permission: "SUPER_ADMIN", menuKey: "menu_permissions" },
-        { text: "Settings", icon: <SettingsIcon />, path: "/backoffice/settings", permission: "core.view_taxconfiguration", menuKey: "settings" },
+        { text: "Stores", icon: <StoreIcon />, path: "/backoffice/stores", menuKey: "stores", permission: "SUPER_ADMIN" },
+        { text: "Users", icon: <PeopleIcon />, path: "/backoffice/users", menuKey: "users_management" },
+        { text: "Menu Permissions", icon: <LockPersonIcon />, path: "/backoffice/settings/menu-permissions", menuKey: "menu_permissions", permission: "SUPER_ADMIN" },
+        { text: "Settings", icon: <SettingsIcon />, path: "/backoffice/settings", menuKey: "store_settings" },
         { text: "Support", icon: <SupportIcon />, path: "/backoffice/support", menuKey: "support" },
       ],
     },
@@ -436,20 +440,23 @@ export default function BackofficeLayout({ children }: { children: React.ReactNo
     ...section,
     items: section.items.filter(item => {
       // 1. Absolute Store-level toggles (Applies to ALL users)
-      // If store is still loading or not found, we hide these feature-dependent items by default
-      if (['parcel', 'reservations', 'kitchen_display'].includes(item.menuKey || '')) {
-        if (!activeStore) return false; // Hide if store settings not yet loaded
+      if (['parcel_order', 'reservation', 'kitchen_display'].includes(item.menuKey || '')) {
+        if (!activeStore) return false; 
 
-        if (item.menuKey === 'parcel' && !activeStore.is_take_away_enabled) return false;
-        if (item.menuKey === 'reservations' && !activeStore.is_reservations_enabled) return false;
+        if (item.menuKey === 'parcel_order' && !activeStore.is_take_away_enabled) return false;
+        if (item.menuKey === 'reservation' && !activeStore.is_reservations_enabled) return false;
         if (item.menuKey === 'kitchen_display' && !activeStore.is_kitchen_step_enabled) return false;
       }
 
       // 2. Role/Permission based filtering
-      if (item.permission === "SUPER_ADMIN") return isRole("SUPER_ADMIN");
+      if (isRole("SUPER_ADMIN")) return true;
+      if (item.permission === "SUPER_ADMIN") return false;
+
+      // Dashboard and Support are visible to all authenticated users
+      if (item.menuKey === 'dashboard' || item.menuKey === 'support') return true;
 
       if (item.menuKey && user?.allowed_menus) {
-        if (!user.allowed_menus.includes(item.menuKey)) return false;
+        return user.allowed_menus.includes(item.menuKey);
       }
 
       return !item.permission || hasPermission(item.permission);
@@ -498,7 +505,12 @@ export default function BackofficeLayout({ children }: { children: React.ReactNo
           )}
         </Box>
       )}
-      {isMobile && <Box sx={{ height: HeaderHeight }} />}
+      {isMobile && (
+        <Box sx={{ p: 2, borderBottom: '1px solid rgba(44, 24, 16, 0.05)', bgcolor: '#fcfcfc' }}>
+          <StoreSwitcher fullWidth />
+        </Box>
+      )}
+      {!isMobile && <Box sx={{ height: HeaderHeight }} />}
       <Box sx={{
         overflowY: "auto",
         overflowX: "hidden",
@@ -690,7 +702,7 @@ export default function BackofficeLayout({ children }: { children: React.ReactNo
             </Box>
 
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
-              <StoreSwitcher />
+              {!isMobile && <StoreSwitcher />}
 
               <IconButton sx={{
                 bgcolor: { xs: alpha('#ffffff', 0.15), md: theme.palette.background.default },
@@ -880,34 +892,61 @@ export default function BackofficeLayout({ children }: { children: React.ReactNo
                 <CircularProgress />
               </Box>
             ) : (
-              <Grid container spacing={2} sx={{ mt: 1 }}>
-                {availableTables.map(table => (
-                  <Grid key={table.id} size={{ xs: 4 }}>
-                    <Button
-                      variant={selectedTableForOrder?.id === table.id ? "contained" : "outlined"}
-                      fullWidth
-                      onClick={() => setSelectedTableForOrder(table)}
-                      sx={{
-                        height: 60,
-                        fontWeight: 800,
-                        borderRadius: '12px'
-                      }}
-                    >
-                      {table.number}
-                    </Button>
-                  </Grid>
-                ))}
-              </Grid>
+              <Box>
+                <Button
+                  variant={isParcel ? "contained" : "outlined"}
+                  fullWidth
+                  color="secondary"
+                  onClick={() => {
+                    setIsParcel(true);
+                    setSelectedTableForOrder(null);
+                  }}
+                  startIcon={<ShoppingBagIcon />}
+                  sx={{
+                    height: 60,
+                    fontWeight: 800,
+                    borderRadius: '12px',
+                    mb: 2,
+                    mt: 1
+                  }}
+                >
+                  Parcel (Take Away)
+                </Button>
+
+                <Divider sx={{ mb: 2, fontWeight: 700, color: 'text.secondary', fontSize: '0.7rem' }}>OR SELECT TABLE</Divider>
+
+                <Grid container spacing={2}>
+                  {availableTables.map(table => (
+                    <Grid key={table.id} size={{ xs: 4 }}>
+                      <Button
+                        variant={selectedTableForOrder?.id === table.id ? "contained" : "outlined"}
+                        fullWidth
+                        onClick={() => {
+                          setSelectedTableForOrder(table);
+                          setIsParcel(false);
+                        }}
+                        sx={{
+                          height: 60,
+                          fontWeight: 800,
+                          borderRadius: '12px'
+                        }}
+                      >
+                        {table.number}
+                      </Button>
+                    </Grid>
+                  ))}
+                </Grid>
+              </Box>
             )}
           </DialogContent>
           <DialogActions sx={{ p: 3 }}>
             <Button onClick={() => setQuickOrderOpen(false)} sx={{ fontWeight: 800 }}>Cancel</Button>
             <Button
-              disabled={!selectedTableForOrder}
+              disabled={!selectedTableForOrder && !isParcel}
               variant="contained"
               onClick={() => {
                 setQuickOrderOpen(false);
-                // logic to open OrderDialog with table
+                setOrderDialogOpen(true);
               }}
               sx={{ fontWeight: 800, borderRadius: '8px' }}
             >
@@ -915,6 +954,21 @@ export default function BackofficeLayout({ children }: { children: React.ReactNo
             </Button>
           </DialogActions>
         </Dialog>
+
+        <OrderDialog
+          open={orderDialogOpen}
+          onClose={() => {
+            setOrderDialogOpen(false);
+            setSelectedTableForOrder(null);
+            setIsParcel(false);
+          }}
+          table={selectedTableForOrder as any}
+          onOrderUpdated={() => {
+             // Dispatch event to refresh table map if we're on that page
+             window.dispatchEvent(new CustomEvent('refresh-tables'));
+             window.dispatchEvent(new CustomEvent('refresh-orders'));
+          }}
+        />
       </Box>
     </Box>
   );

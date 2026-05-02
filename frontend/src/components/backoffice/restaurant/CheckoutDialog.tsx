@@ -42,7 +42,7 @@ interface TaxDetail {
 
 const CheckoutDialog: React.FC<CheckoutDialogProps> = ({ open, onClose, order, onCheckoutSuccess }) => {
   const { hasPermission } = useAuth();
-  const canManagePayment = hasPermission('access_to_payment_management');
+  const canManagePayment = hasPermission('billing');
   
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);

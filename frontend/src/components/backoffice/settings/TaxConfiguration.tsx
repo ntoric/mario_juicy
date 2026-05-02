@@ -33,7 +33,7 @@ export default function TaxConfiguration() {
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
   
-  const [formData, setFormData] = useState({
+  const [formData, setFormData] = useState<any>({
     name: "Default Tax Configuration",
     tax_type: "EXCLUSIVE",
     is_gst_enabled: false,
@@ -57,13 +57,10 @@ export default function TaxConfiguration() {
       // Backend expects store_id as a query parameter
       const data = await fetcher(`/core/tax-configuration/?store_id=${activeStoreId}`);
       setFormData({
-        name: data.name || "Default Tax Configuration",
-        tax_type: data.tax_type || "EXCLUSIVE",
-        is_gst_enabled: data.is_gst_enabled || false,
+        ...data,
         cgst_rate: data.cgst_rate ? data.cgst_rate.toString() : "0.00",
         sgst_rate: data.sgst_rate ? data.sgst_rate.toString() : "0.00",
         igst_rate: data.igst_rate ? data.igst_rate.toString() : "0.00",
-        is_cess_enabled: data.is_cess_enabled || false,
         cess_rate: data.cess_rate ? data.cess_rate.toString() : "0.00",
       });
     } catch (err: any) {
@@ -76,7 +73,7 @@ export default function TaxConfiguration() {
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value, type, checked } = e.target;
-    setFormData((prev) => ({
+    setFormData((prev: any) => ({
       ...prev,
       [name]: type === "checkbox" ? checked : value,
     }));
@@ -87,14 +84,24 @@ export default function TaxConfiguration() {
     setSaving(true);
     setError(null);
     try {
-      // Use the plural endpoint for PATCH - backend handles singleton-per-store
-      await fetcher("/core/tax-configuration/1/", {
-        method: "PATCH",
-        body: JSON.stringify(formData),
+      // Convert rates back to numbers for the backend (float64)
+      const payload = {
+        ...formData,
+        cgst_rate: parseFloat(formData.cgst_rate || "0"),
+        sgst_rate: parseFloat(formData.sgst_rate || "0"),
+        igst_rate: parseFloat(formData.igst_rate || "0"),
+        cess_rate: parseFloat(formData.cess_rate || "0"),
+        store_id: formData.store_id || activeStoreId
+      };
+
+      // Use the correct endpoint and method defined in the Go backend
+      await fetcher("/core/tax-configuration/", {
+        method: "PUT",
+        body: JSON.stringify(payload),
       });
       setSuccess(true);
     } catch (err: any) {
-      setError(err.message);
+      setError(err.message || "Failed to save tax configuration");
     } finally {
       setSaving(false);
     }

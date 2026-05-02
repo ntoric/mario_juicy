@@ -21,7 +21,9 @@ type Store struct {
 	IsTakeAwayEnabled      bool      `gorm:"column:is_take_away_enabled;default:true" json:"is_take_away_enabled"`
 	IsReservationsEnabled  bool      `gorm:"column:is_reservations_enabled;default:true" json:"is_reservations_enabled"`
 	ThermalPrinterSize     string    `gorm:"column:thermal_printer_size;size:10;default:'3_INCH'" json:"thermal_printer_size"`
+	ThermalPrinterType     string    `gorm:"column:thermal_printer_type;size:20;default:'USB'" json:"thermal_printer_type"`
 	ThermalPrinterName     string    `gorm:"column:thermal_printer_name;size:255" json:"thermal_printer_name"`
+	ThermalPrinterAddress  string    `gorm:"column:thermal_printer_address;size:255" json:"thermal_printer_address"`
 	ThermalPrinterVendorID string    `gorm:"column:thermal_printer_vendor_id;size:20" json:"thermal_printer_vendor_id"`
 	ThermalPrinterProductID string   `gorm:"column:thermal_printer_product_id;size:20" json:"thermal_printer_product_id"`
 	CreatedAt              time.Time `json:"created_at"`

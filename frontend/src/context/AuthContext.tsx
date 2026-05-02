@@ -121,8 +121,43 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const hasPermission = (permission: string) => {
     if (!user) return false;
     const role = user.primary_role?.toUpperCase();
-    if (role === 'SUPER_ADMIN' || role === 'ADMIN' || role === 'STORE_ADMIN' || role === 'STORE ADMIN') return true;
-    return user.permissions.includes(permission) || user.permissions.includes(`users.${permission}`);
+    if (role === 'SUPER_ADMIN') return true;
+
+    // Check menu-based permissions
+    if (user.allowed_menus?.includes(permission)) return true;
+
+    // Mapping for legacy permission strings to new menu-based keys
+    const legacyMapping: Record<string, string> = {
+      'manage_table_layout_access': 'table_layout',
+      'view_table_layout_access': 'tables_access',
+      'access_to_payment_management': 'billing',
+      'restaurants.view_order': 'live_order',
+      'restaurants.view_reservation': 'reservation',
+      'restaurants.view_invoice': 'billing',
+      'catalogs.view_category': 'categories',
+      'catalogs.add_category': 'categories',
+      'catalogs.change_category': 'categories',
+      'catalogs.delete_category': 'categories',
+      'catalogs.view_item': 'items',
+      'catalogs.add_item': 'items',
+      'catalogs.change_item': 'items',
+      'catalogs.delete_item': 'items',
+      'users.view_user': 'users_management',
+      'users.add_user': 'users_management',
+      'users.change_user': 'users_management',
+      'users.delete_user': 'users_management',
+      'core.view_taxconfiguration': 'store_settings',
+    };
+
+    const mappedPermission = legacyMapping[permission];
+    if (mappedPermission && user.allowed_menus?.includes(mappedPermission)) return true;
+
+    // Special case for take order: can be either tables or parcel
+    if (permission === 'access_to_take_order') {
+        return (user.allowed_menus?.includes('tables_access') || user.allowed_menus?.includes('parcel_order')) ?? false;
+    }
+
+    return !!(user.permissions.includes(permission) || user.permissions.includes(`users.${permission}`));
   };
 
   const isRole = (role: string) => {

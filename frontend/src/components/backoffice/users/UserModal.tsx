@@ -75,7 +75,7 @@ export default function UserModal({
       setFormData({
         username: user.username,
         password: "", 
-        role: user.groups[0] || "CASHIER",
+        role: (typeof user.groups[0] === 'string' ? user.groups[0] : user.groups[0]?.name) || "CASHIER",
         email: user.email || "",
         is_active: user.is_active,
         store: user.store?.id || undefined

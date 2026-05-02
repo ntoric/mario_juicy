@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import {
-  Dialog, DialogTitle, DialogContent, DialogActions, Button, alpha, Box, Typography, Grid, TextField, IconButton, Paper, Autocomplete, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, CircularProgress, useTheme, useMediaQuery, Stack, Tooltip, Select, MenuItem, FormControl, InputLabel, Divider, Alert, Chip, Card, CardContent, Container, Tabs, Tab, Drawer, Fab, Badge
+  Dialog, DialogTitle, DialogContent, DialogActions, Button, alpha, Box, Typography, Grid, TextField, IconButton, Paper, Autocomplete, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, CircularProgress, useTheme, useMediaQuery, Stack, Tooltip, Select, MenuItem, FormControl, InputLabel, Divider, Alert, Chip, Card, CardContent, Container, Tabs, Tab, Drawer, Fab, Badge, InputAdornment
 } from '@mui/material';
 import { useToast } from '@/context/ToastContext';
 import { useRouter } from 'next/navigation';
@@ -25,7 +25,8 @@ import {
   ExpandMore as ExpandMoreIcon,
   ExpandLess as ExpandLessIcon,
   Print as PrintIcon,
-  Description as DescriptionIcon
+  Description as DescriptionIcon,
+  CheckCircle as CheckIcon
 } from '@mui/icons-material';
 import { restaurantService } from '@/services/restaurantService';
 import { itemService } from '@/services/itemService';
@@ -58,12 +59,12 @@ const OrderDialog: React.FC<OrderDialogProps> = ({ open, onClose, table, initial
   const { showSuccess, showError, showInfo } = useToast();
 
   const { hasPermission, user, isRole, activeStore } = useAuth();
-  const canTakeOrder = hasPermission('access_to_take_order');
-  const canManagePayment = hasPermission('access_to_payment_management');
-
   const [loading, setLoading] = useState(false);
   const [order, setOrder] = useState<Order | null>(null);
   const [orderType, setOrderType] = useState<'DINE_IN' | 'TAKE_AWAY'>('DINE_IN');
+
+  const canTakeOrder = orderType === 'DINE_IN' ? hasPermission('tables_access') : hasPermission('parcel_order');
+  const canManagePayment = hasPermission('billing');
   const [menuItems, setMenuItems] = useState<Item[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
   const [activeCategory, setActiveCategory] = useState<number | 'all'>('all');
@@ -148,6 +149,18 @@ const OrderDialog: React.FC<OrderDialogProps> = ({ open, onClose, table, initial
         setCustomerMobile(initialOrder.customer_mobile || '');
         setSelectedOrderId(initialOrder.id);
         setDialogStage('ORDER_DETAILS');
+      } else if (orderIdToSelect || (selectedOrderId && !table)) {
+        // Handle standalone orders (like Take Away from Quick Order)
+        const ordId = orderIdToSelect || selectedOrderId;
+        if (ordId) {
+          const orderData = await restaurantService.getOrder(ordId);
+          setOrder(orderData);
+          setOrderType(orderData.order_type);
+          setSelectedOrderId(orderData.id);
+          setCustomerName(orderData.customer_name || '');
+          setCustomerMobile(orderData.customer_mobile || '');
+          setDialogStage('ORDER_DETAILS');
+        }
       } else if (currentTable) {
         // Only reset if we don't have an active selection already
         const currentSelection = orderIdToSelect || selectedOrderId;
@@ -155,9 +168,11 @@ const OrderDialog: React.FC<OrderDialogProps> = ({ open, onClose, table, initial
         if (!currentSelection && !order) {
            setOrder(null);
            setSelectedOrderId(null);
+           setCustomerName('');
+           setCustomerMobile('');
         }
         // Don't reset customerName/Mobile if we're already in the process of creating one
-        if (!customerMobile && !customerName) {
+        if (!customerMobile && !customerName && !currentSelection) {
            setCustomerName('');
            setCustomerMobile('');
         }
@@ -173,6 +188,8 @@ const OrderDialog: React.FC<OrderDialogProps> = ({ open, onClose, table, initial
           setOrder(orderData);
           setOrderType(orderData.order_type);
           setSelectedOrderId(orderData.id);
+          setCustomerName(orderData.customer_name || '');
+          setCustomerMobile(orderData.customer_mobile || '');
           setDialogStage('ORDER_DETAILS');
           
           // Persist the selection
@@ -184,8 +201,7 @@ const OrderDialog: React.FC<OrderDialogProps> = ({ open, onClose, table, initial
           setSelectedOrderId(null);
           setDialogStage('ORDER_DETAILS');
         }
-      }
- else {
+      } else {
         setOrder(null);
         setOrderType('TAKE_AWAY');
         setDialogStage('ORDER_DETAILS');
@@ -282,6 +298,8 @@ const OrderDialog: React.FC<OrderDialogProps> = ({ open, onClose, table, initial
       const orderData = await restaurantService.getOrder(orderId);
       setOrder(orderData);
       setOrderType(orderData.order_type);
+      setCustomerName(orderData.customer_name || '');
+      setCustomerMobile(orderData.customer_mobile || '');
       setDialogStage('ORDER_DETAILS');
       
       // Persist the selection
@@ -550,12 +568,7 @@ const OrderDialog: React.FC<OrderDialogProps> = ({ open, onClose, table, initial
     if (!invoiceEl || !order?.invoice) return;
 
     const { printInvoice } = await import('@/utils/printerService');
-    const success = await printInvoice(order.invoice, order.items || [], activeStore);
-
-    if (!success) {
-      // FALLBACK: Standard Browser Print
-      fallbackPrint(invoiceEl.innerHTML);
-    }
+    await printInvoice(order.invoice, order.items || [], activeStore);
   };
 
   const fallbackPrint = (html: string) => {
@@ -722,25 +735,49 @@ const OrderDialog: React.FC<OrderDialogProps> = ({ open, onClose, table, initial
         <Box sx={{ p: 2, borderBottom: '1px solid #e8e4d8', bgcolor: alpha(theme.palette.primary.main, 0.02) }}>
             <Stack spacing={1}>
               <TextField 
-                size="small" label="Customer Name" value={order ? (order.customer_name || '') : customerName} 
-                onChange={(e) => {
-                  if (order) handleUpdateOrderDetails({ customer_name: e.target.value });
-                  else setCustomerName(e.target.value);
-                }}
+                size="small" label="Customer Name" value={customerName} 
+                onChange={(e) => setCustomerName(e.target.value)}
                 disabled={Boolean(order?.invoice)}
+                slotProps={{
+                  input: {
+                    endAdornment: order && (
+                      <InputAdornment position="end">
+                        <IconButton 
+                          size="small" 
+                          onClick={() => handleUpdateOrderDetails({ customer_name: customerName })}
+                          disabled={loading || customerName === order.customer_name}
+                        >
+                          <CheckIcon fontSize="small" color="primary" />
+                        </IconButton>
+                      </InputAdornment>
+                    )
+                  }
+                }}
               />
               <TextField 
                 size="small" 
                 label="Mobile" 
                 required
                 error={orderType === 'TAKE_AWAY' && !customerMobile && !order}
-                value={order ? (order.customer_mobile || '') : customerMobile} 
-                onChange={(e) => {
-                  if (order) handleUpdateOrderDetails({ customer_mobile: e.target.value });
-                  else setCustomerMobile(e.target.value);
-                }}
+                value={customerMobile} 
+                onChange={(e) => setCustomerMobile(e.target.value)}
                 disabled={Boolean(order?.invoice)}
                 helperText={(orderType === 'TAKE_AWAY' && !customerMobile && !order) ? 'Required for Parcel' : ''}
+                slotProps={{
+                  input: {
+                    endAdornment: order && (
+                      <InputAdornment position="end">
+                        <IconButton 
+                          size="small" 
+                          onClick={() => handleUpdateOrderDetails({ customer_mobile: customerMobile })}
+                          disabled={loading || customerMobile === order.customer_mobile}
+                        >
+                          <CheckIcon fontSize="small" color="primary" />
+                        </IconButton>
+                      </InputAdornment>
+                    )
+                  }
+                }}
               />
             </Stack>
         </Box>
@@ -1006,11 +1043,11 @@ const OrderDialog: React.FC<OrderDialogProps> = ({ open, onClose, table, initial
   return (
     <Box sx={{ 
       position: 'absolute', 
-      top: 0,
+      top: { xs: 64, md: 0 },
       left: 0,
       right: 0,
-      bottom: 0,
-      m: { xs: -1, md: 0 },
+      bottom: { xs: 'calc(64px + env(safe-area-inset-bottom))', md: 0 },
+      m: 0,
       zIndex: 1050, 
       display: 'flex', 
       flexDirection: 'column', 
@@ -1018,7 +1055,16 @@ const OrderDialog: React.FC<OrderDialogProps> = ({ open, onClose, table, initial
       overflow: 'hidden',
       boxShadow: '0 -4px 20px rgba(0,0,0,0.1)'
     }}>
-      <Box sx={{ px: { xs: 1.5, md: 2 }, py: { xs: 1, md: 1.5 }, borderBottom: '1px solid #e8e4d8', display: 'flex', alignItems: 'center', justifyContent: 'space-between', bgcolor: 'white', zIndex: 10 }}>
+      <Box sx={{ 
+        px: { xs: 1.5, md: 2 }, 
+        py: { xs: 1, md: 1.5 }, 
+        borderBottom: '1px solid #e8e4d8', 
+        display: 'flex', 
+        alignItems: 'center', 
+        justifyContent: 'space-between', 
+        bgcolor: 'white', 
+        zIndex: 10 
+      }}>
         <Box sx={{ display: 'flex', alignItems: 'center', gap: { xs: 1, md: 2 } }}>
           <IconButton onClick={onClose} size="small" sx={{ border: { xs: '1px solid #f1f5f9', md: 'none' }, p: 0.5 }}><ChevronLeftIcon fontSize="small" /></IconButton>
           <Box>

@@ -31,7 +31,9 @@ export default function RestaurantSettings() {
     is_take_away_enabled: true,
     is_reservations_enabled: true,
     thermal_printer_size: '3_INCH' as '2_INCH' | '3_INCH',
+    thermal_printer_type: 'USB' as string,
     thermal_printer_name: null as string | null,
+    thermal_printer_address: null as string | null,
     thermal_printer_vendor_id: null as string | null,
     thermal_printer_product_id: null as string | null,
   });
@@ -49,13 +51,14 @@ export default function RestaurantSettings() {
     try {
       const response = await fetch('http://localhost:8085/printers');
       if (response.ok) {
-        const usbPrinters = await response.json();
-        if (usbPrinters && usbPrinters.length > 0) {
-          setPrinters(usbPrinters.map((p: any) => ({
+        const detectedPrinters = await response.json();
+        if (detectedPrinters && detectedPrinters.length > 0) {
+          setPrinters(detectedPrinters.map((p: any) => ({
             name: p.name,
             vendor_id: p.vendor_id,
             product_id: p.product_id,
-            type: 'USB'
+            address: p.address,
+            type: p.type || 'USB'
           })));
           return;
         }
@@ -87,7 +90,9 @@ export default function RestaurantSettings() {
         is_take_away_enabled: data.is_take_away_enabled,
         is_reservations_enabled: data.is_reservations_enabled,
         thermal_printer_size: data.thermal_printer_size || '3_INCH',
+        thermal_printer_type: data.thermal_printer_type || 'USB',
         thermal_printer_name: data.thermal_printer_name || null,
+        thermal_printer_address: data.thermal_printer_address || null,
         thermal_printer_vendor_id: data.thermal_printer_vendor_id || null,
         thermal_printer_product_id: data.thermal_printer_product_id || null,
       });
@@ -106,6 +111,7 @@ export default function RestaurantSettings() {
       const payload = {
         ...settings,
         thermal_printer_name: settings.thermal_printer_name || undefined,
+        thermal_printer_address: settings.thermal_printer_address || undefined,
         thermal_printer_vendor_id: settings.thermal_printer_vendor_id || undefined,
         thermal_printer_product_id: settings.thermal_printer_product_id || undefined,
       };
@@ -244,7 +250,7 @@ export default function RestaurantSettings() {
                 <Box>
                   <Typography variant="subtitle1" sx={{ fontWeight: 600 }}>Select Printer</Typography>
                   <Typography variant="body2" color="text.secondary">
-                    Currently selected: <b>{settings.thermal_printer_name || "None"}</b>
+                    Currently selected: <b>{settings.thermal_printer_name || "None"}</b> ({settings.thermal_printer_type})
                   </Typography>
                 </Box>
                 <Button size="small" variant="outlined" onClick={detectPrinters} sx={{ borderRadius: '7px', fontWeight: 700 }}>
@@ -256,11 +262,13 @@ export default function RestaurantSettings() {
                 <Stack spacing={1}>
                   {printers.map((printer, index) => (
                     <Paper
-                      key={`${printer.name}-${printer.vendor_id || ''}-${index}`}
+                      key={`${printer.name}-${printer.vendor_id || ''}-${printer.address || ''}-${index}`}
                       elevation={0}
                       onClick={() => setSettings({ 
                         ...settings, 
                         thermal_printer_name: printer.name,
+                        thermal_printer_type: printer.type,
+                        thermal_printer_address: printer.address || null,
                         thermal_printer_vendor_id: printer.vendor_id || null,
                         thermal_printer_product_id: printer.product_id || null
                       })}
@@ -276,7 +284,7 @@ export default function RestaurantSettings() {
                       <Box>
                         <Typography sx={{ fontWeight: 600, fontSize: '0.9rem' }}>{printer.name}</Typography>
                         <Typography variant="caption" color="text.secondary">
-                          {printer.type} {printer.vendor_id ? `(VID:${printer.vendor_id} PID:${printer.product_id})` : ''}
+                          {printer.type} {printer.vendor_id ? `(VID:${printer.vendor_id} PID:${printer.product_id})` : ''} {printer.address ? `(${printer.address})` : ''}
                         </Typography>
                       </Box>
                       {settings.thermal_printer_name === printer.name && (

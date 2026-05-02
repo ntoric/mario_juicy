@@ -30,9 +30,9 @@ import ItemDetails from "@/components/backoffice/items/ItemDetails";
 export default function ItemsPage() {
   const { hasPermission } = useAuth();
   const { showSuccess, showError } = useToast();
-  const canAdd = hasPermission("catalogs.add_item");
-  const canEdit = hasPermission("catalogs.change_item");
-  const canDelete = hasPermission("catalogs.delete_item");
+  const canAdd = hasPermission("items");
+  const canEdit = hasPermission("items");
+  const canDelete = hasPermission("items");
 
   const [items, setItems] = useState<Item[]>([]);
   const [loading, setLoading] = useState(true);

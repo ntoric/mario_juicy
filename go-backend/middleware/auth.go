@@ -29,7 +29,7 @@ func AuthMiddleware() gin.HandlerFunc {
 
 		// Fetch full user and store details
 		var user models.User
-		if err := config.DB.Preload("Store").Where("id = ?", claims.UserID).First(&user).Error; err != nil {
+		if err := config.DB.Preload("Store").Preload("Groups").Where("id = ?", claims.UserID).First(&user).Error; err != nil {
 			c.JSON(http.StatusUnauthorized, gin.H{"error": "User not found"})
 			c.Abort()
 			return
@@ -61,5 +61,43 @@ func SuperuserMiddleware() gin.HandlerFunc {
 			return
 		}
 		c.Next()
+	}
+}
+
+func PermissionMiddleware(menuKey string) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		isSuperuser, exists := c.Get("is_superuser")
+		if exists && isSuperuser == true {
+			c.Next()
+			return
+		}
+
+		userObj, exists := c.Get("user")
+		if !exists {
+			c.JSON(http.StatusUnauthorized, gin.H{"error": "Authentication required"})
+			c.Abort()
+			return
+		}
+		user := userObj.(models.User)
+
+		// Fetch user groups with their IDs
+		var groupIDs []uint
+		for _, g := range user.Groups {
+			groupIDs = append(groupIDs, g.ID)
+		}
+
+		if len(groupIDs) > 0 {
+			var count int64
+			config.DB.Model(&models.MenuPermission{}).
+				Where("group_id IN ? AND menu_key = ? AND is_enabled = ?", groupIDs, menuKey, true).
+				Count(&count)
+			if count > 0 {
+				c.Next()
+				return
+			}
+		}
+
+		c.JSON(http.StatusForbidden, gin.H{"error": "You do not have permission to perform this action: " + menuKey})
+		c.Abort()
 	}
 }

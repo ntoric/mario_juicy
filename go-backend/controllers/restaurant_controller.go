@@ -203,6 +203,7 @@ type OrderItemResponse struct {
 	Notes            string      `json:"notes"`
 	CreatedAt        string      `json:"created_at"`
 	UpdatedAt        string      `json:"updated_at"`
+	RejectionNote    string      `json:"rejection_note"`
 }
 
 type OrderResponse struct {
@@ -254,27 +255,7 @@ func GetOrder(c *gin.Context) {
 func MapOrderToResponse(o models.Order) OrderResponse {
 	itemResps := []OrderItemResponse{}
 	for _, i := range o.Items {
-		tableNumber := "Take Away"
-		tableID := uint(0)
-		if o.Table != nil {
-			tableNumber = o.Table.Number
-			tableID = o.Table.ID
-		}
-
-		itemResps = append(itemResps, OrderItemResponse{
-			ID:               i.ID,
-			Order:            i.OrderID,
-			OrderTableNumber: tableNumber,
-			OrderTableID:     tableID,
-			Item:             i.ItemID,
-			ItemDetails:      i.Item,
-			Quantity:         i.Quantity,
-			Price:            fmt.Sprintf("%.2f", i.Price),
-			Status:           i.Status,
-			Notes:            i.Notes,
-			CreatedAt:        i.CreatedAt.Format("2006-01-02T15:04:05.999Z07:00"),
-			UpdatedAt:        i.UpdatedAt.Format("2006-01-02T15:04:05.999Z07:00"),
-		})
+		itemResps = append(itemResps, MapOrderItemToResponse(i, &o))
 	}
 
 	tableNumber := "Take Away"
@@ -314,6 +295,31 @@ func MapOrdersToResponse(orders []models.Order) []OrderResponse {
 		response = append(response, MapOrderToResponse(o))
 	}
 	return response
+}
+
+func MapOrderItemToResponse(i models.OrderItem, o *models.Order) OrderItemResponse {
+	tableNumber := "Take Away"
+	tableID := uint(0)
+	if o != nil && o.Table != nil {
+		tableNumber = o.Table.Number
+		tableID = o.Table.ID
+	}
+
+	return OrderItemResponse{
+		ID:               i.ID,
+		Order:            i.OrderID,
+		OrderTableNumber: tableNumber,
+		OrderTableID:     tableID,
+		Item:             i.ItemID,
+		ItemDetails:      i.Item,
+		Quantity:         i.Quantity,
+		Price:            fmt.Sprintf("%.2f", i.Price),
+		Status:           i.Status,
+		Notes:            i.Notes,
+		RejectionNote:    i.RejectionNote,
+		CreatedAt:        i.CreatedAt.Format("2006-01-02T15:04:05.999Z07:00"),
+		UpdatedAt:        i.UpdatedAt.Format("2006-01-02T15:04:05.999Z07:00"),
+	}
 }
 
 func GetPendingSettlements(c *gin.Context) {
@@ -1001,7 +1007,12 @@ func GetKitchenItems(c *gin.Context) {
 
 	query.Order("restaurants_orderitem.created_at asc").Find(&items)
 
-	utils.SuccessResponse(c, http.StatusOK, items)
+	response := []OrderItemResponse{}
+	for _, i := range items {
+		response = append(response, MapOrderItemToResponse(i, &i.Order))
+	}
+
+	utils.SuccessResponse(c, http.StatusOK, response)
 }
 
 func GetInvoices(c *gin.Context) {
