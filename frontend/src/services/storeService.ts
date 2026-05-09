@@ -10,6 +10,7 @@ export interface Store {
   invoice_prefix: string;
   logo?: string;
   location?: string;
+  branch?: string;
   fssai_lic_no?: string;
   mobile?: string;
   is_kitchen_step_enabled: boolean;
@@ -31,6 +32,7 @@ export interface StoreFormData {
   email?: string;
   gst_number?: string;
   location?: string;
+  branch?: string;
   fssai_lic_no?: string;
   mobile?: string;
   invoice_prefix: string;

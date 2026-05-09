@@ -4,7 +4,7 @@ const getBaseUrl = () => {
     if (customUrl) return customUrl;
   }
 
-  let url = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8020/api';
+  let url = process.env.NEXT_PUBLIC_API_URL || 'https://mario-api.ntoric.com/api';
 
   if (typeof window !== 'undefined') {
     // If we're on a mobile browser or Capacitor

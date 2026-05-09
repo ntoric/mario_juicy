@@ -3,6 +3,7 @@ import { toast } from 'sonner';
 export interface PrinterServiceData {
   type: "invoice";
   printer: {
+    name: string;
     type: string;
     vendor_id: string;
     product_id: string;
@@ -61,7 +62,7 @@ export interface PrinterServiceData {
 export const mapToPrinterServiceData = (invoice: any, orderItems: any[], storeOverride?: any): PrinterServiceData => {
   const store = storeOverride || invoice.store_details || invoice.store;
   const taxDetails = invoice.tax_details || {};
-  
+
   // Handle case where taxDetails is a string (JSON string from raw model)
   let parsedTaxDetails = taxDetails;
   if (typeof taxDetails === 'string') {
@@ -89,6 +90,7 @@ export const mapToPrinterServiceData = (invoice: any, orderItems: any[], storeOv
   const data: PrinterServiceData = {
     type: "invoice",
     printer: {
+      name: store?.thermal_printer_name || "",
       type: (store?.thermal_printer_type || 'usb').toLowerCase(),
       vendor_id: store?.thermal_printer_vendor_id || "0x0fe6",
       product_id: store?.thermal_printer_product_id || "0x811e",
@@ -136,7 +138,7 @@ export const mapToPrinterServiceData = (invoice: any, orderItems: any[], storeOv
       },
       footer: [
         "Thank You! Visit Again",
-        "Keep the bill for exchange"
+        // "Keep the bill for exchange"
       ]
     }
   };
@@ -155,19 +157,32 @@ export const mapToPrinterServiceData = (invoice: any, orderItems: any[], storeOv
 
 export const printInvoice = async (invoice: any, items: any[], storeOverride?: any): Promise<boolean> => {
   if (!invoice) return false;
-  
+
   const { mapToPrinterServiceData } = await import('./printerService');
   const printData = mapToPrinterServiceData(invoice, items || [], storeOverride);
   const store = storeOverride || invoice.store_details || invoice.store;
 
   // CHECK: If printer is not selected
   if (!store?.thermal_printer_name) {
+    console.warn('Printer not configured for store:', store);
     toast.info("Printer not selected", {
       description: "Please configure a thermal printer in Store Settings to print invoices."
     });
-    return true; // Return true to prevent error fallbacks or system print
+    return true;
   }
-  
+
+  // IF SYSTEM PRINTER: Try native print if possible
+  if (store.thermal_printer_type?.toLowerCase() === 'system' && typeof window !== 'undefined' && (window as any).api?.print) {
+    try {
+      console.log('Using System printer via Electron bridge:', store.thermal_printer_name);
+      // Note: This requires HTML which we don't have here easily. 
+      // Callers should ideally handle System printers if they have the DOM element.
+      // But we can try to notify the user if they called this directly.
+    } catch (e) {
+      console.error('System print error:', e);
+    }
+  }
+
   console.log('Printing Invoice Data:', JSON.stringify(printData, null, 2));
 
   // TRY 1: Direct Fetch to Local Service (Port 8085)

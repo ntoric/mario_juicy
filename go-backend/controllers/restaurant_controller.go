@@ -47,11 +47,22 @@ func GetTables(c *gin.Context) {
 	for _, t := range tables {
 		// Calculate active orders
 		var activeOrders []models.Order
-		config.DB.Where("table_id = ? AND order_type = 'DINE_IN' AND status NOT IN ?", t.ID, services.TerminalStatuses).Order("id DESC").Find(&activeOrders)
+		config.DB.Preload("Items.Item").Where("table_id = ? AND order_type = 'DINE_IN' AND status NOT IN ?", t.ID, services.TerminalStatuses).Order("id DESC").Find(&activeOrders)
 
 		activeOrdersResp := []interface{}{}
 		var currentOccupancy int
 		for _, o := range activeOrders {
+			items := []gin.H{}
+			for _, item := range o.Items {
+				items = append(items, gin.H{
+					"item_details": gin.H{
+						"name": item.Item.Name,
+					},
+					"quantity": item.Quantity,
+					"price":    fmt.Sprintf("%.2f", item.Price),
+				})
+			}
+
 			activeOrdersResp = append(activeOrdersResp, gin.H{
 				"id":                o.ID,
 				"status":            o.Status,
@@ -60,6 +71,7 @@ func GetTables(c *gin.Context) {
 				"number_of_persons": o.NumberOfPersons,
 				"order_type":        o.OrderType,
 				"created_at":        o.CreatedAt,
+				"items":             items,
 			})
 			currentOccupancy += o.NumberOfPersons
 		}
@@ -401,6 +413,17 @@ func CreateOrder(c *gin.Context) {
 	config.DB.Preload("Table").Preload("Items.Item").Preload("Waiter").Preload("Invoice").First(&order, order.ID)
 
 	websocket.Broadcast("ORDER_CREATED", MapOrderToResponse(order))
+	
+	// Create Notification
+	orderTypeLabel := "Order"
+	if order.OrderType == "TAKE_AWAY" {
+		orderTypeLabel = "Parcel Order"
+	}
+	notificationTitle := fmt.Sprintf("New %s #%d", orderTypeLabel, order.ID)
+	notificationMsg := fmt.Sprintf("A new %s has been created for %s. Total: ₹%.2f", 
+		orderTypeLabel, order.CustomerName, order.TotalAmount)
+	services.CreateNotification(*order.StoreID, nil, notificationTitle, notificationMsg, "ORDER_CREATED", fmt.Sprintf("/backoffice/restaurant/orders?id=%d", order.ID))
+
 	utils.SuccessResponse(c, http.StatusCreated, MapOrderToResponse(order))
 }
 
@@ -528,6 +551,14 @@ func UpdateOrder(c *gin.Context) {
 	}
 
 	websocket.Broadcast("ORDER_UPDATED", MapOrderToResponse(order))
+
+	// Create Notification for status change
+	if status, ok := input["status"].(string); ok {
+		notificationTitle := fmt.Sprintf("Order #%d Status Changed", order.ID)
+		notificationMsg := fmt.Sprintf("Order #%d status has been updated to %s", order.ID, status)
+		services.CreateNotification(*order.StoreID, nil, notificationTitle, notificationMsg, "ORDER_STATUS_CHANGED", fmt.Sprintf("/backoffice/restaurant/orders?id=%d", order.ID))
+	}
+
 	utils.SuccessResponse(c, http.StatusOK, MapOrderToResponse(order))
 }
 
@@ -920,6 +951,45 @@ func MapInvoiceToResponse(inv models.Invoice) interface{} {
 		taxDetails = make(map[string]interface{})
 	}
 
+	// Fetch BusinessConfig for overrides
+	var businessConfig models.BusinessConfig
+	if inv.StoreID != nil {
+		config.DB.Where("store_id = ?", *inv.StoreID).First(&businessConfig)
+	}
+
+	storeDetails := gin.H{
+		"name":         inv.Store.Name,
+		"branch":       inv.Store.Branch,
+		"location":     inv.Store.Location,
+		"mobile":       inv.Store.Mobile,
+		"phone":        inv.Store.Phone,
+		"gst_number":   inv.Store.GSTNumber,
+		"fssai_lic_no": inv.Store.FSSAILicNo,
+		"address":      inv.Store.Address,
+	}
+
+	if businessConfig.ID != 0 {
+		if businessConfig.ShopName != "" {
+			storeDetails["name"] = businessConfig.ShopName
+		}
+		if businessConfig.Branch != "" {
+			storeDetails["branch"] = businessConfig.Branch
+		}
+		if businessConfig.Location != "" {
+			storeDetails["location"] = businessConfig.Location
+		}
+		if businessConfig.Mobile != "" {
+			storeDetails["mobile"] = businessConfig.Mobile
+			storeDetails["phone"] = businessConfig.Mobile
+		}
+		if businessConfig.GSTIN != "" {
+			storeDetails["gst_number"] = businessConfig.GSTIN
+		}
+		if businessConfig.FSSAILicNo != "" {
+			storeDetails["fssai_lic_no"] = businessConfig.FSSAILicNo
+		}
+	}
+
 	return gin.H{
 		"id":             inv.ID,
 		"invoice_number": inv.InvoiceNumber,
@@ -934,7 +1004,7 @@ func MapInvoiceToResponse(inv models.Invoice) interface{} {
 		"waiter":         inv.WaiterID,
 		"waiter_name":    waiterName,
 		"created_at":     inv.CreatedAt.Format("2006-01-02T15:04:05.999Z07:00"),
-		"store_details":  inv.Store,
+		"store_details":  storeDetails,
 	}
 }
 

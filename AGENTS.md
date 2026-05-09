@@ -1,6 +1,6 @@
 <!-- BEGIN:project-agent-rules -->
 # This is a dockerized project
-the project is a completely dockerized. tech stack is django rest framework, nextjs, react, material ui, postgresql, redis.
+the project is a completely dockerized. tech stack is go Gin Framework, nextjs, react, material ui, postgresql, redis.
 
 the currency in the project is Indian Rupee (₹) only
 

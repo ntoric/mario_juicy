@@ -64,6 +64,15 @@ func SuperuserMiddleware() gin.HandlerFunc {
 	}
 }
 
+func contains(slice []string, item string) bool {
+	for _, s := range slice {
+		if s == item {
+			return true
+		}
+	}
+	return false
+}
+
 func PermissionMiddleware(menuKey string) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		isSuperuser, exists := c.Get("is_superuser")
@@ -80,18 +89,44 @@ func PermissionMiddleware(menuKey string) gin.HandlerFunc {
 		}
 		user := userObj.(models.User)
 
-		// Fetch user groups with their IDs
-		var groupIDs []uint
+		var roles []string
 		for _, g := range user.Groups {
-			groupIDs = append(groupIDs, g.ID)
+			roles = append(roles, g.Name)
 		}
 
-		if len(groupIDs) > 0 {
-			var count int64
-			config.DB.Model(&models.MenuPermission{}).
-				Where("group_id IN ? AND menu_key = ? AND is_enabled = ?", groupIDs, menuKey, true).
-				Count(&count)
-			if count > 0 {
+		var allowedMenus []string
+		if contains(roles, "SUPER_ADMIN") {
+			allowedMenus = []string{
+				"dashboard", "parcel_order", "billing", "reservation", "live_order",
+				"users_management", "store_settings", "tables_access", "table_layout",
+				"categories", "items", "reports", "stores", "subscription", "support",
+			}
+		} else if contains(roles, "ADMIN") {
+			allowedMenus = []string{
+				"dashboard", "parcel_order", "billing", "reservation", "live_order",
+				"users_management", "store_settings", "tables_access", "table_layout",
+				"categories", "items", "reports", "support", "subscription",
+			}
+		} else if contains(roles, "MANAGER") {
+			allowedMenus = []string{
+				"dashboard", "parcel_order", "billing", "reservation", "live_order",
+				"tables_access", "table_layout", "categories", "items", "support",
+			}
+		} else if contains(roles, "CASHIER") {
+			allowedMenus = []string{
+				"dashboard", "parcel_order", "billing", "reservation", "live_order",
+				"categories", "items", "store_settings", "support",
+			}
+		} else if contains(roles, "STAFF") {
+			allowedMenus = []string{
+				"dashboard", "tables_access", "table_layout", "parcel_order", "reservation", "live_order", "support",
+			}
+		} else {
+			allowedMenus = []string{"dashboard", "support"}
+		}
+
+		for _, key := range allowedMenus {
+			if key == menuKey {
 				c.Next()
 				return
 			}

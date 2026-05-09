@@ -17,11 +17,10 @@ import {
   Tab,
   useTheme,
   useMediaQuery,
-  Fab,
-  Zoom,
   Tooltip,
   IconButton,
   alpha,
+  keyframes,
 } from '@mui/material';
 import {
   Refresh as RefreshIcon,
@@ -30,78 +29,111 @@ import {
   AccessTime as TimeIcon,
   Fastfood as FoodIcon,
   History as HistoryIcon,
-  Inbox as InboxIcon,
 } from '@mui/icons-material';
 import { restaurantService, Order } from '@/services/restaurantService';
 import { OrderStatusChip } from '@/components/backoffice/restaurant/StatusChips';
 import OrderDialog from '@/components/backoffice/restaurant/OrderDialog';
 import { useWebSocket } from '@/hooks/useWebSocket';
 
+// --- Animations ---
+const pulse = keyframes`
+  0% { transform: scale(1); box-shadow: 0 4px 12px rgba(0,0,0,0.02); }
+  50% { transform: scale(1.01); box-shadow: 0 10px 25px rgba(233,118,43,0.08); }
+  100% { transform: scale(1); box-shadow: 0 4px 12px rgba(0,0,0,0.02); }
+`;
+
+const spin = keyframes`
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+`;
+
 function TakeAwayCard({ order, onClick }: { order: Order; onClick: () => void }) {
+  const theme = useTheme();
   const mins = Math.floor((Date.now() - new Date(order.created_at).getTime()) / 60000);
   const readyCount = (order.items || []).filter((i: any) => i.status === 'READY').length;
+  const isActive = !['PAID', 'COMPLETED', 'CANCELLED', 'RETURNED'].includes(order.status);
 
   return (
     <Card
-      variant="outlined"
+      elevation={0}
       sx={{
         cursor: 'pointer',
-        transition: '0.15s',
-        borderRadius: '5px',
+        transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+        borderRadius: '20px',
         position: 'relative',
+        bgcolor: 'rgba(255, 255, 255, 0.75)',
+        backdropFilter: 'blur(10px)',
+        border: '1px solid',
+        borderColor: alpha(theme.palette.divider, 0.08),
+        animation: isActive ? `${pulse} 3s infinite ease-in-out` : 'none',
         '&:hover': { 
-          borderColor: 'primary.main', 
-          boxShadow: '0 4px 14px rgba(0,0,0,0.08)',
-          transform: 'translateY(-2px)'
+          borderColor: '#e9762b', 
+          boxShadow: '0 15px 35px rgba(0,0,0,0.08)',
+          transform: 'translateY(-6px)',
+          zIndex: 2,
+          '& .chevron': { transform: 'translateX(4px)' }
         },
       }}
       onClick={onClick}
     >
-      <CardContent sx={{ p: 2 }}>
-        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 1.5 }}>
+      <CardContent sx={{ p: 2.5 }}>
+        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 2 }}>
           <Box>
-            <Typography variant="h6" sx={{ fontWeight: 800, fontSize: '1.1rem' }}>
-              ORDER #{order.id}
+            <Typography variant="h6" sx={{ fontWeight: 1000, fontSize: '1.2rem', letterSpacing: '-0.02em', color: '#1a1a1a', mb: 0.5 }}>
+              #{order.id}
             </Typography>
-            <Typography variant="caption" sx={{ fontWeight: 600, opacity: 0.6 }}>PARCEL</Typography>
-            {order.customer_name && (
-              <Typography variant="body2" sx={{ mt: 0.5, fontWeight: 700, color: 'primary.main' }}>
-                {order.customer_name} {order.customer_mobile && `(${order.customer_mobile})`}
+            {order.customer_name ? (
+              <Typography variant="body2" sx={{ fontWeight: 800, color: '#e9762b', display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                {order.customer_name.toUpperCase()}
+              </Typography>
+            ) : (
+              <Typography variant="caption" sx={{ fontWeight: 700, color: 'text.disabled', textTransform: 'uppercase' }}>
+                Walk-in Customer
               </Typography>
             )}
           </Box>
           <Stack sx={{ alignItems: 'flex-end' }} spacing={1}>
-
-            <OrderStatusChip status={order.status} orderType="TAKE_AWAY" sx={{ borderRadius: '4px', fontWeight: 800 }} />
-            {readyCount > 0 && !['READY', 'SERVED', 'PAID', 'COMPLETED'].includes(order.status) && (
+            <OrderStatusChip status={order.status} orderType="TAKE_AWAY" sx={{ borderRadius: '10px', fontWeight: 900, px: 1.5, height: 26, fontSize: '0.65rem' }} />
+            {readyCount > 0 && isActive && (
               <Box sx={{ 
-                bgcolor: 'success.main', color: 'white', 
-                px: 1, py: 0.3, borderRadius: '4px', fontSize: '0.65rem', fontWeight: 900,
+                bgcolor: '#10b981', color: 'white', 
+                px: 1.2, py: 0.4, borderRadius: '8px', fontSize: '0.65rem', fontWeight: 1000,
                 display: 'flex', alignItems: 'center', gap: 0.5,
-                boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
+                boxShadow: '0 4px 12px rgba(16,185,129,0.2)'
               }}>
-                <FoodIcon sx={{ fontSize: 10 }} /> {readyCount} READY
+                <FoodIcon sx={{ fontSize: 12 }} /> {readyCount} READY
               </Box>
             )}
           </Stack>
         </Box>
 
-        <Divider sx={{ my: 1.5, borderStyle: 'dotted' }} />
+        <Divider sx={{ my: 2, opacity: 0.4 }} />
 
-        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end' }}>
-          <Stack spacing={0.75}>
+        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <Stack spacing={0.5}>
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, color: 'text.secondary' }}>
-              <ShoppingBagIcon sx={{ fontSize: 14 }} />
-              <Typography variant="caption" sx={{ fontWeight: 700 }}>{order.items.length} ITEMS</Typography>
+              <Box sx={{ p: 0.5, bgcolor: alpha('#e9762b', 0.08), borderRadius: '6px', display: 'flex' }}>
+                <ShoppingBagIcon sx={{ fontSize: 14, color: '#e9762b' }} />
+              </Box>
+              <Typography variant="caption" sx={{ fontWeight: 800, color: '#1a1a1a' }}>{order.items.length} ITEMS</Typography>
             </Box>
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, color: 'text.secondary' }}>
-              <TimeIcon sx={{ fontSize: 14 }} />
-              <Typography variant="caption" sx={{ fontWeight: 700 }}>{mins}M AGO</Typography>
+               <Box sx={{ p: 0.5, bgcolor: alpha(theme.palette.divider, 0.08), borderRadius: '6px', display: 'flex' }}>
+                <TimeIcon sx={{ fontSize: 14 }} />
+              </Box>
+              <Typography variant="caption" sx={{ fontWeight: 700, opacity: 0.7 }}>{mins}M AGO</Typography>
             </Box>
           </Stack>
-          <Typography variant="h6" sx={{ fontWeight: 900, color: 'primary.main' }}>
-            ₹{parseFloat(order.total_amount).toFixed(0)}
-          </Typography>
+          <Box sx={{ textAlign: 'right' }}>
+            <Typography variant="h5" sx={{ fontWeight: 1000, color: '#1a1a1a', letterSpacing: '-0.02em' }}>
+              ₹{parseFloat(order.total_amount).toFixed(0)}
+            </Typography>
+            {order.customer_mobile && (
+              <Typography variant="caption" sx={{ fontWeight: 700, color: 'text.disabled' }}>
+                {order.customer_mobile}
+              </Typography>
+            )}
+          </Box>
         </Box>
       </CardContent>
     </Card>
@@ -149,7 +181,6 @@ export default function TakeAwayPage() {
 
   useEffect(() => { 
     fetchOrders(); 
-    // Save session
     localStorage.setItem('takeaway_active_tab', activeTab.toString());
   }, [fetchOrders, activeTab]);
 
@@ -202,176 +233,184 @@ export default function TakeAwayPage() {
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
 
   return (
-    <Box sx={{ position: 'relative', height: '100%', display: "flex", flexDirection: "column", p: { xs: 1.5, md: 2 }, overflow: 'hidden' }}>
-      {/* Optimized Header Row */}
-      {/* Optimized Header Row */}
-      <Box sx={{ 
-        mb: 2, 
-        display: 'flex', 
-        justifyContent: 'space-between', 
-        alignItems: 'center', 
-        gap: 2 
-      }}>
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-          <Typography variant="h4" sx={{ fontWeight: 500, color: '#e9762b', fontSize: '1.25rem', whiteSpace: 'nowrap' }}>
-            Parcel Orders
-          </Typography>
-          
-          <Tabs 
-            value={activeTab} 
-            onChange={(_, val) => setActiveTab(val)} 
-            sx={{ 
-              display: { xs: 'none', md: 'flex' },
-              minHeight: 40,
-              '& .MuiTabs-indicator': { height: 3, borderRadius: '7px 7px 0 0' },
-              '& .MuiTab-root': { 
-                fontWeight: 700, 
-                fontSize: '0.85rem', 
-                minHeight: 40, 
-                px: 2,
-                color: 'text.secondary',
-                '&.Mui-selected': { color: 'primary.main' }
-              }
-            }}
-          >
-            <Tab label={`Active (${activeOrders.length})`} />
-            <Tab label="History" />
-          </Tabs>
-        </Box>
+    <Box sx={{ position: 'relative', height: '100%', display: "flex", flexDirection: "column", p: { xs: 2, md: 3 }, overflow: 'hidden' }}>
+       {/* Decorative Background Elements */}
+      <Box sx={{ position: 'absolute', top: -100, right: -100, width: 400, height: 400, background: 'radial-gradient(circle, rgba(233,118,43,0.08) 0%, transparent 70%)', borderRadius: '50%', zIndex: 0, pointerEvents: 'none' }} />
+      <Box sx={{ position: 'absolute', bottom: -120, left: -120, width: 450, height: 450, background: 'radial-gradient(circle, rgba(255,184,0,0.06) 0%, transparent 70%)', borderRadius: '50%', zIndex: 0, pointerEvents: 'none' }} />
+      
+      <Box sx={{ position: 'relative', zIndex: 1, display: 'flex', flexDirection: 'column', height: '100%' }}>
+        {/* Modern Header Row */}
+        <Box sx={{ 
+          mb: 4, 
+          display: 'flex', 
+          justifyContent: 'space-between', 
+          alignItems: 'center', 
+          flexDirection: { xs: 'column', md: 'row' },
+          gap: 3 
+        }}>
+          <Box>
+            <Typography variant="h4" sx={{ 
+              fontWeight: 1000, 
+              background: 'linear-gradient(90deg, #e9762b 0%, #ffb800 100%)', 
+              WebkitBackgroundClip: 'text', 
+              WebkitTextFillColor: 'transparent', 
+              fontSize: { xs: '2rem', md: '2.5rem' }, 
+              letterSpacing: '-0.04em',
+              mb: 0.5
+            }}>
+              Parcel Orders
+            </Typography>
+            <Typography variant="body2" sx={{ color: 'text.secondary', fontWeight: 600, opacity: 0.8 }}>
+              Manage your takeaway and delivery queue efficiently.
+            </Typography>
+          </Box>
 
-        <Stack direction="row" spacing={1} sx={{ alignItems: 'center' }}>
-          <Tooltip title="Refresh Orders">
-            <IconButton 
-              onClick={fetchOrders} 
-              size="small" 
-              sx={{ 
-                color: 'primary.main', 
-                border: '1px solid', 
-                borderColor: 'divider', 
-                borderRadius: '7px',
-                height: 40,
-                width: 40
-              }}
-            >
-              <RefreshIcon fontSize="small" />
-            </IconButton>
-          </Tooltip>
-          
-          {isMobile ? (
-            <IconButton
-              color="primary"
-              onClick={() => { setSelectedOrder(null); setDialogOpen(true); }}
-              sx={{ 
-                borderRadius: '7px', 
-                height: 40, 
-                width: 40,
-                bgcolor: 'primary.main',
-                color: 'white',
-                '&:hover': { bgcolor: 'primary.dark' }
-              }}
-            >
-              <AddIcon fontSize="small" />
-            </IconButton>
-          ) : (
+          <Stack direction="row" spacing={1.5} sx={{ alignItems: 'center', width: { xs: '100%', md: 'auto' }, justifyContent: { xs: 'center', md: 'flex-end' } }}>
+             <Box sx={{ 
+              display: 'flex', 
+              gap: 1, 
+              p: 0.6, 
+              bgcolor: 'rgba(233,118,43,0.05)', 
+              borderRadius: '16px', 
+              border: '1px solid rgba(233,118,43,0.1)',
+              mr: 1
+            }}>
+              {['Active', 'History'].map((label, idx) => (
+                <Button 
+                  key={label} 
+                  onClick={() => setActiveTab(idx)}
+                  sx={{ 
+                    borderRadius: '12px', 
+                    fontWeight: 900, 
+                    fontSize: '0.85rem', 
+                    px: 3, 
+                    py: 1, 
+                    minWidth: 0,
+                    transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+                    ...(activeTab === idx ? { 
+                      background: 'linear-gradient(135deg, #e9762b 0%, #d35400 100%)', 
+                      color: 'white', 
+                      boxShadow: '0 8px 20px rgba(233,118,43,0.3)' 
+                    } : { 
+                      color: 'text.secondary', 
+                      '&:hover': { bgcolor: 'rgba(233,118,43,0.1)', color: '#e9762b' } 
+                    })
+                  }}
+                >
+                  {label}
+                  {idx === 0 && activeOrders.length > 0 && (
+                    <Box component="span" sx={{ ml: 1, px: 0.8, py: 0.1, bgcolor: activeTab === 0 ? 'rgba(255,255,255,0.3)' : 'rgba(233,118,43,0.15)', borderRadius: '8px', fontSize: '0.7rem', fontWeight: 1000 }}>
+                      {activeOrders.length}
+                    </Box>
+                  )}
+                </Button>
+              ))}
+            </Box>
+
+            <Tooltip title="Refresh Queue">
+              <IconButton 
+                onClick={fetchOrders} 
+                sx={{ 
+                  bgcolor: 'white',
+                  border: '1px solid', 
+                  borderColor: alpha(theme.palette.divider, 0.1), 
+                  borderRadius: '16px',
+                  height: 48,
+                  width: 48,
+                  boxShadow: '0 4px 12px rgba(0,0,0,0.03)',
+                  transition: 'all 0.3s ease',
+                  '&:hover': { transform: 'rotate(180deg)', borderColor: '#e9762b', color: '#e9762b' }
+                }}
+              >
+                <RefreshIcon sx={{ animation: loading ? `${spin} 1s linear infinite` : 'none' }} />
+              </IconButton>
+            </Tooltip>
+            
             <Button
               variant="contained"
-              size="small"
               onClick={() => { setSelectedOrder(null); setDialogOpen(true); }}
-              sx={{ borderRadius: '7px', height: 40, px: 2, fontWeight: 800 }}
+              sx={{ 
+                borderRadius: '16px', 
+                height: 48, 
+                px: 3, 
+                fontWeight: 1000,
+                background: 'linear-gradient(135deg, #1a1a1a 0%, #333 100%)',
+                boxShadow: '0 10px 25px rgba(0,0,0,0.15)',
+                '&:hover': { transform: 'translateY(-2px)', boxShadow: '0 15px 35px rgba(0,0,0,0.2)' }
+              }}
               startIcon={<AddIcon />}
             >
               New Order
             </Button>
-          )}
-        </Stack>
-      </Box>
-
-      {/* Mobile Only Tabs */}
-      {isMobile && (
-        <Box sx={{ mb: 2 }}>
-          <Tabs 
-            value={activeTab} 
-            onChange={(_, val) => setActiveTab(val)} 
-            variant="fullWidth"
-            sx={{ 
-              bgcolor: alpha(theme.palette.primary.main, 0.03),
-              borderRadius: '7px',
-              '& .MuiTabs-indicator': { height: 3, borderRadius: '7px' },
-              '& .MuiTab-root': { fontWeight: 800, fontSize: '0.8rem', minHeight: 44 }
-            }}
-          >
-            <Tab label={`Active (${activeOrders.length})`} />
-            <Tab label="History" />
-          </Tabs>
+          </Stack>
         </Box>
-      )}
 
+        {error && <Alert severity="error" sx={{ mb: 4, borderRadius: '20px', border: '1px solid rgba(239, 68, 68, 0.15)' }}>{error}</Alert>}
 
-      {error && <Alert severity="error" sx={{ mb: 2, borderRadius: '7px' }}>{error}</Alert>}
-
-      <Box sx={{ flexGrow: 1, overflowY: 'auto', px: 0.5, pb: { xs: 15, md: 0.5 } }}>
-        {loading ? (
-          <Box sx={{ display: 'flex', justifyContent: 'center', py: 10 }}><CircularProgress /></Box>
-        ) : (
-          <>
-            {activeTab === 0 ? (
-              activeOrders.length === 0 ? (
-                <Box sx={{ display: 'flex', justifyContent: 'center', py: 8 }}>
-                  <Card variant="outlined" sx={{ maxWidth: 400, width: '100%', textAlign: 'center', p: 4, borderRadius: '7px', bgcolor: '#fbfaf8', borderStyle: 'dashed', borderWidth: 2 }}>
-                    <ShoppingBagIcon sx={{ fontSize: 48, color: 'text.disabled', mb: 2, opacity: 0.5 }} />
-                    <Typography variant="h6" sx={{ fontWeight: 800, color: 'text.secondary' }}>No Active Parcels</Typography>
-                    <Typography variant="body2" color="text.secondary" sx={{ mt: 1, mb: 3 }}>
-                      Current active take-away orders will appear here. Click the button above to start a new one.
+        <Box sx={{ flexGrow: 1, overflowY: 'auto', px: 0.5, pb: 4, '&::-webkit-scrollbar': { width: 6 }, '&::-webkit-scrollbar-thumb': { bgcolor: alpha('#e9762b', 0.2), borderRadius: 3 } }}>
+          {loading ? (
+            <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: 300 }}>
+              <CircularProgress sx={{ color: '#e9762b' }} />
+            </Box>
+          ) : (
+            <>
+              {(activeTab === 0 ? activeOrders : historyOrders).length === 0 ? (
+                <Box sx={{ display: 'flex', justifyContent: 'center', py: 12 }}>
+                  <Paper elevation={0} sx={{ 
+                    maxWidth: 450, 
+                    width: '100%', 
+                    textAlign: 'center', 
+                    p: 6, 
+                    borderRadius: '32px', 
+                    bgcolor: 'rgba(255, 255, 255, 0.5)', 
+                    border: '2px dashed',
+                    borderColor: alpha('#e9762b', 0.2),
+                    backdropFilter: 'blur(10px)'
+                  }}>
+                    <Box sx={{ p: 3, borderRadius: '24px', bgcolor: 'rgba(233,118,43,0.05)', display: 'inline-flex', mb: 3 }}>
+                      {activeTab === 0 ? <ShoppingBagIcon sx={{ fontSize: 48, color: '#e9762b' }} /> : <HistoryIcon sx={{ fontSize: 48, color: '#e9762b' }} />}
+                    </Box>
+                    <Typography variant="h5" sx={{ fontWeight: 1000, color: '#1a1a1a', mb: 1 }}>
+                      {activeTab === 0 ? 'The queue is clear' : 'No history found'}
                     </Typography>
-                    {!isMobile && (
-                      <Button variant="contained" startIcon={<AddIcon />} onClick={() => setDialogOpen(true)} sx={{ borderRadius: '7px' }}>
-                        New Parcel Order
+                    <Typography variant="body2" sx={{ color: 'text.secondary', fontWeight: 600, mb: 4 }}>
+                      {activeTab === 0 
+                        ? 'Current active take-away orders will appear here. Start a new order to fill the queue.' 
+                        : 'Past orders will be listed here once they are settled or cancelled.'}
+                    </Typography>
+                    {activeTab === 0 && (
+                      <Button 
+                        variant="contained" 
+                        startIcon={<AddIcon />} 
+                        onClick={() => setDialogOpen(true)}
+                        sx={{ borderRadius: '16px', px: 4, py: 1.5, fontWeight: 900, bgcolor: '#1a1a1a' }}
+                      >
+                        Create First Order
                       </Button>
                     )}
-                  </Card>
+                  </Paper>
                 </Box>
               ) : (
-                <Grid container spacing={2}>
-                  {activeOrders.map(order => (
+                <Grid container spacing={3}>
+                  {(activeTab === 0 ? activeOrders : historyOrders).map(order => (
                     <Grid size={{ xs: 12, sm: 6, md: 4, lg: 3 }} key={order.id}>
                       <TakeAwayCard order={order} onClick={() => { setSelectedOrder(order); setDialogOpen(true); }} />
                     </Grid>
                   ))}
                 </Grid>
-              )
-            ) : (
-              historyOrders.length === 0 ? (
-                <Box sx={{ display: 'flex', justifyContent: 'center', py: 8 }}>
-                  <Card variant="outlined" sx={{ maxWidth: 400, width: '100%', textAlign: 'center', p: 4, borderRadius: '7px', bgcolor: '#fbfaf8', borderStyle: 'dashed', borderWidth: 2 }}>
-                    <HistoryIcon sx={{ fontSize: 48, color: 'text.disabled', mb: 2, opacity: 0.5 }} />
-                    <Typography variant="h6" sx={{ fontWeight: 800, color: 'text.secondary' }}>History is Empty</Typography>
-                    <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
-                      All completed or cancelled parcel orders will be listed here for audit.
-                    </Typography>
-                  </Card>
-                </Box>
-              ) : (
-                <Grid container spacing={2}>
-                  {historyOrders.map(order => (
-                    <Grid size={{ xs: 12, sm: 6, md: 4, lg: 3 }} key={order.id}>
-                      <TakeAwayCard order={order} onClick={() => { setSelectedOrder(order); setDialogOpen(true); }} />
-                    </Grid>
-                  ))}
-                </Grid>
-              )
-            )}
-          </>
-        )}
+              )}
+            </>
+          )}
+        </Box>
       </Box>
 
       <OrderDialog
         open={dialogOpen}
         onClose={() => setDialogOpen(false)}
-        table={null} // Crucial: No table for take-away
+        table={null}
         initialOrder={selectedOrder}
         onOrderUpdated={fetchOrders}
       />
-
     </Box>
   );
 }

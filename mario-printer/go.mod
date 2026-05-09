@@ -5,6 +5,7 @@ go 1.25.4
 require (
 	github.com/gin-gonic/gin v1.12.0
 	github.com/google/gousb v1.1.3
+	golang.org/x/sys v0.41.0
 	tinygo.org/x/bluetooth v0.15.0
 )
 
@@ -45,7 +46,6 @@ require (
 	golang.org/x/crypto v0.48.0 // indirect
 	golang.org/x/exp v0.0.0-20241204233417-43b7b7cde48d // indirect
 	golang.org/x/net v0.51.0 // indirect
-	golang.org/x/sys v0.41.0 // indirect
 	golang.org/x/text v0.34.0 // indirect
 	google.golang.org/protobuf v1.36.10 // indirect
 )

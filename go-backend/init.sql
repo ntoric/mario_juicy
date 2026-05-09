@@ -147,7 +147,7 @@ CREATE TABLE IF NOT EXISTS core_taxconfiguration (
     id SERIAL PRIMARY KEY,
     name VARCHAR(100) DEFAULT 'Default Tax Configuration',
     store_id INTEGER REFERENCES stores_store(id) ON DELETE CASCADE,
-    tax_type VARCHAR(20) DEFAULT 'EXCLUSIVE',
+    tax_type VARCHAR(20) DEFAULT 'EXEMPTED',
     is_gst_enabled BOOLEAN DEFAULT FALSE,
     cgst_rate DECIMAL(5, 2) DEFAULT 0.00,
     sgst_rate DECIMAL(5, 2) DEFAULT 0.00,

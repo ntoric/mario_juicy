@@ -119,32 +119,40 @@ func GetProfile(c *gin.Context) {
 
 	// Allowed menus logic
 	var allowedMenus []string
-	if user.IsSuperuser {
+	if user.IsSuperuser || contains(roles, "SUPER_ADMIN") {
 		// Super Admin gets everything
 		allowedMenus = []string{
 			"dashboard", "parcel_order", "billing", "reservation", "live_order",
 			"users_management", "store_settings", "tables_access", "table_layout",
-			"categories", "items", "reports", "stores", "menu_permissions",
+			"categories", "items", "reports", "stores", "support",
+		}
+	} else if contains(roles, "ADMIN") {
+		// Admin gets everything except global store management and super-admin specific stuff
+		allowedMenus = []string{
+			"dashboard", "parcel_order", "billing", "reservation", "live_order",
+			"users_management", "store_settings", "tables_access", "table_layout",
+			"categories", "items", "reports", "support",
+		}
+	} else if contains(roles, "MANAGER") {
+		// Manager: All admin access except report, business settings, user management
+		allowedMenus = []string{
+			"dashboard", "parcel_order", "billing", "reservation", "live_order",
+			"tables_access", "table_layout", "categories", "items", "support",
+		}
+	} else if contains(roles, "CASHIER") {
+		// Cashier: billing, categories, items, orders, parcel, reservation, kitchen, and business settings
+		allowedMenus = []string{
+			"dashboard", "parcel_order", "billing", "reservation", "live_order",
+			"categories", "items", "store_settings", "support",
+		}
+	} else if contains(roles, "STAFF") {
+		// Staff: Floor Layout, Parcel, Kitchen, Reservation, orders
+		allowedMenus = []string{
+			"dashboard", "tables_access", "table_layout", "parcel_order", "reservation", "live_order", "support",
 		}
 	} else {
-		// Fetch from MenuPermission table for user's groups
-		var groupIDs []uint
-		for _, g := range user.Groups {
-			groupIDs = append(groupIDs, g.ID)
-		}
-		
-		if len(groupIDs) > 0 {
-			var perms []models.MenuPermission
-			config.DB.Where("group_id IN ? AND is_enabled = ?", groupIDs, true).Find(&perms)
-			for _, p := range perms {
-				allowedMenus = append(allowedMenus, p.MenuKey)
-			}
-		}
-		
-		// Always include dashboard for everyone
-		if !contains(allowedMenus, "dashboard") {
-			allowedMenus = append(allowedMenus, "dashboard")
-		}
+		// Default fallback
+		allowedMenus = []string{"dashboard", "support"}
 	}
 
 	storeData := interface{}(nil)
@@ -383,41 +391,3 @@ func GetGroups(c *gin.Context) {
 	utils.SuccessResponse(c, http.StatusOK, groups)
 }
 
-func GetMenuPermissions(c *gin.Context) {
-	var perms []models.MenuPermission
-	groupID := c.Query("group")
-	query := config.DB.Model(&models.MenuPermission{})
-	if groupID != "" {
-		query = query.Where("group_id = ?", groupID)
-	}
-	query.Find(&perms)
-	utils.SuccessResponse(c, http.StatusOK, perms)
-}
-
-func CreateMenuPermission(c *gin.Context) {
-	var perm models.MenuPermission
-	if err := c.ShouldBindJSON(&perm); err != nil {
-		utils.ErrorResponse(c, http.StatusBadRequest, err.Error())
-		return
-	}
-	if err := config.DB.Create(&perm).Error; err != nil {
-		utils.ErrorResponse(c, http.StatusInternalServerError, err.Error())
-		return
-	}
-	utils.SuccessResponse(c, http.StatusCreated, perm)
-}
-
-func UpdateMenuPermission(c *gin.Context) {
-	id := c.Param("id")
-	var perm models.MenuPermission
-	if err := config.DB.First(&perm, id).Error; err != nil {
-		utils.ErrorResponse(c, http.StatusNotFound, "Permission not found")
-		return
-	}
-	if err := c.ShouldBindJSON(&perm); err != nil {
-		utils.ErrorResponse(c, http.StatusBadRequest, err.Error())
-		return
-	}
-	config.DB.Save(&perm)
-	utils.SuccessResponse(c, http.StatusOK, perm)
-}

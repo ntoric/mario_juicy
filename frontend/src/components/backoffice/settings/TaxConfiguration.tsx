@@ -35,7 +35,7 @@ export default function TaxConfiguration() {
   
   const [formData, setFormData] = useState<any>({
     name: "Default Tax Configuration",
-    tax_type: "EXCLUSIVE",
+    tax_type: "EXEMPTED",
     is_gst_enabled: false,
     cgst_rate: "0.00",
     sgst_rate: "0.00",
@@ -184,28 +184,32 @@ export default function TaxConfiguration() {
                     slotProps={{ input: { sx: { borderRadius: '7px' } } }}
                   />
                 </Grid>
-                <Grid size={{ xs: 12, md: 4 }}>
-                  <TextField
-                    fullWidth
-                    label="SGST (%)"
-                    name="sgst_rate"
-                    value={formData.sgst_rate}
-                    onChange={handleInputChange}
-                    type="number"
-                    slotProps={{ input: { sx: { borderRadius: '7px' } } }}
-                  />
-                </Grid>
-                <Grid size={{ xs: 12, md: 4 }}>
-                  <TextField
-                    fullWidth
-                    label="IGST (%)"
-                    name="igst_rate"
-                    value={formData.igst_rate}
-                    onChange={handleInputChange}
-                    type="number"
-                    slotProps={{ input: { sx: { borderRadius: '7px' } } }}
-                  />
-                </Grid>
+                {formData.tax_type !== "EXEMPTED" && (
+                  <>
+                    <Grid size={{ xs: 12, md: 4 }}>
+                      <TextField
+                        fullWidth
+                        label="SGST (%)"
+                        name="sgst_rate"
+                        value={formData.sgst_rate}
+                        onChange={handleInputChange}
+                        type="number"
+                        slotProps={{ input: { sx: { borderRadius: '7px' } } }}
+                      />
+                    </Grid>
+                    <Grid size={{ xs: 12, md: 4 }}>
+                      <TextField
+                        fullWidth
+                        label="IGST (%)"
+                        name="igst_rate"
+                        value={formData.igst_rate}
+                        onChange={handleInputChange}
+                        type="number"
+                        slotProps={{ input: { sx: { borderRadius: '7px' } } }}
+                      />
+                    </Grid>
+                  </>
+                )}
               </>
             )}
 

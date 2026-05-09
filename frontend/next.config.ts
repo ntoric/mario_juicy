@@ -57,7 +57,8 @@ const nextConfig: NextConfig = {
     '192.168.220.35:3000',
     '192.168.220.35',
     'http://localhost:3000',
-    'http://localhost:8022'
+    'http://localhost:8022',
+    'https://mario-api.ntoric.com'
   ],
   // } as any,
 };

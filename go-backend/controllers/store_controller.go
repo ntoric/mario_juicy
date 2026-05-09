@@ -17,6 +17,7 @@ type StoreResponse struct {
 	Email                  string    `json:"email"`
 	GSTNumber              string    `json:"gst_number"`
 	Location               string    `json:"location"`
+	Branch                 string    `json:"branch"`
 	FSSAILicNo             string    `json:"fssai_lic_no"`
 	Mobile                 string    `json:"mobile"`
 	InvoicePrefix          string    `json:"invoice_prefix"`
@@ -60,6 +61,7 @@ func GetStores(c *gin.Context) {
 			Email:                  s.Email,
 			GSTNumber:              s.GSTNumber,
 			Location:               s.Location,
+			Branch:                 s.Branch,
 			FSSAILicNo:             s.FSSAILicNo,
 			Mobile:                 s.Mobile,
 			InvoicePrefix:          s.InvoicePrefix,
@@ -96,6 +98,7 @@ func GetStore(c *gin.Context) {
 		Email:                  s.Email,
 		GSTNumber:              s.GSTNumber,
 		Location:               s.Location,
+		Branch:                 s.Branch,
 		FSSAILicNo:             s.FSSAILicNo,
 		Mobile:                 s.Mobile,
 		InvoicePrefix:          s.InvoicePrefix,

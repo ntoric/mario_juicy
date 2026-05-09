@@ -22,15 +22,17 @@
   "build": {
     "appId": "com.mario.pos",
     "productName": "Mario POS",
+    "icon": "public/logo.png",
     "directories": {
       "output": "dist"
     },
     "extraResources": [
       {
-        "from": "../mario-printer/mario-printer",
-        "to": "bin/mario-printer",
+        "from": "../mario-printer",
+        "to": "bin",
         "filter": [
-          "**/*"
+          "mario-printer",
+          "mario-printer.exe"
         ]
       }
     ],
@@ -88,6 +90,7 @@
     "eslint": "^9",
     "eslint-config-next": "16.2.3",
     "typescript": "^5",
-    "wait-on": "^9.0.5"
+    "wait-on": "^9.0.5",
+    "zero-native": "^0.1.9"
   }
 }

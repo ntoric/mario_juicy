@@ -105,11 +105,11 @@ export default function UserTable({
       <Table>
         <TableHead sx={{ backgroundColor: "#FCF9EA" }}>
           <TableRow>
-            <TableCell sx={{ color: "#e9762b", fontWeight: 800, fontSize: '0.75rem', textTransform: 'uppercase' }}>User</TableCell>
-            <TableCell sx={{ color: "#e9762b", fontWeight: 800, fontSize: '0.75rem', textTransform: 'uppercase' }}>Role</TableCell>
-            <TableCell sx={{ color: "#e9762b", fontWeight: 800, fontSize: '0.75rem', textTransform: 'uppercase', display: { xs: "none", md: "table-cell" } }}>Email</TableCell>
-            <TableCell sx={{ color: "#e9762b", fontWeight: 800, fontSize: '0.75rem', textTransform: 'uppercase' }}>Status</TableCell>
-            <TableCell sx={{ color: "#e9762b", fontWeight: 800, fontSize: '0.75rem', textTransform: 'uppercase', textAlign: "right" }}>Actions</TableCell>
+            <TableCell sx={{ color: "#e9762b", fontWeight: 800, fontSize: '0.7rem', py: 1.5, textTransform: 'uppercase', letterSpacing: '0.05em' }}>User</TableCell>
+            <TableCell sx={{ color: "#e9762b", fontWeight: 800, fontSize: '0.7rem', py: 1.5, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Role</TableCell>
+            <TableCell sx={{ color: "#e9762b", fontWeight: 800, fontSize: '0.7rem', py: 1.5, textTransform: 'uppercase', letterSpacing: '0.05em', display: { xs: "none", md: "table-cell" } }}>Email</TableCell>
+            <TableCell sx={{ color: "#e9762b", fontWeight: 800, fontSize: '0.7rem', py: 1.5, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Status</TableCell>
+            <TableCell sx={{ color: "#e9762b", fontWeight: 800, fontSize: '0.7rem', py: 1.5, textTransform: 'uppercase', letterSpacing: '0.05em', textAlign: "right" }}>Actions</TableCell>
           </TableRow>
         </TableHead>
         <TableBody>
@@ -128,22 +128,22 @@ export default function UserTable({
                       }
                   }}
               >
-                <TableCell sx={{ py: 1.5 }}>
+                <TableCell sx={{ py: 1 }}>
                   <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
-                    <Avatar sx={{ bgcolor: alpha('#e9762b', 0.1), color: '#e9762b', width: 32, height: 32, fontSize: '0.9rem', fontWeight: 800, borderRadius: '7px' }}>
+                    <Avatar sx={{ bgcolor: alpha('#e9762b', 0.1), color: '#e9762b', width: 28, height: 28, fontSize: '0.8rem', fontWeight: 800, borderRadius: '6px' }}>
                       {user.username.charAt(0).toUpperCase()}
                     </Avatar>
                     <Box>
-                      <Typography variant="body2" sx={{ fontWeight: 700, color: 'text.primary' }}>
+                      <Typography variant="body2" sx={{ fontWeight: 700, color: 'text.primary', fontSize: '0.85rem' }}>
                         {user.username}
                       </Typography>
-                      <Typography variant="caption" color="text.secondary" sx={{ display: { xs: 'block', sm: 'none' }, fontWeight: 600 }}>
+                      <Typography variant="caption" color="text.secondary" sx={{ display: { xs: 'block', sm: 'none' }, fontWeight: 600, fontSize: '0.65rem' }}>
                         {role}
                       </Typography>
                     </Box>
                   </Box>
                 </TableCell>
-                <TableCell sx={{ py: 1.5 }}>
+                <TableCell sx={{ py: 1 }}>
                   <Chip
                     icon={getRoleIcon(role)}
                     label={role.toUpperCase()}
@@ -152,36 +152,36 @@ export default function UserTable({
                       bgcolor: alpha(roleStyle.bg, 0.5), 
                       color: roleStyle.text,
                       fontWeight: 800,
-                      fontSize: '0.65rem',
-                      borderRadius: '7px',
-                      height: 22,
-                      '& .MuiChip-icon': { color: 'inherit', fontSize: 14 }
+                      fontSize: '0.6rem',
+                      borderRadius: '6px',
+                      height: 20,
+                      '& .MuiChip-icon': { color: 'inherit', fontSize: 12 }
                     }}
                   />
                 </TableCell>
-                <TableCell sx={{ display: { xs: "none", md: "table-cell" }, py: 1.5 }}>
-                  <Typography variant="body2" sx={{ color: 'text.secondary', fontWeight: 500, fontSize: '0.8rem' }}>
+                <TableCell sx={{ display: { xs: "none", md: "table-cell" }, py: 1 }}>
+                  <Typography variant="body2" sx={{ color: 'text.secondary', fontWeight: 500, fontSize: '0.75rem' }}>
                     {user.email || '—'}
                   </Typography>
                 </TableCell>
-                <TableCell sx={{ py: 1.5 }}>
+                <TableCell sx={{ py: 1 }}>
                   <Chip
                       label={user.is_active ? "ACTIVE" : "DISABLED"}
                       size="small"
                       sx={{ 
                           fontWeight: 800, 
-                          height: 20,
-                          fontSize: '0.6rem',
-                          borderRadius: '7px',
+                          height: 18,
+                          fontSize: '0.55rem',
+                          borderRadius: '6px',
                           bgcolor: user.is_active ? alpha('#2e7d32', 0.1) : alpha('#757575', 0.1),
                           color: user.is_active ? '#2e7d32' : '#757575',
-                          border: `1px solid ${user.is_active ? alpha('#2e7d32', 0.2) : alpha('#757575', 0.2)}`
+                          border: `1px solid ${user.is_active ? alpha('#2e7d32', 0.1) : alpha('#757575', 0.1)}`
                       }}
                   />
                 </TableCell>
-                <TableCell align="right" sx={{ py: 1.5 }}>
+                <TableCell align="right" sx={{ py: 1 }}>
                   <Box 
-                      sx={{ display: { xs: "none", lg: "flex" }, justifyContent: "flex-end", gap: 0.5 }}
+                      sx={{ display: { xs: "none", lg: "flex" }, justifyContent: "flex-end", gap: 0.25 }}
                   >
                     <Tooltip title={user.is_active ? "Disable User" : "Enable User"}>
                       <IconButton
@@ -190,11 +190,12 @@ export default function UserTable({
                         sx={{ 
                           color: user.is_active ? 'warning.main' : 'success.main',
                           bgcolor: user.is_active ? alpha('#ed6c02', 0.05) : alpha('#2e7d32', 0.05), 
-                          borderRadius: '7px',
+                          borderRadius: '6px',
+                          p: 0.5,
                           '&:hover': { bgcolor: user.is_active ? alpha('#ed6c02', 0.1) : alpha('#2e7d32', 0.1) } 
                         }}
                       >
-                        {user.is_active ? <ToggleOffIcon fontSize="small" /> : <ToggleOnIcon fontSize="small" />}
+                        {user.is_active ? <ToggleOffIcon sx={{ fontSize: 16 }} /> : <ToggleOnIcon sx={{ fontSize: 16 }} />}
                       </IconButton>
                     </Tooltip>
                     <Tooltip title="Edit User">
@@ -203,12 +204,13 @@ export default function UserTable({
                         onClick={() => onEdit(user)}
                         sx={{ 
                           bgcolor: alpha('#000', 0.03), 
-                          borderRadius: '7px',
+                          borderRadius: '6px',
+                          p: 0.5,
                           '&:hover': { bgcolor: alpha('#000', 0.08) }, 
                           color: 'text.primary' 
                         }}
                       >
-                        <EditIcon fontSize="small" />
+                        <EditIcon sx={{ fontSize: 16 }} />
                       </IconButton>
                     </Tooltip>
                     <Tooltip title="Delete User">
@@ -218,11 +220,12 @@ export default function UserTable({
                         sx={{ 
                           color: 'error.main',
                           bgcolor: alpha('#d32f2f', 0.05), 
-                          borderRadius: '7px',
+                          borderRadius: '6px',
+                          p: 0.5,
                           '&:hover': { bgcolor: alpha('#d32f2f', 0.1) } 
                         }}
                       >
-                        <DeleteIcon fontSize="small" />
+                        <DeleteIcon sx={{ fontSize: 16 }} />
                       </IconButton>
                     </Tooltip>
                   </Box>

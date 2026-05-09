@@ -31,12 +31,18 @@ import {
   Refresh as RefreshIcon,
   Save as SaveIcon,
   ChevronLeft as ChevronLeftIcon,
+  History as HistoryIcon,
+  Payments as PaymentsIcon,
 } from "@mui/icons-material";
 import { storeService, Store, StoreFormData } from "@/services/storeService";
 import { useAuth } from "@/hooks/useAuth";
+import { useConfirm } from "@/context/ConfirmContext";
+import { useToast } from "@/context/ToastContext";
 
 export default function StoreManager() {
   const { user } = useAuth();
+  const { confirm } = useConfirm();
+  const { showError, showSuccess } = useToast();
   const isSuperAdmin = user?.primary_role === 'SUPER_ADMIN';
   const [stores, setStores] = useState<Store[]>([]);
   const [loading, setLoading] = useState(true);
@@ -47,8 +53,9 @@ export default function StoreManager() {
   const [editingStore, setEditingStore] = useState<Store | null>(null);
   const [formData, setFormData] = useState<StoreFormData>({
     name: "", address: "", phone: "", email: "", gst_number: "",
-    location: "", fssai_lic_no: "", mobile: "", invoice_prefix: "", is_active: true,
+    location: "", branch: "", fssai_lic_no: "", mobile: "", invoice_prefix: "", is_active: true,
   });
+
 
   const loadStores = useCallback(async () => {
     try {
@@ -70,7 +77,7 @@ export default function StoreManager() {
     setEditingStore(null);
     setFormData({
       name: "", address: "", phone: "", email: "", gst_number: "",
-      location: "", fssai_lic_no: "", mobile: "", invoice_prefix: "", is_active: true,
+      location: "", branch: "", fssai_lic_no: "", mobile: "", invoice_prefix: "", is_active: true,
     });
     setView('create');
   };
@@ -80,7 +87,7 @@ export default function StoreManager() {
     setFormData({
       name: store.name, address: store.address, phone: store.phone || "",
       email: store.email || "", gst_number: store.gst_number || "",
-      location: store.location || "", fssai_lic_no: store.fssai_lic_no || "",
+      location: store.location || "", branch: store.branch || "", fssai_lic_no: store.fssai_lic_no || "",
       mobile: store.mobile || "", invoice_prefix: store.invoice_prefix, is_active: store.is_active,
     });
     setView('edit');
@@ -102,12 +109,18 @@ export default function StoreManager() {
   };
 
   const handleDelete = async (id: number) => {
-    if (window.confirm("Are you sure you want to delete this store?")) {
+    if (await confirm({
+      title: 'Delete Store',
+      message: "Are you sure you want to delete this store? This action cannot be undone.",
+      severity: 'error',
+      confirmLabel: 'DELETE'
+    })) {
       try {
         await storeService.deleteStore(id);
+        showSuccess('Store deleted successfully');
         loadStores();
       } catch (err: any) {
-        setError(err.message);
+        showError(err.message);
       }
     }
   };
@@ -160,6 +173,14 @@ export default function StoreManager() {
                           label="Address" fullWidth required multiline rows={2}
                           value={formData.address}
                           onChange={(e) => setFormData({ ...formData, address: e.target.value })}
+                          slotProps={{ input: { sx: { borderRadius: '12px', bgcolor: 'white' } } }}
+                        />
+                      </Grid>
+                      <Grid size={{ xs: 12 }}>
+                        <TextField
+                          label="Branch Name" fullWidth
+                          value={formData.branch}
+                          onChange={(e) => setFormData({ ...formData, branch: e.target.value })}
                           slotProps={{ input: { sx: { borderRadius: '12px', bgcolor: 'white' } } }}
                         />
                       </Grid>
@@ -359,7 +380,7 @@ export default function StoreManager() {
                 </Box>
               </Stack>
 
-              <Box sx={{ p: 2, bgcolor: '#FCF9EA', borderRadius: '12px', border: '1px solid #e8e4d8', display: 'flex', justifyContent: 'space-around' }}>
+              <Box sx={{ p: 2, bgcolor: '#FCF9EA', borderRadius: '12px', border: '1px solid #e8e4d8', display: 'flex', justifyContent: 'space-around', mb: 2 }}>
                 <Box sx={{ textAlign: 'center' }}>
                   <Typography variant="caption" sx={{ fontWeight: 900, color: "text.disabled", display: 'block', fontSize: '0.6rem' }}>PREFIX</Typography>
                   <Typography variant="body2" sx={{ fontWeight: 900, color: '#e9762b' }}>{store.invoice_prefix}</Typography>
@@ -370,10 +391,12 @@ export default function StoreManager() {
                   <Typography variant="body2" sx={{ fontWeight: 900 }}>{store.gst_number || "NONE"}</Typography>
                 </Box>
               </Box>
+
             </CardContent>
           </Card>
         ))}
       </Box>
+
     </Box>
   );
 }

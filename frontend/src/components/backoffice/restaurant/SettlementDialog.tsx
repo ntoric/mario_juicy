@@ -36,6 +36,7 @@ import {
 } from '@mui/icons-material';
 import { Tooltip } from '@mui/material';
 import { restaurantService, Order } from '@/services/restaurantService';
+import { useAuth } from '@/context/AuthContext';
 import InvoicePrint from './InvoicePrint';
 import InvoicePreviewDialog from './InvoicePreviewDialog';
 
@@ -47,6 +48,7 @@ interface SettlementDialogProps {
 }
 
 export default function SettlementDialog({ open, onClose, order, onSuccess }: SettlementDialogProps) {
+  const { activeStore } = useAuth();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [paymentMethod, setPaymentMethod] = useState('UPI');
@@ -129,8 +131,21 @@ export default function SettlementDialog({ open, onClose, order, onSuccess }: Se
     const invoiceEl = document.getElementById('thermal-invoice-container-settle');
     if (!invoiceEl) return;
 
+    if (activeStore?.thermal_printer_type?.toLowerCase() === 'system' && typeof window !== 'undefined' && (window as any).api) {
+      try {
+        await (window as any).api.print({
+          html: invoiceEl.innerHTML,
+          printerName: activeStore.thermal_printer_name,
+          paperSize: activeStore.thermal_printer_size
+        });
+        return;
+      } catch (err) {
+        console.error("System print failed in settlement:", err);
+      }
+    }
+
     const { printInvoice } = await import('@/utils/printerService');
-    await printInvoice(activeInvoice, order.items || [], activeInvoice?.store_details || activeInvoice?.store);
+    await printInvoice(activeInvoice, order.items || [], activeStore || activeInvoice?.store_details || activeInvoice?.store);
   };
 
   const fallbackPrint = (html: string) => {

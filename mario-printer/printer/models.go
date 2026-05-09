@@ -1,6 +1,7 @@
 package printer
 
 type PrinterConfig struct {
+	Name       string `json:"name,omitempty"`
 	Type       string `json:"type"` // "usb", "bluetooth", "network"
 	VendorID   string `json:"vendor_id,omitempty"`
 	ProductID  string `json:"product_id,omitempty"`
@@ -9,11 +10,13 @@ type PrinterConfig struct {
 }
 
 type Store struct {
-	Name   string `json:"name"`
-	Branch string `json:"branch"`
-	GSTIN  string `json:"gstin"`
-	Fssai  string `json:"fssai"`
-	Phone  string `json:"phone"`
+	Name       string `json:"name"`
+	Branch     string `json:"branch"`
+	Location   string `json:"location"`
+	GSTNumber  string `json:"gst_number"`
+	FSSAILicNo string `json:"fssai_lic_no"`
+	Phone      string `json:"phone"`
+	Address    string `json:"address"`
 }
 
 type Customer struct {
@@ -79,4 +82,9 @@ type Device struct {
 	VendorID  string `json:"vendor_id,omitempty"`
 	ProductID string `json:"product_id,omitempty"`
 	Address   string `json:"address,omitempty"`
+}
+
+type RawPrintRequest struct {
+	PrinterName string `json:"printerName"`
+	Data        string `json:"data"` // Base64 encoded bytes
 }

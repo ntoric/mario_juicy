@@ -38,6 +38,8 @@ import {
 import { restaurantService, Reservation, Table as RestaurantTable } from '@/services/restaurantService';
 import ReservationForm from '@/components/backoffice/restaurant/ReservationForm';
 import { useAuth } from '@/hooks/useAuth';
+import { useConfirm } from '@/context/ConfirmContext';
+import { useToast } from '@/context/ToastContext';
 
 function formatDate(iso: string) {
   if (!iso) return '';
@@ -62,6 +64,8 @@ export default function ReservationsPage() {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
   const { hasPermission } = useAuth();
+  const { confirm } = useConfirm();
+  const { showError, showSuccess } = useToast();
   const canManage = hasPermission('reservation');
 
   if (!canManage) {
@@ -109,16 +113,23 @@ export default function ReservationsPage() {
   const handleStatus = async (id: number, status: Reservation['status']) => {
     try {
       await restaurantService.updateReservation(id, { status });
+      showSuccess('Status updated');
       fetchData();
-    } catch (e: any) { alert(e.message); }
+    } catch (e: any) { showError(e.message); }
   };
 
   const handleDelete = async (id: number) => {
-    if (!confirm('Delete this reservation?')) return;
+    if (!await confirm({
+      title: 'Delete Reservation',
+      message: 'Are you sure you want to delete this reservation?',
+      severity: 'error',
+      confirmLabel: 'DELETE'
+    })) return;
     try {
       await restaurantService.deleteReservation(id);
+      showSuccess('Reservation deleted');
       fetchData();
-    } catch (e: any) { alert(e.message); }
+    } catch (e: any) { showError(e.message); }
   };
 
   return (

@@ -26,7 +26,8 @@ import {
   ExpandLess as ExpandLessIcon,
   Print as PrintIcon,
   Description as DescriptionIcon,
-  CheckCircle as CheckIcon
+  CheckCircle as CheckIcon,
+  Restaurant as FoodIcon
 } from '@mui/icons-material';
 import { restaurantService } from '@/services/restaurantService';
 import { itemService } from '@/services/itemService';
@@ -38,6 +39,7 @@ import InvoicePreviewDialog from './InvoicePreviewDialog';
 import InvoicePrint from './InvoicePrint';
 import { getImageUrl } from '@/utils/image';
 import { useWebSocket } from '@/hooks/useWebSocket';
+import { useConfirm } from '@/context/ConfirmContext';
 
 const DINE_IN_STATUS_FLOW: Order['status'][] = ['ORDER_TAKEN', 'SERVED', 'COMPLETED', 'PAID'];
 const DINE_IN_STATUS_FLOW_NO_KITCHEN: Order['status'][] = ['ORDER_TAKEN', 'SERVED', 'COMPLETED', 'PAID'];
@@ -59,11 +61,12 @@ const OrderDialog: React.FC<OrderDialogProps> = ({ open, onClose, table, initial
   const { showSuccess, showError, showInfo } = useToast();
 
   const { hasPermission, user, isRole, activeStore } = useAuth();
+  const { confirm } = useConfirm();
   const [loading, setLoading] = useState(false);
   const [order, setOrder] = useState<Order | null>(null);
   const [orderType, setOrderType] = useState<'DINE_IN' | 'TAKE_AWAY'>('DINE_IN');
 
-  const canTakeOrder = orderType === 'DINE_IN' ? hasPermission('tables_access') : hasPermission('parcel_order');
+  const canTakeOrder = hasPermission('access_to_take_order');
   const canManagePayment = hasPermission('billing');
   const [menuItems, setMenuItems] = useState<Item[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
@@ -78,8 +81,6 @@ const OrderDialog: React.FC<OrderDialogProps> = ({ open, onClose, table, initial
   const [moving, setMoving] = useState(false);
   const [selectedTargetTable, setSelectedTargetTable] = useState<RestaurantTable | null>(null);
   const [moveFinalConfirmOpen, setMoveFinalConfirmOpen] = useState(false);
-
-
 
   // Parcel details
   const [customerName, setCustomerName] = useState('');
@@ -105,6 +106,7 @@ const OrderDialog: React.FC<OrderDialogProps> = ({ open, onClose, table, initial
   const activeFlow = order?.order_type === 'TAKE_AWAY' 
     ? (isKitchenStepEnabled ? TAKE_AWAY_STATUS_FLOW : TAKE_AWAY_STATUS_FLOW_NO_KITCHEN)
     : (isKitchenStepEnabled ? DINE_IN_STATUS_FLOW : DINE_IN_STATUS_FLOW_NO_KITCHEN);
+  
   const nextStatus = (() => {
     if (!order || !activeFlow) return null;
     const idx = activeFlow.indexOf(order.status);
@@ -114,6 +116,7 @@ const OrderDialog: React.FC<OrderDialogProps> = ({ open, onClose, table, initial
     if (order.status === 'PREPARING' && order.order_type === 'TAKE_AWAY' && activeFlow.includes('READY')) return 'READY';
     return null;
   })();
+  
   const hasNewItems = (order?.items || []).some((i: OrderItem) => i.status === 'ORDERED');
   const hasReadyItems = (order?.items || []).some((i: OrderItem) => ['READY', 'PREPARING'].includes(i.status));
   const hasIncompleteItems = (order?.items || []).some((i: OrderItem) => ['AWAITING', 'PREPARING'].includes(i.status));
@@ -275,7 +278,7 @@ const OrderDialog: React.FC<OrderDialogProps> = ({ open, onClose, table, initial
       onOrderUpdated();
       
       // Refresh local state
-      await fetchData();
+      await fetchData(newOrder.id);
     } catch (e: any) {
       showError('Error', 'Failed to create order');
     } finally {
@@ -414,7 +417,12 @@ const OrderDialog: React.FC<OrderDialogProps> = ({ open, onClose, table, initial
   };
 
   const handleRemoveItem = async (itemId: number) => {
-    if (!confirm('Remove this item?')) return;
+    if (!await confirm({
+      title: 'Remove Item',
+      message: 'Are you sure you want to remove this item from the order?',
+      severity: 'warning',
+      confirmLabel: 'REMOVE'
+    })) return;
     setLoading(true);
     try {
       await restaurantService.deleteOrderItem(itemId);
@@ -511,7 +519,12 @@ const OrderDialog: React.FC<OrderDialogProps> = ({ open, onClose, table, initial
 
   const handleReleaseTable = async () => {
     if (!table) return;
-    if (!window.confirm('Emergency Clear Table?')) return;
+    if (!await confirm({
+      title: 'Emergency Clear',
+      message: 'Are you sure you want to emergency clear this table? This will force release the table.',
+      severity: 'error',
+      confirmLabel: 'CLEAR TABLE'
+    })) return;
     setLoading(true);
     try {
       await restaurantService.releaseTable(table.id);
@@ -611,7 +624,7 @@ const OrderDialog: React.FC<OrderDialogProps> = ({ open, onClose, table, initial
             variant="contained" 
             fullWidth 
             onClick={() => handleCreateOrder('DINE_IN')} 
-            sx={{ py: 1, borderRadius: '12px', fontWeight: 900, bgcolor: 'primary.main', color: 'white' }}
+            sx={{ py: 1.5, borderRadius: '16px', fontWeight: 900, bgcolor: '#e9762b', color: 'white', fontSize: '0.9rem', boxShadow: '0 8px 20px rgba(233, 118, 43, 0.2)' }}
             disabled={loading}
           >
             {loading ? <CircularProgress size={20} color="inherit" /> : 'START ORDER'}
@@ -621,82 +634,85 @@ const OrderDialog: React.FC<OrderDialogProps> = ({ open, onClose, table, initial
     } else {
     if (hasNewItems) {
       actions.push(
-        <Button key="kot" variant="contained" color="warning" size="small" onClick={handleSendToKitchen} sx={{ fontWeight: 900, borderRadius: '12px', flexGrow: 1, py: 1 }}>KOT</Button>
+        <Button key="kot" variant="contained" color="warning" size="small" onClick={handleSendToKitchen} sx={{ fontWeight: 950, borderRadius: '16px', flexGrow: 1, py: 1.5, bgcolor: '#e9762b', '&:hover': { bgcolor: '#d66a27' } }}>KOT</Button>
       );
     }
     if (hasReadyItems && order?.order_type !== 'TAKE_AWAY') {
       actions.push(
-        <Button key="serve" variant="contained" color="success" size="small" onClick={handleServeAllReady} sx={{ fontWeight: 900, borderRadius: '12px', flexGrow: 1, py: 1 }}>SERVE</Button>
+        <Button key="serve" variant="contained" color="success" size="small" onClick={handleServeAllReady} sx={{ fontWeight: 950, borderRadius: '16px', flexGrow: 1, py: 1.5, bgcolor: '#2e7d32' }}>SERVE</Button>
       );
     }
     if (nextStatus && order?.status !== 'COMPLETED' && (order?.items || []).length > 0 && 
         !(order?.order_type === 'DINE_IN' && nextStatus === 'SERVED') &&
         !(order?.order_type === 'TAKE_AWAY' && hasNewItems)) {
       actions.push(
-        <Button key="status" variant="contained" size="small" onClick={() => handleUpdateOrderStatus(nextStatus)} sx={{ fontWeight: 900, borderRadius: '12px', flexGrow: 1, py: 1 }}>
+        <Button key="status" variant="contained" size="small" onClick={() => handleUpdateOrderStatus(nextStatus)} sx={{ fontWeight: 950, borderRadius: '16px', flexGrow: 1, py: 1.5, bgcolor: '#e9762b', '&:hover': { bgcolor: '#d66a27' } }}>
           {nextStatus === 'READY' ? 'READY' : (nextStatus === 'SERVED' ? 'SERVE' : nextStatus.split('_')[0])}
         </Button>
       );
     }
     if (order?.status === 'COMPLETED' && !order.invoice) {
       actions.push(
-        <Button key="checkout" variant="contained" color="success" size="small" onClick={handleGenerateBill} sx={{ fontWeight: 900, borderRadius: '12px', flexGrow: 1, py: 1 }}>BILL</Button>
+        <Button key="checkout" variant="contained" color="success" size="small" onClick={handleGenerateBill} sx={{ fontWeight: 950, borderRadius: '16px', flexGrow: 1, py: 1.5, bgcolor: '#2e7d32' }}>BILL</Button>
       );
     }
     if (order?.order_type !== 'TAKE_AWAY' && order?.invoice && order?.status !== 'COMPLETED') {
       actions.push(
-        <Button key="payment" variant="contained" color="secondary" size="small" onClick={() => setCheckoutOpen(true)} sx={{ fontWeight: 900, borderRadius: '12px', flexGrow: 1, py: 1 }}>PAY</Button>
+        <Button key="payment" variant="contained" color="secondary" size="small" onClick={() => setCheckoutOpen(true)} sx={{ fontWeight: 950, borderRadius: '16px', flexGrow: 1, py: 1.5, bgcolor: '#6a1b9a' }}>PAY</Button>
       );
     }
     }
 
     return (
       <Box sx={{ 
-        p: { xs: 1, md: 2 }, 
+        p: 2, 
         bgcolor: 'white', 
-        borderTop: '1px solid #e8e4d8', 
+        borderTop: '1px solid',
+        borderColor: alpha(theme.palette.divider, 0.1), 
         display: 'flex', 
         gap: 2, 
         alignItems: 'center', 
         flexShrink: 0,
-        zIndex: 1100
+        zIndex: 1100,
+        boxShadow: '0 -4px 20px rgba(0,0,0,0.05)'
       }}>
-        <Box sx={{ width: '85%', display: 'flex', gap: 1 }}>
+        <Box sx={{ flexGrow: 1, display: 'flex', gap: 1.5 }}>
           {actions.length > 0 ? actions : (
-            <Box sx={{ flexGrow: 1, display: 'flex', alignItems: 'center' }}>
-               <Typography variant="caption" sx={{ fontWeight: 800, color: 'text.secondary' }}>NO ACTIONS AVAILABLE</Typography>
+            <Box sx={{ flexGrow: 1, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+               <Typography variant="caption" sx={{ fontWeight: 900, color: 'text.disabled', letterSpacing: '0.05em' }}>NO ACTIONS AVAILABLE</Typography>
             </Box>
           )}
         </Box>
         
-        <Box sx={{ width: '20%', display: 'flex', justifyContent: 'center' }}>
+        <Box sx={{ flexShrink: 0 }}>
           <Badge 
             badgeContent={order ? (order.items || []).length : 0} 
             overlap="circular"
             sx={{
               '& .MuiBadge-badge': {
-                bgcolor: '#FFEB3B',
-                color: '#E65100',
+                bgcolor: '#e9762b',
+                color: 'white',
                 fontWeight: 900,
                 fontSize: '0.65rem',
-                height: 18,
-                minWidth: 18,
+                height: 20,
+                minWidth: 20,
+                border: '2px solid white'
               }
             }}
           >
             <IconButton 
-              size="small"
+              size="large"
               onClick={() => setMobileSummaryOpen(!mobileSummaryOpen)}
               sx={{ 
-                bgcolor: 'primary.main', 
-                color: 'white', 
-                width: 44, 
-                height: 44,
-                boxShadow: '0 4px 12px rgba(239, 108, 0, 0.2)',
-                '&:hover': { bgcolor: 'primary.dark' } 
+                bgcolor: alpha('#e9762b', 0.1), 
+                color: '#e9762b', 
+                width: 52, 
+                height: 52,
+                borderRadius: '16px',
+                '&:hover': { bgcolor: alpha('#e9762b', 0.15) } 
               }}
             >
-              <BasketIcon fontSize="small" />
+              <BasketIcon />
             </IconButton>
           </Badge>
         </Box>
@@ -706,48 +722,47 @@ const OrderDialog: React.FC<OrderDialogProps> = ({ open, onClose, table, initial
 
   const renderSummaryContent = () => (
     <>
-      <Box sx={{ p: 2, borderBottom: '1px solid #e8e4d8', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <Typography variant="caption" sx={{ fontWeight: 900, letterSpacing: '0.05em' }}>SUMMARY</Typography>
+      <Box sx={{ p: 2.5, borderBottom: '1px solid', borderColor: alpha(theme.palette.divider, 0.1), display: 'flex', justifyContent: 'space-between', alignItems: 'center', bgcolor: alpha('#e9762b', 0.02) }}>
+        <Typography variant="caption" sx={{ fontWeight: 950, letterSpacing: '0.1em', color: 'text.disabled' }}>CART SUMMARY</Typography>
         
           {orderType === 'DINE_IN' && (
-          <Stack direction="row" spacing={0.5} sx={{ alignItems: 'center', border: '1px solid #e8e4d8', borderRadius: '20px', px: 1 }}>
-            <PersonIcon sx={{ fontSize: 14, color: 'text.secondary' }} />
-            <IconButton size="small" onClick={() => order ? handleUpdateOrderDetails({ number_of_persons: Math.max(1, order.number_of_persons - 1) }) : setNumberOfPersons(p => Math.max(1, p-1))} disabled={Boolean(order?.invoice)}>
-              <RemoveIcon sx={{ fontSize: 12 }} />
+          <Stack direction="row" spacing={0.5} sx={{ alignItems: 'center', bgcolor: 'white', borderRadius: '12px', px: 1, py: 0.5, border: '1px solid', borderColor: alpha(theme.palette.divider, 0.1) }}>
+            <PersonIcon sx={{ fontSize: 16, color: 'text.secondary' }} />
+            <IconButton size="small" onClick={() => order ? handleUpdateOrderDetails({ number_of_persons: Math.max(1, order.number_of_persons - 1) }) : setNumberOfPersons(p => Math.max(1, p-1))} disabled={Boolean(order?.invoice)} sx={{ p: 0.5 }}>
+              <RemoveIcon sx={{ fontSize: 14 }} />
             </IconButton>
-            <Tooltip title="Guest Count">
-              <Typography sx={{ fontWeight: 800, fontSize: '0.875rem', minWidth: 16, textAlign: 'center' }}>{order ? order.number_of_persons : numberOfPersons}</Typography>
-            </Tooltip>
+            <Typography sx={{ fontWeight: 900, fontSize: '0.9rem', minWidth: 20, textAlign: 'center' }}>{order ? order.number_of_persons : numberOfPersons}</Typography>
             <IconButton 
               size="small" 
               onClick={() => order ? handleUpdateOrderDetails({ number_of_persons: order.number_of_persons + 1 }) : setNumberOfPersons(p => p+1)} 
               disabled={Boolean(order?.invoice) || (table ? ((table.current_occupancy || 0) + (order ? 0 : numberOfPersons)) >= table.capacity : false)}
+              sx={{ p: 0.5 }}
             >
-              <AddIcon sx={{ fontSize: 12 }} />
+              <AddIcon sx={{ fontSize: 14 }} />
             </IconButton>
           </Stack>
         )}
-
-        <Chip label={`${(order?.items || []).length} Items`} size="small" />
       </Box>
       
       {orderType === 'TAKE_AWAY' && (
-        <Box sx={{ p: 2, borderBottom: '1px solid #e8e4d8', bgcolor: alpha(theme.palette.primary.main, 0.02) }}>
-            <Stack spacing={1}>
+        <Box sx={{ p: 2.5, borderBottom: '1px solid', borderColor: alpha(theme.palette.divider, 0.1), bgcolor: alpha('#e9762b', 0.01) }}>
+            <Stack spacing={2}>
               <TextField 
                 size="small" label="Customer Name" value={customerName} 
                 onChange={(e) => setCustomerName(e.target.value)}
                 disabled={Boolean(order?.invoice)}
                 slotProps={{
                   input: {
+                    sx: { borderRadius: '12px', fontWeight: 700 },
                     endAdornment: order && (
                       <InputAdornment position="end">
                         <IconButton 
                           size="small" 
                           onClick={() => handleUpdateOrderDetails({ customer_name: customerName })}
                           disabled={loading || customerName === order.customer_name}
+                          sx={{ color: '#e9762b' }}
                         >
-                          <CheckIcon fontSize="small" color="primary" />
+                          <CheckIcon fontSize="small" />
                         </IconButton>
                       </InputAdornment>
                     )
@@ -765,14 +780,16 @@ const OrderDialog: React.FC<OrderDialogProps> = ({ open, onClose, table, initial
                 helperText={(orderType === 'TAKE_AWAY' && !customerMobile && !order) ? 'Required for Parcel' : ''}
                 slotProps={{
                   input: {
+                    sx: { borderRadius: '12px', fontWeight: 700 },
                     endAdornment: order && (
                       <InputAdornment position="end">
                         <IconButton 
                           size="small" 
                           onClick={() => handleUpdateOrderDetails({ customer_mobile: customerMobile })}
                           disabled={loading || customerMobile === order.customer_mobile}
+                          sx={{ color: '#e9762b' }}
                         >
-                          <CheckIcon fontSize="small" color="primary" />
+                          <CheckIcon fontSize="small" />
                         </IconButton>
                       </InputAdornment>
                     )
@@ -782,64 +799,64 @@ const OrderDialog: React.FC<OrderDialogProps> = ({ open, onClose, table, initial
             </Stack>
         </Box>
       )}
-      <Box sx={{ flexGrow: 1, overflowY: 'auto' }}>
+      <Box sx={{ flexGrow: 1, overflowY: 'auto', p: 1 }}>
         {(order?.items || []).length === 0 ? (
-          <Box sx={{ p: 4, textAlign: 'center', opacity: 0.5 }}>
-            <BasketIcon sx={{ fontSize: 40, mb: 1, color: 'text.disabled' }} />
-            <Typography variant="body2" sx={{ fontWeight: 600 }}>Cart is empty</Typography>
+          <Box sx={{ py: 8, textAlign: 'center', opacity: 0.3 }}>
+            <BasketIcon sx={{ fontSize: 64, mb: 2, color: 'text.disabled' }} />
+            <Typography variant="body2" sx={{ fontWeight: 800, letterSpacing: '0.05em' }}>YOUR CART IS EMPTY</Typography>
           </Box>
         ) : (
           <Table size="small">
             <TableBody>
               {[...(order?.items || [])].sort((a, b) => a.id - b.id).map(item => (
-                <TableRow key={item.id}>
-                  <TableCell sx={{ py: 1.5, px: 1 }}>
-                    <Typography variant="body2" sx={{ fontWeight: 800, display: 'block' }}>{item.item_details.name}</Typography>
-                    <ItemStatusChip status={item.status} orderType={order?.order_type || 'DINE_IN'} sx={{ height: 18, fontSize: '0.7rem' }} />
+                <TableRow key={item.id} sx={{ '&:last-child td': { borderBottom: 0 } }}>
+                  <TableCell sx={{ py: 2, px: 1.5 }}>
+                    <Typography variant="body2" sx={{ fontWeight: 850, color: '#1a1a1a', mb: 0.5 }}>{item.item_details.name}</Typography>
+                    <ItemStatusChip status={item.status} orderType={order?.order_type || 'DINE_IN'} sx={{ height: 18, fontSize: '0.65rem', fontWeight: 900, borderRadius: '6px' }} />
                   </TableCell>
                   <TableCell align="right" sx={{ px: 1 }}>
                     {item.status === 'ORDERED' && !order?.invoice ? (
-                      <Stack direction="row" spacing={0.5} sx={{ alignItems: 'center', justifyContent: 'flex-end' }}>
-                        <IconButton size="small" onClick={() => handleUpdateItemQuantity(item, -1)} sx={{ p: 0.25 }}><RemoveIcon sx={{ fontSize: 12 }} /></IconButton>
-                        <Typography sx={{ fontWeight: 800, fontSize: '1rem' }}>{item.quantity}</Typography>
-                        <IconButton size="small" onClick={() => handleUpdateItemQuantity(item, 1)} sx={{ p: 0.25 }}><AddIcon sx={{ fontSize: 12 }} /></IconButton>
+                      <Stack direction="row" spacing={0.5} sx={{ alignItems: 'center', justifyContent: 'flex-end', bgcolor: alpha('#000', 0.03), borderRadius: '10px', p: 0.5 }}>
+                        <IconButton size="small" onClick={() => handleUpdateItemQuantity(item, -1)} sx={{ p: 0.5, bgcolor: 'white', '&:hover': { bgcolor: alpha('#000', 0.05) } }}><RemoveIcon sx={{ fontSize: 12 }} /></IconButton>
+                        <Typography sx={{ fontWeight: 950, fontSize: '0.9rem', minWidth: 24, textAlign: 'center' }}>{item.quantity}</Typography>
+                        <IconButton size="small" onClick={() => handleUpdateItemQuantity(item, 1)} sx={{ p: 0.5, bgcolor: 'white', '&:hover': { bgcolor: alpha('#000', 0.05) } }}><AddIcon sx={{ fontSize: 12 }} /></IconButton>
                       </Stack>
                     ) : (
-                      <Typography sx={{ fontWeight: 800, fontSize: '1rem' }}>×{item.quantity}</Typography>
+                      <Typography sx={{ fontWeight: 950, fontSize: '1rem', color: 'text.secondary' }}>×{item.quantity}</Typography>
                     )}
                   </TableCell>
-                  <TableCell align="right" sx={{ fontWeight: 800, fontSize: '1rem', px: 1 }}>₹{(parseFloat(item.price) * item.quantity).toFixed(2)}</TableCell>
+                  <TableCell align="right" sx={{ fontWeight: 950, fontSize: '1rem', color: '#1a1a1a', px: 1.5 }}>₹{(parseFloat(item.price) * item.quantity).toFixed(0)}</TableCell>
                 </TableRow>
               ))}
             </TableBody>
           </Table>
         )}
       </Box>
-      <Box sx={{ p: 1.5, borderTop: '2px dashed #e8e4d8', bgcolor: '#fdfdfd' }}>
-        <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 2 }}>
-          <Typography variant="body2" sx={{ fontWeight: 900 }}>Total</Typography>
-          <Typography variant="h5" sx={{ fontWeight: 900, color: 'primary.main' }}>₹{order?.total_amount || '0.00'}</Typography>
+      <Box sx={{ p: 2.5, borderTop: '2px dashed', borderColor: alpha(theme.palette.divider, 0.2), bgcolor: 'white' }}>
+        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2.5 }}>
+          <Typography sx={{ fontWeight: 900, color: 'text.secondary', fontSize: '0.9rem' }}>TOTAL AMOUNT</Typography>
+          <Typography variant="h4" sx={{ fontWeight: 1000, color: '#e9762b', letterSpacing: '-0.02em' }}>₹{parseFloat(order?.total_amount || '0').toFixed(0)}</Typography>
         </Box>
         {!isMobile && (
-          <Stack spacing={1}>
+          <Stack spacing={1.5}>
             {hasNewItems && (
-              <Button variant="contained" color="warning" fullWidth onClick={handleSendToKitchen} sx={{ fontWeight: 900 }}>KOT</Button>
+              <Button variant="contained" fullWidth onClick={handleSendToKitchen} sx={{ fontWeight: 950, py: 1.5, borderRadius: '16px', bgcolor: '#e9762b', boxShadow: '0 8px 20px rgba(233, 118, 43, 0.2)', '&:hover': { bgcolor: '#d66a27' } }}>SEND TO KITCHEN (KOT)</Button>
             )}
             {hasReadyItems && order?.order_type !== 'TAKE_AWAY' && (
-              <Button variant="contained" color="success" fullWidth onClick={handleServeAllReady} sx={{ fontWeight: 900 }}>SERVE</Button>
+              <Button variant="contained" fullWidth onClick={handleServeAllReady} sx={{ fontWeight: 950, py: 1.5, borderRadius: '16px', bgcolor: '#2e7d32', boxShadow: '0 8px 20px rgba(46, 125, 50, 0.2)' }}>SERVE ALL READY</Button>
             )}
             {nextStatus && order?.status !== 'COMPLETED' && (order?.items || []).length > 0 && 
               !(order?.order_type === 'DINE_IN' && nextStatus === 'SERVED') &&
               !(order?.order_type === 'TAKE_AWAY' && hasNewItems) && (
-              <Button variant="contained" fullWidth onClick={() => handleUpdateOrderStatus(nextStatus)} sx={{ fontWeight: 900 }}>
+              <Button variant="contained" fullWidth onClick={() => handleUpdateOrderStatus(nextStatus)} sx={{ fontWeight: 950, py: 1.5, borderRadius: '16px', bgcolor: '#e9762b', boxShadow: '0 8px 20px rgba(233, 118, 43, 0.2)', '&:hover': { bgcolor: '#d66a27' } }}>
                 {nextStatus === 'READY' ? 'MARK AS READY' : (nextStatus === 'SERVED' ? 'MARK AS SERVED' : nextStatus.replace('_', ' '))}
               </Button>
             )}
             {order?.status === 'COMPLETED' && !order.invoice && (
-              <Button variant="contained" color="success" fullWidth onClick={handleGenerateBill} sx={{ fontWeight: 900 }}>CHECKOUT</Button>
+              <Button variant="contained" fullWidth onClick={handleGenerateBill} sx={{ fontWeight: 950, py: 1.5, borderRadius: '16px', bgcolor: '#2e7d32', boxShadow: '0 8px 20px rgba(46, 125, 50, 0.2)' }}>GENERATE BILL</Button>
             )}
             {order?.order_type !== 'TAKE_AWAY' && order?.invoice && order?.status !== 'COMPLETED' && (
-              <Button variant="contained" color="secondary" fullWidth onClick={() => setCheckoutOpen(true)} sx={{ fontWeight: 900 }}>PAYMENT</Button>
+              <Button variant="contained" fullWidth onClick={() => setCheckoutOpen(true)} sx={{ fontWeight: 950, py: 1.5, borderRadius: '16px', bgcolor: '#6a1b9a', boxShadow: '0 8px 20px rgba(106, 27, 154, 0.2)' }}>PROCEED TO PAYMENT</Button>
             )}
           </Stack>
         )}
@@ -851,19 +868,19 @@ const OrderDialog: React.FC<OrderDialogProps> = ({ open, onClose, table, initial
     if (loading && !order && menuItems.length === 0) {
       return (
         <Box sx={{ flexGrow: 1, display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: 400 }}>
-          <CircularProgress />
+          <CircularProgress sx={{ color: '#e9762b' }} />
         </Box>
       );
     }
 
     if (dialogStage === 'CHOICE') {
       return (
-        <Box sx={{ flexGrow: 1, display: 'flex', flexDirection: 'column', bgcolor: '#f8fafc' }}>
+        <Box sx={{ flexGrow: 1, display: 'flex', flexDirection: 'column', bgcolor: alpha('#e9762b', 0.02) }}>
           <Container maxWidth="md" sx={{ py: { xs: 4, md: 8 }, flexGrow: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
             <Grid container spacing={4} sx={{ justifyContent: 'center' }}>
               {(!table || (table.current_occupancy || 0) < (table.capacity || 0)) && (
                 <Grid size={{ xs: 12, md: 6 }}>
-                  <Typography variant="overline" sx={{ fontWeight: 900, color: 'text.disabled', mb: 2, display: 'block', letterSpacing: '0.1em' }}>START FRESH</Typography>
+                  <Typography variant="overline" sx={{ fontWeight: 950, color: 'text.disabled', mb: 2, display: 'block', letterSpacing: '0.15em' }}>START FRESH</Typography>
                   <Paper
                     elevation={0}
                     onClick={() => {
@@ -874,22 +891,25 @@ const OrderDialog: React.FC<OrderDialogProps> = ({ open, onClose, table, initial
                       }
                     }}
                     sx={{ 
-                      p: 4, height: '100%', minHeight: 180, borderRadius: '24px', border: '2px solid #e8e4d8',
-                      display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 2,
-                      cursor: 'pointer', transition: 'all 0.25s', bgcolor: 'white',
-                      '&:hover': { borderColor: 'primary.main', transform: 'translateY(-4px)', boxShadow: '0 12px 30px rgba(0,0,0,0.08)' }
+                      p: 5, height: '100%', minHeight: 220, borderRadius: '32px', border: '2px solid', borderColor: alpha('#e9762b', 0.1),
+                      display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 3,
+                      cursor: 'pointer', transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)', bgcolor: 'white',
+                      boxShadow: '0 10px 40px rgba(0,0,0,0.03)',
+                      '&:hover': { borderColor: '#e9762b', transform: 'translateY(-8px)', boxShadow: '0 20px 50px rgba(233, 118, 43, 0.12)' }
                     }}
                   >
-                    <AddIcon sx={{ fontSize: 32, color: 'primary.main' }} />
-                    <Typography variant="h5" sx={{ fontWeight: 900 }}>NEW ORDER</Typography>
+                    <Box sx={{ p: 2, bgcolor: alpha('#e9762b', 0.1), borderRadius: '20px' }}>
+                      <AddIcon sx={{ fontSize: 40, color: '#e9762b' }} />
+                    </Box>
+                    <Typography variant="h5" sx={{ fontWeight: 1000, letterSpacing: '-0.02em' }}>NEW ORDER</Typography>
                   </Paper>
                 </Grid>
               )}
 
               {table?.active_orders && table.active_orders.length > 0 && (
                 <Grid size={{ xs: 12, md: 6 }}>
-                  <Typography variant="overline" sx={{ fontWeight: 900, color: 'text.disabled', mb: 2, display: 'block', letterSpacing: '0.1em' }}>JOIN EXISTING</Typography>
-                  <Stack spacing={2}>
+                  <Typography variant="overline" sx={{ fontWeight: 950, color: 'text.disabled', mb: 2, display: 'block', letterSpacing: '0.15em' }}>JOIN EXISTING</Typography>
+                  <Stack spacing={2.5}>
                     {table.active_orders.map((activeOrd: Order) => (
                       <Paper
                         key={activeOrd.id}
@@ -898,10 +918,19 @@ const OrderDialog: React.FC<OrderDialogProps> = ({ open, onClose, table, initial
                           setOrder(data);
                           setDialogStage('ORDER_DETAILS');
                         }}
-                        sx={{ p: 2.5, border: '2px solid #e8e4d8', borderRadius: '20px', cursor: 'pointer', '&:hover': { borderColor: 'primary.main' } }}
+                        sx={{ 
+                          p: 3, border: '2px solid', borderColor: alpha(theme.palette.divider, 0.1), borderRadius: '24px', cursor: 'pointer', transition: 'all 0.2s',
+                          bgcolor: 'white',
+                          '&:hover': { borderColor: '#e9762b', bgcolor: alpha('#e9762b', 0.02), transform: 'translateX(8px)' } 
+                        }}
                       >
-                        <Typography sx={{ fontWeight: 900 }}>{activeOrd.customer_name || `Order #${activeOrd.id}`}</Typography>
-                        <Typography variant="caption">₹{activeOrd.total_amount} • {activeOrd.number_of_persons} Persons</Typography>
+                        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                          <Box>
+                            <Typography sx={{ fontWeight: 950, fontSize: '1.1rem', mb: 0.5 }}>{activeOrd.customer_name || `Order #${activeOrd.id}`}</Typography>
+                            <Typography variant="caption" sx={{ fontWeight: 800, color: 'text.disabled', letterSpacing: '0.05em' }}>{activeOrd.number_of_persons} PERSONS • {new Date(activeOrd.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</Typography>
+                          </Box>
+                          <Typography variant="h6" sx={{ fontWeight: 1000, color: '#e9762b' }}>₹{parseFloat(activeOrd.total_amount).toFixed(0)}</Typography>
+                        </Box>
                       </Paper>
                     ))}
                   </Stack>
@@ -915,23 +944,23 @@ const OrderDialog: React.FC<OrderDialogProps> = ({ open, onClose, table, initial
 
     if (dialogStage === 'NEW_ORDER_SETUP') {
       return (
-        <Box sx={{ flexGrow: 1, display: 'flex', flexDirection: 'column', bgcolor: '#f8fafc' }}>
-          <Container maxWidth="xs" sx={{ py: 4 }}>
-            <Box sx={{ mb: 2, display: 'flex', alignItems: 'center', gap: 1.5 }}>
-              <IconButton size="small" onClick={() => setDialogStage('CHOICE')} sx={{ border: '1px solid #e8e4d8' }}><ChevronLeftIcon fontSize="small" /></IconButton>
-              <Typography variant="h6" sx={{ fontWeight: 900 }}>Order Setup</Typography>
+        <Box sx={{ flexGrow: 1, display: 'flex', flexDirection: 'column', bgcolor: alpha('#e9762b', 0.02) }}>
+          <Container maxWidth="xs" sx={{ py: 6 }}>
+            <Box sx={{ mb: 4, display: 'flex', alignItems: 'center', gap: 2 }}>
+              <IconButton onClick={() => setDialogStage('CHOICE')} sx={{ bgcolor: 'white', border: '1px solid', borderColor: alpha(theme.palette.divider, 0.1), borderRadius: '12px' }}><ChevronLeftIcon /></IconButton>
+              <Typography variant="h5" sx={{ fontWeight: 950, letterSpacing: '-0.02em' }}>Order Setup</Typography>
             </Box>
-            <Paper sx={{ p: 3, borderRadius: '24px', border: '1px solid #e8e4d8' }}>
-              <Stack spacing={2.5}>
+            <Paper sx={{ p: 4, borderRadius: '32px', border: '1px solid', borderColor: alpha(theme.palette.divider, 0.1), boxShadow: '0 10px 40px rgba(0,0,0,0.03)' }}>
+              <Stack spacing={4}>
                 <Box sx={{ textAlign: 'center' }}>
-                  <Typography variant="overline" sx={{ fontWeight: 800, color: 'text.secondary' }}>GUEST COUNT</Typography>
-                  <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 3, mt: 1 }}>
-                    <IconButton size="small" onClick={() => setNumberOfPersons(Math.max(1, numberOfPersons - 1))} sx={{ border: '1px solid #e8e4d8' }}><RemoveIcon fontSize="small" /></IconButton>
-                    <Typography variant="h4" sx={{ fontWeight: 900 }}>{numberOfPersons}</Typography>
-                    <IconButton size="small" onClick={() => setNumberOfPersons(numberOfPersons + 1)} disabled={table ? ((table.current_occupancy || 0) + numberOfPersons) >= table.capacity : false} sx={{ border: '1px solid #e8e4d8' }}><AddIcon fontSize="small" /></IconButton>
+                  <Typography variant="overline" sx={{ fontWeight: 950, color: 'text.disabled', letterSpacing: '0.1em' }}>GUEST COUNT</Typography>
+                  <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4, mt: 3 }}>
+                    <IconButton size="large" onClick={() => setNumberOfPersons(Math.max(1, numberOfPersons - 1))} sx={{ bgcolor: alpha('#000', 0.03), borderRadius: '16px' }}><RemoveIcon /></IconButton>
+                    <Typography variant="h2" sx={{ fontWeight: 1000, minWidth: 80 }}>{numberOfPersons}</Typography>
+                    <IconButton size="large" onClick={() => setNumberOfPersons(numberOfPersons + 1)} disabled={table ? ((table.current_occupancy || 0) + numberOfPersons) >= table.capacity : false} sx={{ bgcolor: alpha('#000', 0.03), borderRadius: '16px' }}><AddIcon /></IconButton>
                   </Box>
                 </Box>
-                <Button variant="contained" fullWidth onClick={() => { setOrder(null); setOrderType('DINE_IN'); setDialogStage('ORDER_DETAILS'); }} sx={{ py: 1.5, borderRadius: '12px', fontWeight: 900, fontSize: '0.9rem' }}>START ORDER</Button>
+                <Button variant="contained" fullWidth onClick={() => { setOrder(null); setOrderType('DINE_IN'); setDialogStage('ORDER_DETAILS'); }} sx={{ py: 2, borderRadius: '18px', fontWeight: 950, fontSize: '1rem', bgcolor: '#e9762b', boxShadow: '0 10px 30px rgba(233, 118, 43, 0.2)' }}>START ORDER</Button>
               </Stack>
             </Paper>
           </Container>
@@ -944,92 +973,124 @@ const OrderDialog: React.FC<OrderDialogProps> = ({ open, onClose, table, initial
         <Box sx={{ display: 'flex', flexDirection: { xs: 'column', md: 'row' }, flexGrow: 1, height: '100%', overflow: 'hidden' }}>
           {/* MENU */}
           {(!order || !order.invoice) && !['COMPLETED', 'PAID', 'CANCELLED', 'REJECTED', 'RETURNED'].includes(order?.status || 'ORDER_TAKEN') ? (
-            <Box sx={{ flexGrow: 1, display: 'flex', flexDirection: 'column', height: '100%', overflow: 'hidden' }}>
-              <Box sx={{ p: { xs: 1, md: 2 }, borderBottom: '1px solid #e8e4d8', bgcolor: 'white' }}>
-                <Grid container spacing={0.5} sx={{ alignItems: 'center' }}>
-                  <Grid size={{ xs: 12, md: 'auto' }}>
-                    <Stack direction="row" spacing={0.5} sx={{ alignItems: 'center', mb: { xs: 0.5, md: 0 } }}>
-                      {orderType === 'DINE_IN' && (
-                        <Stack direction="row" spacing={0.25} sx={{ alignItems: 'center', bgcolor: '#f8fafc', borderRadius: '12px', px: 0.75, border: '1px solid #e2e8f0', mr: 0.5 }}>
-                          <PersonIcon sx={{ fontSize: 14, color: 'text.secondary' }} />
-                          <IconButton size="small" onClick={() => order ? handleUpdateOrderDetails({ number_of_persons: Math.max(1, order.number_of_persons - 1) }) : setNumberOfPersons(p => Math.max(1, p-1))} disabled={Boolean(order?.invoice)} sx={{ p: 0.25 }}>
-                            <RemoveIcon sx={{ fontSize: 12 }} />
-                          </IconButton>
-                          <Typography sx={{ fontWeight: 800, fontSize: '0.75rem', minWidth: 16, textAlign: 'center' }}>{order ? order.number_of_persons : numberOfPersons}</Typography>
-                          <IconButton size="small" onClick={() => order ? handleUpdateOrderDetails({ number_of_persons: order.number_of_persons + 1 }) : setNumberOfPersons(p => p+1)} disabled={Boolean(order?.invoice) || (table ? ((table.current_occupancy || 0) + (order ? 0 : numberOfPersons)) >= table.capacity : false)} sx={{ p: 0.25 }}>
-                            <AddIcon sx={{ fontSize: 12 }} />
-                          </IconButton>
-                        </Stack>
-                      )}
-                      <Box sx={{ display: 'flex', gap: 0.5, overflowX: 'auto', pb: 0.25, '&::-webkit-scrollbar': { display: 'none' } }}>
-                        <Button size="small" variant={activeCategory === 'all' ? 'contained' : 'outlined'} onClick={() => setActiveCategory('all')} sx={{ minWidth: 'fit-content', borderRadius: '12px', fontSize: '0.8rem', py: 0.5 }}>All</Button>
-                        {categories.map(cat => (
-                          <Button key={cat.id} size="small" variant={activeCategory === cat.id ? 'contained' : 'outlined'} onClick={() => setActiveCategory(cat.id)} sx={{ minWidth: 'fit-content', borderRadius: '12px', fontSize: '0.8rem', py: 0.5 }}>{cat.name}</Button>
-                        ))}
-                      </Box>
-                    </Stack>
-                  </Grid>
-                  <Grid size={{ xs: 12, md: 'grow' }}>
-                    <TextField fullWidth size="small" placeholder="Search menu..." value={searchQuery} onChange={e => setSearchQuery(e.target.value)} sx={{ '& .MuiInputBase-root': { borderRadius: '12px' } }} />
-                  </Grid>
-                </Grid>
-              </Box>
-              <Box sx={{ flexGrow: 1, p: { xs: 0, md: 2 }, pb: { xs: '140px', md: 2 }, overflowY: 'auto', bgcolor: 'white' }}>
-                <Stack spacing={0}>
-                  {filteredItems.map((item: Item) => (
-                    <Box 
-                      key={item.id}
-                      onClick={() => setSelectedItemForDetail(item)}
+            <Box sx={{ flexGrow: 1, display: 'flex', flexDirection: 'column', height: '100%', overflow: 'hidden', bgcolor: '#fcfcfc' }}>
+              <Box sx={{ p: 2, borderBottom: '1px solid', borderColor: alpha(theme.palette.divider, 0.1), bgcolor: 'white' }}>
+                <Stack spacing={2}>
+                  <Box sx={{ display: 'flex', gap: 1.5, alignItems: 'center' }}>
+                    <TextField 
+                      fullWidth 
+                      size="small" 
+                      placeholder="Search menu items..." 
+                      value={searchQuery} 
+                      onChange={e => setSearchQuery(e.target.value)} 
+                    slotProps={{
+                      input: {
+                        startAdornment: <SearchIcon sx={{ mr: 1, color: 'text.disabled' }} />,
+                        sx: { borderRadius: '12px', fontWeight: 700, bgcolor: alpha('#000', 0.02) }
+                      }
+                    }}
+                    />
+                  </Box>
+                  <Box sx={{ display: 'flex', gap: 1, overflowX: 'auto', pb: 0.5, '&::-webkit-scrollbar': { height: 4 } }}>
+                    <Chip 
+                      label="All Items" 
+                      onClick={() => setActiveCategory('all')} 
                       sx={{ 
-                        px: 2, 
-                        py: 1.75, 
-                        borderBottom: '1px solid #f1f5f9', 
-                        display: 'flex', 
-                        justifyContent: 'space-between', 
-                        alignItems: 'center',
-                        cursor: 'pointer',
-                        transition: 'all 0.2s',
-                        '&:hover': { bgcolor: alpha(theme.palette.primary.main, 0.05) }
-                      }}
-                    >
-                      <Box>
-                        <Typography variant="body1" sx={{ fontWeight: 700, color: '#334155', fontSize: '0.95rem' }}>{item.name}</Typography>
-                      </Box>
-                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
-                        <Typography variant="body1" sx={{ fontWeight: 900, color: 'primary.main', fontSize: '1rem' }}>₹{item.price}</Typography>
-                        <IconButton 
-                          size="small" 
-                          onClick={(e) => { e.stopPropagation(); handleAddItem(item); }}
-                          disabled={loading || Boolean(order?.invoice)}
-                          sx={{ 
-                            p: 0.25,
-                            bgcolor: alpha(theme.palette.primary.main, 0.08), 
-                            color: 'primary.main',
-                            border: `1px solid ${alpha(theme.palette.primary.main, 0.2)}`,
-                            '&:hover': { bgcolor: alpha(theme.palette.primary.main, 0.15) },
-                          }}
-                        >
-                          {loading ? <CircularProgress size={14} color="inherit" /> : <AddIcon sx={{ fontSize: 16 }} />}
-                        </IconButton>
-                      </Box>
-                    </Box>
+                        fontWeight: 900, 
+                        px: 1, 
+                        borderRadius: '10px',
+                        bgcolor: activeCategory === 'all' ? '#e9762b' : alpha('#000', 0.05),
+                        color: activeCategory === 'all' ? 'white' : 'text.secondary',
+                        '&:hover': { bgcolor: activeCategory === 'all' ? '#e9762b' : alpha('#000', 0.08) }
+                      }} 
+                    />
+                    {categories.map(cat => (
+                      <Chip 
+                        key={cat.id} 
+                        label={cat.name} 
+                        onClick={() => setActiveCategory(cat.id)} 
+                        sx={{ 
+                          fontWeight: 900, 
+                          px: 1, 
+                          borderRadius: '10px',
+                          bgcolor: activeCategory === cat.id ? '#e9762b' : alpha('#000', 0.05),
+                          color: activeCategory === cat.id ? 'white' : 'text.secondary',
+                          '&:hover': { bgcolor: activeCategory === cat.id ? '#e9762b' : alpha('#000', 0.08) }
+                        }} 
+                      />
+                    ))}
+                  </Box>
+                </Stack>
+              </Box>
+              <Box sx={{ flexGrow: 1, p: { xs: 0, md: 2 }, overflowY: 'auto' }}>
+                <Grid container spacing={2}>
+                  {filteredItems.map((item: Item) => (
+                    <Grid size={{ xs: 12, sm: 6, lg: 4 }} key={item.id}>
+                      <Card 
+                        elevation={0}
+                        onClick={() => setSelectedItemForDetail(item)}
+                        sx={{ 
+                          borderRadius: '20px', 
+                          border: '1px solid', 
+                          borderColor: alpha(theme.palette.divider, 0.1), 
+                          cursor: 'pointer',
+                          transition: 'all 0.2s',
+                          position: 'relative',
+                          overflow: 'hidden',
+                          '&:hover': { borderColor: '#e9762b', boxShadow: '0 8px 24px rgba(0,0,0,0.05)', transform: 'translateY(-4px)' }
+                        }}
+                      >
+                        <CardContent sx={{ p: 2 }}>
+                          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 1.5 }}>
+                            <Box sx={{ flexGrow: 1, pr: 1 }}>
+                              <Typography variant="subtitle1" sx={{ fontWeight: 900, color: '#1a1a1a', lineHeight: 1.2, mb: 0.5 }}>{item.name}</Typography>
+                              <Typography variant="caption" sx={{ color: 'text.disabled', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.05em' }}>{item.category_name}</Typography>
+                            </Box>
+                            <Typography variant="h6" sx={{ fontWeight: 1000, color: '#e9762b' }}>₹{parseFloat(item.price).toFixed(0)}</Typography>
+                          </Box>
+                          
+                          <Box sx={{ display: 'flex', justifyContent: 'flex-end' }}>
+                            <IconButton 
+                              size="small" 
+                              onClick={(e) => { e.stopPropagation(); handleAddItem(item); }}
+                              disabled={loading || Boolean(order?.invoice)}
+                              sx={{ 
+                                bgcolor: alpha('#e9762b', 0.1), 
+                                color: '#e9762b',
+                                borderRadius: '10px',
+                                p: 1,
+                                '&:hover': { bgcolor: alpha('#e9762b', 0.2) },
+                                '&.Mui-disabled': { bgcolor: alpha(theme.palette.divider, 0.1) }
+                              }}
+                            >
+                              {loading ? <CircularProgress size={20} color="inherit" /> : <AddIcon />}
+                            </IconButton>
+                          </Box>
+                        </CardContent>
+                      </Card>
+                    </Grid>
                   ))}
                   {filteredItems.length === 0 && (
-                    <Box sx={{ p: 4, textAlign: 'center', opacity: 0.5 }}>
-                      <Typography>No items found</Typography>
+                    <Box sx={{ p: 8, textAlign: 'center', width: '100%', opacity: 0.5 }}>
+                      <SearchIcon sx={{ fontSize: 48, mb: 2, color: 'text.disabled' }} />
+                      <Typography sx={{ fontWeight: 800 }}>No items match your search</Typography>
                     </Box>
                   )}
-                </Stack>
+                </Grid>
               </Box>
             </Box>
           ) : (
-            <Box sx={{ flexGrow: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', p: 4 }}>
-                <Typography variant="h5" sx={{ fontWeight: 900 }}>{order?.invoice ? 'Order Finalized' : 'Order Completed'}</Typography>
+            <Box sx={{ flexGrow: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', p: 4, bgcolor: alpha('#e9762b', 0.02) }}>
+                <Box sx={{ p: 3, bgcolor: 'white', borderRadius: '32px', textAlign: 'center', boxShadow: '0 10px 40px rgba(0,0,0,0.03)', border: '1px solid', borderColor: alpha(theme.palette.divider, 0.1) }}>
+                  <CheckIcon sx={{ fontSize: 64, color: '#2e7d32', mb: 2 }} />
+                  <Typography variant="h5" sx={{ fontWeight: 1000, mb: 1 }}>{order?.invoice ? 'Order Finalized' : 'Order Completed'}</Typography>
+                  <Typography color="text.secondary" sx={{ fontWeight: 700 }}>This order has been processed and is ready for billing.</Typography>
+                </Box>
             </Box>
           )}
 
           {/* SUMMARY SIDEBAR (DESKTOP) */}
-          <Box sx={{ width: { md: '400px' }, borderLeft: '1px solid #e8e4d8', display: { xs: 'none', md: 'flex' }, flexDirection: 'column', bgcolor: 'white' }}>
+          <Box sx={{ width: { md: '420px' }, borderLeft: '1px solid', borderColor: alpha(theme.palette.divider, 0.1), display: { xs: 'none', md: 'flex' }, flexDirection: 'column', bgcolor: 'white' }}>
             {renderSummaryContent()}
           </Box>
         </Box>
@@ -1053,38 +1114,50 @@ const OrderDialog: React.FC<OrderDialogProps> = ({ open, onClose, table, initial
       flexDirection: 'column', 
       bgcolor: 'white', 
       overflow: 'hidden',
-      boxShadow: '0 -4px 20px rgba(0,0,0,0.1)'
+      boxShadow: '0 -10px 40px rgba(0,0,0,0.1)'
     }}>
       <Box sx={{ 
-        px: { xs: 1.5, md: 2 }, 
-        py: { xs: 1, md: 1.5 }, 
-        borderBottom: '1px solid #e8e4d8', 
+        px: 2.5, 
+        py: 1.5, 
+        borderBottom: '1px solid', 
+        borderColor: alpha(theme.palette.divider, 0.1),
         display: 'flex', 
         alignItems: 'center', 
         justifyContent: 'space-between', 
         bgcolor: 'white', 
         zIndex: 10 
       }}>
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: { xs: 1, md: 2 } }}>
-          <IconButton onClick={onClose} size="small" sx={{ border: { xs: '1px solid #f1f5f9', md: 'none' }, p: 0.5 }}><ChevronLeftIcon fontSize="small" /></IconButton>
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+          <IconButton 
+            onClick={onClose} 
+            sx={{ 
+              bgcolor: alpha('#000', 0.03), 
+              borderRadius: '12px',
+              '&:hover': { bgcolor: alpha('#000', 0.05) }
+            }}
+          >
+            <ChevronLeftIcon />
+          </IconButton>
           <Box>
-            <Typography variant={isMobile ? "body2" : "h6"} sx={{ fontWeight: 900, lineHeight: 1.1 }}>{table?.number ? `Table ${table.number}` : 'Order Details'}</Typography>
-            {order && <Typography variant="caption" sx={{ display: 'block', opacity: 0.7, fontSize: '0.65rem' }}>Order #{order.id}</Typography>}
+            <Typography variant={isMobile ? "subtitle1" : "h6"} sx={{ fontWeight: 1000, lineHeight: 1.2, letterSpacing: '-0.01em' }}>
+              {table?.number ? `Table ${table.number}` : 'Order Detail'}
+            </Typography>
+            {order && <Typography variant="caption" sx={{ fontWeight: 850, color: 'text.disabled', letterSpacing: '0.05em' }}>ORDER #{order.id}</Typography>}
           </Box>
         </Box>
-        <Box sx={{ display: 'flex', gap: 1 }}>
+        <Box sx={{ display: 'flex', gap: 1.5 }}>
           {order && order.order_type === 'DINE_IN' && !order.invoice && (
-            <Tooltip title="Move to Another Table">
+            <Tooltip title="Move Order">
               <IconButton 
-                size="small" 
                 onClick={() => {
                   setMovePersons(order.number_of_persons);
                   setMoveTableOpen(true);
                 }}
                 sx={{ 
-                  bgcolor: alpha(theme.palette.primary.main, 0.05),
-                  color: 'primary.main',
-                  '&:hover': { bgcolor: alpha(theme.palette.primary.main, 0.1) }
+                  bgcolor: alpha('#e9762b', 0.1),
+                  color: '#e9762b',
+                  borderRadius: '12px',
+                  '&:hover': { bgcolor: alpha('#e9762b', 0.15) }
                 }}
               >
                 <TableIcon fontSize="small" />
@@ -1096,7 +1169,7 @@ const OrderDialog: React.FC<OrderDialogProps> = ({ open, onClose, table, initial
 
       {/* Tabs for multiple orders */}
       {table && (
-        <Box sx={{ borderBottom: '1px solid #e8e4d8', bgcolor: '#fdfdfd', display: 'flex', alignItems: 'center' }}>
+        <Box sx={{ borderBottom: '1px solid', borderColor: alpha(theme.palette.divider, 0.1), bgcolor: alpha('#e9762b', 0.01), display: 'flex', alignItems: 'center' }}>
           {activeOrders.length > 0 && (
             <Tabs
               value={selectedOrderId || false}
@@ -1105,16 +1178,16 @@ const OrderDialog: React.FC<OrderDialogProps> = ({ open, onClose, table, initial
               scrollButtons="auto"
               sx={{
                 flexGrow: 1,
-                minHeight: 48,
-                '& .MuiTabs-indicator': { height: 3 },
+                minHeight: 52,
+                '& .MuiTabs-indicator': { height: 3, borderRadius: '3px 3px 0 0', bgcolor: '#e9762b' },
                 '& .MuiTab-root': {
-                  fontWeight: 800,
-                  fontSize: '0.875rem',
-                  minHeight: 48,
+                  fontWeight: 900,
+                  fontSize: '0.85rem',
+                  minHeight: 52,
                   textTransform: 'none',
-                  px: 2,
-                  color: 'text.secondary',
-                  '&.Mui-selected': { color: 'primary.main' }
+                  px: 3,
+                  color: 'text.disabled',
+                  '&.Mui-selected': { color: '#e9762b' }
                 },
               }}
             >
@@ -1131,28 +1204,27 @@ const OrderDialog: React.FC<OrderDialogProps> = ({ open, onClose, table, initial
           {(table.current_occupancy || 0) < table.capacity && (
             <>
               {activeOrders.length > 0 && (
-                <Box sx={{ height: 24, width: '1px', bgcolor: '#e8e4d8', mx: 0.5 }} />
+                <Box sx={{ height: 24, width: '1px', bgcolor: alpha(theme.palette.divider, 0.1), mx: 1 }} />
               )}
               <Button 
                 onClick={() => handleTabChange(null)}
                 startIcon={<AddIcon sx={{ fontSize: 20 }} />}
                 sx={{ 
-                  height: 48, 
-                  px: { xs: 2, md: 3 }, 
+                  height: 52, 
+                  px: 4, 
                   borderRadius: 0,
-                  fontWeight: 900,
+                  fontWeight: 1000,
                   fontSize: '0.85rem',
-                  color: selectedOrderId === null ? 'primary.main' : 'text.secondary',
+                  color: selectedOrderId === null ? '#e9762b' : 'text.disabled',
                   borderBottom: selectedOrderId === null ? '3px solid' : 'none',
-                  borderColor: 'primary.main',
-                  bgcolor: selectedOrderId === null ? alpha(theme.palette.primary.main, 0.05) : 'transparent',
+                  borderColor: '#e9762b',
+                  bgcolor: selectedOrderId === null ? alpha('#e9762b', 0.05) : 'transparent',
                   textTransform: 'none',
                   whiteSpace: 'nowrap',
-                  transition: 'all 0.2s',
-                  '&:hover': { bgcolor: alpha(theme.palette.primary.main, 0.08) }
+                  '&:hover': { bgcolor: alpha('#e9762b', 0.08) }
                 }}
               >
-                New Order
+                NEW ORDER
               </Button>
             </>
           )}
@@ -1171,13 +1243,13 @@ const OrderDialog: React.FC<OrderDialogProps> = ({ open, onClose, table, initial
           onClose={() => setMobileSummaryOpen(false)}
           slotProps={{
             paper: {
-              sx: { borderTopLeftRadius: '24px', borderTopRightRadius: '24px', height: '70vh', zIndex: 1400 }
+              sx: { borderTopLeftRadius: '32px', borderTopRightRadius: '32px', height: '80vh', zIndex: 1400, boxShadow: '0 -10px 40px rgba(0,0,0,0.1)' }
             }
           }}
         >
-          <Box sx={{ display: 'flex', flexDirection: 'column', height: '100%', overflow: 'hidden', pb: 'env(safe-area-inset-bottom, 16px)' }}>
-            <Box sx={{ p: 1, display: 'flex', justifyContent: 'center', flexShrink: 0 }}>
-              <Box sx={{ width: 40, height: 4, bgcolor: '#e8e4d8', borderRadius: 2 }} />
+          <Box sx={{ display: 'flex', flexDirection: 'column', height: '100%', overflow: 'hidden', pb: 'env(safe-area-inset-bottom, 24px)' }}>
+            <Box sx={{ p: 2, display: 'flex', justifyContent: 'center', flexShrink: 0 }}>
+              <Box sx={{ width: 48, height: 6, bgcolor: alpha('#000', 0.1), borderRadius: 3 }} />
             </Box>
             {renderSummaryContent()}
             {renderQuickActions()}
@@ -1205,68 +1277,38 @@ const OrderDialog: React.FC<OrderDialogProps> = ({ open, onClose, table, initial
         onClose={() => setMoveTableOpen(false)}
         maxWidth="xs"
         fullWidth
-        slotProps={{
-          paper: { sx: { borderRadius: '16px' } }
-        }}
+        slotProps={{ paper: { sx: { borderRadius: '32px', p: 1 } } }}
       >
-        <DialogTitle sx={{ fontWeight: 900, pb: 0.5 }}>Move Order</DialogTitle>
+        <DialogTitle sx={{ fontWeight: 1000, pb: 1, fontSize: '1.5rem', letterSpacing: '-0.02em' }}>Move Order</DialogTitle>
         <DialogContent>
-          <Typography variant="caption" color="text.secondary" sx={{ mb: 2, display: 'block' }}>
-            Move Order #{order?.id} (Table {table?.number})
+          <Typography variant="body2" color="text.secondary" sx={{ mb: 4, fontWeight: 700 }}>
+            Transferring Order #{order?.id} from Table {table?.number}
           </Typography>
           
-          <Box sx={{ mb: 2 }}>
-             <Typography variant="overline" sx={{ fontWeight: 800, color: 'text.secondary', display: 'block', mb: 1 }}>GUESTS</Typography>
-             <Stack direction="row" spacing={2} sx={{ alignItems: 'center' }}>
-                <IconButton 
-                  size="small" 
-                  onClick={() => setMovePersons((p: number) => Math.max(1, p - 1))} 
-                  sx={{ 
-                    border: '1px solid #e8e4d8', 
-                    borderRadius: '50%', 
-                    p: 0.5,
-                    '&:hover': { bgcolor: alpha(theme.palette.primary.main, 0.05), borderColor: 'primary.main' }
-                  }}
-                >
-                  <RemoveIcon sx={{ fontSize: 16 }} />
-                </IconButton>
-                <Typography variant="h5" sx={{ fontWeight: 900, minWidth: 30, textAlign: 'center' }}>{movePersons}</Typography>
-                <IconButton 
-                  size="small" 
-                  onClick={() => setMovePersons((p: number) => p + 1)} 
-                  sx={{ 
-                    border: '1px solid #e8e4d8', 
-                    borderRadius: '50%', 
-                    p: 0.5,
-                    '&:hover': { bgcolor: alpha(theme.palette.primary.main, 0.05), borderColor: 'primary.main' }
-                  }}
-                >
-                  <AddIcon sx={{ fontSize: 16 }} />
-                </IconButton>
+          <Box sx={{ mb: 5 }}>
+             <Typography variant="overline" sx={{ fontWeight: 950, color: 'text.disabled', display: 'block', mb: 2, letterSpacing: '0.1em' }}>GUEST COUNT</Typography>
+             <Stack direction="row" spacing={3} sx={{ alignItems: 'center', justifyContent: 'center' }}>
+                <IconButton size="large" onClick={() => setMovePersons((p: number) => Math.max(1, p - 1))} sx={{ bgcolor: alpha('#000', 0.03), borderRadius: '16px' }}><RemoveIcon /></IconButton>
+                <Typography variant="h3" sx={{ fontWeight: 1000, minWidth: 60, textAlign: 'center' }}>{movePersons}</Typography>
+                <IconButton size="large" onClick={() => setMovePersons((p: number) => p + 1)} sx={{ bgcolor: alpha('#000', 0.03), borderRadius: '16px' }}><AddIcon /></IconButton>
              </Stack>
           </Box>
 
-          <Typography variant="overline" sx={{ fontWeight: 800, color: 'text.secondary', display: 'block', mb: 0.5 }}>TARGET TABLE</Typography>
+          <Typography variant="overline" sx={{ fontWeight: 950, color: 'text.disabled', display: 'block', mb: 2, letterSpacing: '0.1em' }}>SELECT TARGET TABLE</Typography>
           <Box 
             sx={{ 
               display: 'flex', 
-              gap: 1, 
+              gap: 1.5, 
               overflowX: 'auto', 
-              pb: 1, 
+              pb: 2, 
               pt: 0.5,
-              mx: -0.5,
-              px: 0.5,
-              '&::-webkit-scrollbar': { height: 4 },
-              '&::-webkit-scrollbar-thumb': { bgcolor: alpha(theme.palette.primary.main, 0.1), borderRadius: 2 }
+              '&::-webkit-scrollbar': { height: 6 },
+              '&::-webkit-scrollbar-thumb': { bgcolor: alpha('#e9762b', 0.2), borderRadius: 3 }
             }}
           >
             {allTables
               .filter((t: RestaurantTable) => t.id !== table?.id && t.is_active)
-              .sort((a: RestaurantTable, b: RestaurantTable) => {
-                 const aNum = parseInt(a.number) || 0;
-                 const bNum = parseInt(b.number) || 0;
-                 return aNum - bNum;
-              })
+              .sort((a: RestaurantTable, b: RestaurantTable) => (parseInt(a.number) || 0) - (parseInt(b.number) || 0))
               .map((t: RestaurantTable) => {
                 const availableCapacity = t.capacity - (t.current_occupancy || 0);
                 const hasCapacity = availableCapacity >= movePersons;
@@ -1275,61 +1317,33 @@ const OrderDialog: React.FC<OrderDialogProps> = ({ open, onClose, table, initial
                 return (
                   <Paper
                     key={t.id}
-                    elevation={isSelected ? 4 : 0}
+                    elevation={0}
                     onClick={() => hasCapacity && setSelectedTargetTable(t)}
                     sx={{
                       flexShrink: 0,
-                      minWidth: 90,
-                      p: 1,
-                      borderRadius: '12px',
+                      minWidth: 100,
+                      p: 2,
+                      borderRadius: '24px',
                       border: '2px solid',
-                      borderColor: isSelected ? 'primary.main' : (hasCapacity ? '#e8e4d8' : alpha(theme.palette.error.main, 0.1)),
+                      borderColor: isSelected ? '#e9762b' : (hasCapacity ? alpha(theme.palette.divider, 0.1) : alpha(theme.palette.error.main, 0.1)),
                       cursor: hasCapacity ? 'pointer' : 'not-allowed',
                       opacity: hasCapacity ? 1 : 0.6,
-                      bgcolor: isSelected ? alpha(theme.palette.primary.main, 0.05) : (hasCapacity ? 'white' : alpha(theme.palette.error.main, 0.02)),
-                      transform: isSelected ? 'translateY(-2px)' : 'none',
+                      bgcolor: isSelected ? alpha('#e9762b', 0.05) : 'white',
                       transition: 'all 0.2s',
                       textAlign: 'center',
-                      '&:hover': hasCapacity ? {
-                        borderColor: 'primary.main',
-                        bgcolor: alpha(theme.palette.primary.main, 0.02),
-                      } : {}
+                      '&:hover': hasCapacity ? { borderColor: '#e9762b', transform: 'translateY(-4px)' } : {}
                     }}
                   >
-                    <Typography variant="subtitle2" sx={{ fontWeight: 900, color: hasCapacity ? 'text.primary' : 'text.disabled', lineHeight: 1.2 }}>
-                      T{t.number}
-                    </Typography>
-                    <Typography variant="caption" sx={{ display: 'block', fontWeight: 700, color: hasCapacity ? 'primary.main' : 'error.main', fontSize: '0.65rem' }}>
-                      {t.current_occupancy || 0}/{t.capacity}
-                    </Typography>
-                    {!hasCapacity && (
-                      <Typography variant="caption" sx={{ color: 'error.main', fontSize: '0.55rem', fontWeight: 900, display: 'block' }}>
-                        FULL
-                      </Typography>
-                    )}
+                    <Typography variant="h6" sx={{ fontWeight: 1000, color: hasCapacity ? '#1a1a1a' : 'text.disabled' }}>T{t.number}</Typography>
+                    <Typography variant="caption" sx={{ display: 'block', fontWeight: 800, color: hasCapacity ? '#e9762b' : 'error.main' }}>{t.current_occupancy || 0}/{t.capacity}</Typography>
                   </Paper>
                 );
               })}
           </Box>
         </DialogContent>
-        <DialogActions sx={{ p: 2, pt: 0, justifyContent: 'space-between' }}>
-          <Button size="small" onClick={() => setMoveTableOpen(false)} sx={{ fontWeight: 800, color: 'text.secondary', fontSize: '0.75rem' }}>CANCEL</Button>
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-            {moving && <CircularProgress size={16} />}
-            <Button 
-              variant="contained" 
-              size="small" 
-              disabled={!selectedTargetTable || moving} 
-              onClick={() => setMoveFinalConfirmOpen(true)}
-              sx={{ 
-                fontWeight: 900, 
-                borderRadius: '8px',
-                px: 3
-              }}
-            >
-              MOVE ORDER
-            </Button>
-          </Box>
+        <DialogActions sx={{ p: 3, pt: 0, gap: 2 }}>
+          <Button onClick={() => setMoveTableOpen(false)} sx={{ fontWeight: 900, color: 'text.disabled' }}>CANCEL</Button>
+          <Button variant="contained" disabled={!selectedTargetTable || moving} onClick={() => setMoveFinalConfirmOpen(true)} sx={{ fontWeight: 950, borderRadius: '16px', px: 4, py: 1.5, bgcolor: '#e9762b', boxShadow: '0 8px 20px rgba(233, 118, 43, 0.2)' }}>MOVE ORDER</Button>
         </DialogActions>
       </Dialog>
 
@@ -1339,39 +1353,31 @@ const OrderDialog: React.FC<OrderDialogProps> = ({ open, onClose, table, initial
         onClose={() => setMoveFinalConfirmOpen(false)}
         maxWidth="xs"
         fullWidth
-        slotProps={{
-          paper: { sx: { borderRadius: '16px', p: 1 } }
-        }}
+        slotProps={{ paper: { sx: { borderRadius: '32px', p: 2 } } }}
       >
-        <DialogTitle sx={{ fontWeight: 900, textAlign: 'center' }}>Confirm Move</DialogTitle>
+        <DialogTitle sx={{ fontWeight: 1000, textAlign: 'center', fontSize: '1.5rem' }}>Confirm Move</DialogTitle>
         <DialogContent sx={{ textAlign: 'center' }}>
-          <Typography variant="body1" sx={{ mb: 1 }}>
-            Are you sure you want to move this order?
+          <Typography variant="body1" sx={{ mb: 3, fontWeight: 700 }}>
+            Are you sure you want to transfer this order?
           </Typography>
-          <Box sx={{ bgcolor: alpha(theme.palette.primary.main, 0.05), p: 2, borderRadius: '12px', mb: 2 }}>
-            <Typography variant="body2" sx={{ fontWeight: 800 }}>
+          <Box sx={{ bgcolor: alpha('#e9762b', 0.05), p: 3, borderRadius: '24px', mb: 1 }}>
+            <Typography variant="h6" sx={{ fontWeight: 1000, color: '#e9762b' }}>
               Table {table?.number} → Table {selectedTargetTable?.number}
             </Typography>
-            <Typography variant="caption" color="text.secondary">
+            <Typography variant="caption" sx={{ fontWeight: 800, color: 'text.secondary', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
               Order #{order?.id} • {movePersons} Guests
             </Typography>
           </Box>
         </DialogContent>
-        <DialogActions sx={{ justifyContent: 'center', pb: 2, gap: 2 }}>
-          <Button 
-            onClick={() => setMoveFinalConfirmOpen(false)}
-            sx={{ fontWeight: 800, color: 'text.secondary' }}
-          >
-            CANCEL
-          </Button>
+        <DialogActions sx={{ justifyContent: 'center', pb: 3, gap: 3 }}>
+          <Button onClick={() => setMoveFinalConfirmOpen(false)} sx={{ fontWeight: 900, color: 'text.disabled' }}>CANCEL</Button>
           <Button 
             variant="contained" 
-            color="primary"
             onClick={handleMoveTable}
             disabled={moving}
-            sx={{ fontWeight: 900, borderRadius: '10px', px: 4 }}
+            sx={{ fontWeight: 950, borderRadius: '16px', px: 6, py: 1.5, bgcolor: '#e9762b' }}
           >
-            {moving ? <CircularProgress size={20} color="inherit" /> : 'CONFIRM MOVE'}
+            {moving ? <CircularProgress size={24} color="inherit" /> : 'YES, MOVE IT'}
           </Button>
         </DialogActions>
       </Dialog>
@@ -1383,40 +1389,49 @@ const OrderDialog: React.FC<OrderDialogProps> = ({ open, onClose, table, initial
         onClose={() => setSelectedItemForDetail(null)}
         maxWidth="xs"
         fullWidth
-        slotProps={{
-          paper: { sx: { borderRadius: '24px', p: 1 } }
-        }}
+        slotProps={{ paper: { sx: { borderRadius: '32px', overflow: 'hidden' } } }}
       >
         {selectedItemForDetail && (
           <>
-            <DialogContent>
-              {selectedItemForDetail.image && (
-                <Box sx={{ width: '100%', height: 200, borderRadius: '16px', overflow: 'hidden', mb: 2 }}>
+            <Box sx={{ position: 'relative' }}>
+              {selectedItemForDetail.image ? (
+                <Box sx={{ width: '100%', height: 240 }}>
                   <img 
                     src={getImageUrl(selectedItemForDetail.image)} 
                     alt={selectedItemForDetail.name} 
                     style={{ width: '100%', height: '100%', objectFit: 'cover' }} 
                   />
                 </Box>
+              ) : (
+                <Box sx={{ width: '100%', height: 160, bgcolor: alpha('#e9762b', 0.05), display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  <FoodIcon sx={{ fontSize: 64, color: alpha('#e9762b', 0.2) }} />
+                </Box>
               )}
-              <Typography variant="h5" sx={{ fontWeight: 900, mb: 1 }}>{selectedItemForDetail.name}</Typography>
-              <Stack direction="row" spacing={1} sx={{ mb: 2 }}>
-                {selectedItemForDetail.category_name && <Chip label={selectedItemForDetail.category_name} size="small" />}
-                {selectedItemForDetail.code && <Chip label={`#${selectedItemForDetail.code}`} size="small" variant="outlined" />}
-              </Stack>
-              <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
+              <IconButton 
+                onClick={() => setSelectedItemForDetail(null)} 
+                sx={{ position: 'absolute', right: 16, top: 16, bgcolor: 'rgba(255,255,255,0.8)', '&:hover': { bgcolor: 'white' } }}
+              >
+                <ChevronLeftIcon sx={{ transform: 'rotate(-90deg)' }} />
+              </IconButton>
+            </Box>
+            <DialogContent sx={{ pt: 3 }}>
+              <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 2 }}>
+                <Box>
+                  <Typography variant="h4" sx={{ fontWeight: 1000, letterSpacing: '-0.02em', mb: 0.5 }}>{selectedItemForDetail.name}</Typography>
+                  <Chip label={selectedItemForDetail.category_name} size="small" sx={{ fontWeight: 900, bgcolor: alpha('#000', 0.05) }} />
+                </Box>
+                <Typography variant="h4" sx={{ fontWeight: 1000, color: '#e9762b' }}>₹{parseFloat(selectedItemForDetail.price).toFixed(0)}</Typography>
+              </Box>
+              <Typography variant="body1" color="text.secondary" sx={{ fontWeight: 600, lineHeight: 1.6 }}>
                 {selectedItemForDetail.description || 'No description available for this item.'}
               </Typography>
-              <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <Typography variant="h5" sx={{ fontWeight: 900, color: 'primary.main' }}>₹{selectedItemForDetail.price}</Typography>
-              </Box>
             </DialogContent>
-            <DialogActions sx={{ p: 2, pt: 0 }}>
+            <DialogActions sx={{ p: 3 }}>
               <Button 
                 fullWidth 
                 variant="contained" 
                 onClick={() => { handleAddItem(selectedItemForDetail); setSelectedItemForDetail(null); }} 
-                sx={{ py: 1.5, borderRadius: '12px', fontWeight: 900 }}
+                sx={{ py: 2, borderRadius: '18px', fontWeight: 950, fontSize: '1rem', bgcolor: '#e9762b' }}
               >
                 ADD TO ORDER
               </Button>

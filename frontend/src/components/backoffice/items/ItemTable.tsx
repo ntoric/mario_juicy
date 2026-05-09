@@ -36,6 +36,7 @@ import {
 } from "@mui/icons-material";
 import { Item } from "@/services/itemService";
 import { getImageUrl } from "@/lib/getImageUrl";
+import { alpha } from "@mui/material/styles";
 
 interface ItemTableProps {
   items: Item[];
@@ -46,8 +47,6 @@ interface ItemTableProps {
   canEdit?: boolean;
   canDelete?: boolean;
 }
-
-import { alpha } from "@mui/material/styles";
 
 export default function ItemTable({
   items,
@@ -82,11 +81,21 @@ export default function ItemTable({
 
   if (items.length === 0) {
     return (
-      <TableContainer component={Paper} sx={{ borderRadius: "7px", border: '1px solid #e8e4d8', boxShadow: 'none' }}>
-        <Box sx={{ p: 5, textAlign: "center" }}>
-          <Typography color="text.secondary" sx={{ fontWeight: 600 }}>No items found.</Typography>
+      <Box sx={{ 
+        p: 8, 
+        textAlign: "center", 
+        bgcolor: 'rgba(255,255,255,0.4)', 
+        borderRadius: '32px', 
+        border: '2px dashed',
+        borderColor: alpha(theme.palette.divider, 0.1),
+        backdropFilter: 'blur(10px)'
+      }}>
+        <Box sx={{ p: 3, borderRadius: '24px', bgcolor: alpha('#e9762b', 0.05), display: 'inline-flex', mb: 2 }}>
+          <ImageIcon sx={{ fontSize: 48, color: '#e9762b', opacity: 0.5 }} />
         </Box>
-      </TableContainer>
+        <Typography variant="h6" sx={{ fontWeight: 1000, color: 'text.secondary' }}>No items found</Typography>
+        <Typography variant="body2" color="text.secondary" sx={{ fontWeight: 600 }}>Your menu items will appear here once added.</Typography>
+      </Box>
     );
   }
 
@@ -95,34 +104,47 @@ export default function ItemTable({
       <Box sx={{ pb: { xs: 12, md: 2 } }}>
         <Grid container spacing={2}>
           {items.map((item) => (
-            <Grid size={{ xs: 12 }} key={item.id}>
+            <Grid size={{ xs: 12, sm: 6 }} key={item.id}>
               <MuiCard 
                 onClick={() => onViewDetails?.(item)}
                 sx={{ 
-                  borderRadius: '7px', 
+                  borderRadius: '24px', 
                   overflow: 'hidden', 
-                  border: '1px solid #e8e4d8',
-                  boxShadow: '0 2px 8px rgba(0,0,0,0.04)',
-                  '&:active': { bgcolor: 'rgba(0,0,0,0.02)' }
+                  border: '1px solid',
+                  borderColor: alpha(theme.palette.divider, 0.08),
+                  boxShadow: '0 4px 15px rgba(0,0,0,0.03)',
+                  bgcolor: 'rgba(255, 255, 255, 0.7)',
+                  backdropFilter: 'blur(10px)',
+                  transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+                  '&:hover': { transform: 'translateY(-4px)', boxShadow: '0 10px 25px rgba(0,0,0,0.06)', borderColor: '#e9762b' }
                 }}
               >
                 <Box sx={{ display: 'flex', position: 'relative' }}>
                   <Avatar
                     src={getImageUrl(item.image)}
                     variant="square"
-                    sx={{ width: 90, height: 90, bgcolor: "#FCF9EA" }}
+                    sx={{ width: 100, height: 100, bgcolor: alpha('#e9762b', 0.02), borderRight: '1px solid', borderColor: alpha(theme.palette.divider, 0.05) }}
                   >
-                    <ImageIcon sx={{ color: "#8d6e63" }} />
+                    <ImageIcon sx={{ color: alpha('#1a1a1a', 0.1) }} />
                   </Avatar>
-                  <Box sx={{ flexGrow: 1, p: 1.5, display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
+                  <Box sx={{ flexGrow: 1, p: 2, display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
                     <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
                       <Box>
-                        <Typography variant="subtitle2" sx={{ fontWeight: 800, lineHeight: 1.2, mb: 0.5 }}>
+                        <Typography variant="subtitle1" sx={{ fontWeight: 1000, lineHeight: 1.2, mb: 0.5, color: '#1a1a1a' }}>
                           {item.name}
                         </Typography>
-                        <Typography variant="caption" color="text.secondary" sx={{ display: 'block', fontWeight: 600 }}>
-                          {item.category_name || "General"}
-                        </Typography>
+                        <Chip 
+                          label={item.category_name || "General"} 
+                          size="small" 
+                          sx={{ 
+                            height: 18, 
+                            fontSize: '0.6rem', 
+                            fontWeight: 800, 
+                            borderRadius: '6px',
+                            bgcolor: alpha('#e9762b', 0.08),
+                            color: '#e9762b'
+                          }} 
+                        />
                       </Box>
                       <IconButton 
                         size="small" 
@@ -130,25 +152,25 @@ export default function ItemTable({
                           e.stopPropagation();
                           handleOpenMenu(e, item);
                         }}
-                        sx={{ mt: -0.5, mr: -0.5 }}
+                        sx={{ mt: -0.5, mr: -0.5, bgcolor: alpha('#000', 0.02) }}
                       >
                         <MoreVertIcon fontSize="small" />
                       </IconButton>
                     </Box>
                     <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end' }}>
-                      <Typography variant="subtitle1" sx={{ fontWeight: 900, color: '#e9762b' }}>
-                        ₹{parseFloat(item.price).toFixed(2)}
+                      <Typography variant="h6" sx={{ fontWeight: 1000, color: '#1a1a1a' }}>
+                        ₹{parseFloat(item.price).toFixed(0)}
                       </Typography>
                       <Chip
                         label={item.is_enabled ? "ACTIVE" : "DISABLED"}
                         size="small"
                         sx={{ 
-                          height: 18, 
+                          height: 20, 
                           fontSize: '0.6rem', 
-                          fontWeight: 900,
-                          borderRadius: '4px',
-                          bgcolor: item.is_enabled ? alpha('#2e7d32', 0.1) : alpha('#757575', 0.1),
-                          color: item.is_enabled ? '#2e7d32' : '#757575'
+                          fontWeight: 1000,
+                          borderRadius: '8px',
+                          bgcolor: item.is_enabled ? alpha('#10b981', 0.1) : alpha('#64748b', 0.1),
+                          color: item.is_enabled ? '#10b981' : '#64748b'
                         }}
                       />
                     </Box>
@@ -157,19 +179,13 @@ export default function ItemTable({
               </MuiCard>
             </Grid>
           ))}
-          <Grid size={{ xs: 12 }}>
-            <Box sx={{ height: { xs: 120, lg: 0 } }} />
-          </Grid>
         </Grid>
         
-        {/* Reuse the Desktop Menu for Mobile as well */}
         <Menu
           anchorEl={anchorEl}
           open={Boolean(anchorEl)}
           onClose={handleCloseMenu}
-          anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
-          transformOrigin={{ vertical: 'top', horizontal: 'right' }}
-          slotProps={{ paper: { sx: { borderRadius: '12px' } } }}
+          slotProps={{ paper: { sx: { borderRadius: '16px', boxShadow: '0 10px 35px rgba(0,0,0,0.1)', mt: 1 } } }}
         >
           {canEdit && (
             <MenuItem onClick={() => {
@@ -179,7 +195,7 @@ export default function ItemTable({
               <ListItemIcon sx={{ color: activeItem?.is_enabled ? 'warning.main' : 'success.main' }}>
                 {activeItem?.is_enabled ? <ToggleOffIcon fontSize="small" /> : <ToggleOnIcon fontSize="small" />}
               </ListItemIcon>
-              <ListItemText sx={{ '& .MuiTypography-root': { fontWeight: 600, fontSize: '0.85rem' } }}>
+              <ListItemText sx={{ '& .MuiTypography-root': { fontWeight: 800, fontSize: '0.85rem' } }}>
                 {activeItem?.is_enabled ? 'Disable' : 'Enable'}
               </ListItemText>
             </MenuItem>
@@ -192,7 +208,7 @@ export default function ItemTable({
               <ListItemIcon sx={{ color: 'primary.main' }}>
                 <EditIcon fontSize="small" />
               </ListItemIcon>
-              <ListItemText sx={{ '& .MuiTypography-root': { fontWeight: 600, fontSize: '0.85rem' } }}>Edit</ListItemText>
+              <ListItemText sx={{ '& .MuiTypography-root': { fontWeight: 800, fontSize: '0.85rem' } }}>Edit</ListItemText>
             </MenuItem>
           )}
           {canDelete && (
@@ -203,7 +219,7 @@ export default function ItemTable({
               <ListItemIcon sx={{ color: 'error.main' }}>
                 <DeleteIcon fontSize="small" />
               </ListItemIcon>
-              <ListItemText sx={{ '& .MuiTypography-root': { fontWeight: 600, fontSize: '0.85rem' } }}>Delete</ListItemText>
+              <ListItemText sx={{ '& .MuiTypography-root': { fontWeight: 800, fontSize: '0.85rem' } }}>Delete</ListItemText>
             </MenuItem>
           )}
         </Menu>
@@ -212,17 +228,24 @@ export default function ItemTable({
   }
 
   return (
-    <TableContainer component={Paper} sx={{ borderRadius: "7px", overflow: "hidden", border: '1px solid #e8e4d8', boxShadow: 'none' }}>
-      <Table>
-        <TableHead sx={{ backgroundColor: "#FCF9EA" }}>
+    <TableContainer sx={{ 
+      borderRadius: "32px", 
+      overflow: "hidden", 
+      border: '1px solid',
+      borderColor: alpha(theme.palette.divider, 0.08), 
+      boxShadow: '0 20px 60px rgba(0,0,0,0.04)',
+      bgcolor: 'rgba(255, 255, 255, 0.6)',
+      backdropFilter: 'blur(20px)'
+    }}>
+      <Table stickyHeader>
+        <TableHead>
           <TableRow>
-            <TableCell sx={{ color: "#e9762b", fontWeight: 800, fontSize: '0.75rem', textTransform: 'uppercase' }}>Image</TableCell>
-            <TableCell sx={{ color: "#e9762b", fontWeight: 800, fontSize: '0.75rem', textTransform: 'uppercase' }}>Name</TableCell>
-            <TableCell sx={{ color: "#e9762b", fontWeight: 800, fontSize: '0.75rem', textTransform: 'uppercase', display: { xs: "none", sm: "table-cell" } }}>Category</TableCell>
-            <TableCell sx={{ color: "#e9762b", fontWeight: 800, fontSize: '0.75rem', textTransform: 'uppercase', display: { xs: "none", md: "table-cell" } }}>Price</TableCell>
-            <TableCell sx={{ color: "#e9762b", fontWeight: 800, fontSize: '0.75rem', textTransform: 'uppercase' }}>Status</TableCell>
-            <TableCell sx={{ color: "#e9762b", fontWeight: 800, fontSize: '0.75rem', textTransform: 'uppercase', display: { xs: "none", md: "table-cell" }, textAlign: 'right' }}>Created</TableCell>
-            <TableCell sx={{ color: "#e9762b", fontWeight: 800, fontSize: '0.75rem', textTransform: 'uppercase', textAlign: "right" }}>Actions</TableCell>
+            <TableCell sx={{ fontWeight: 1000, py: 2.5, fontSize: '0.7rem', color: 'text.disabled', textTransform: 'uppercase', letterSpacing: '0.1em', pl: 4, bgcolor: 'white' }}>IMAGE</TableCell>
+            <TableCell sx={{ fontWeight: 1000, fontSize: '0.7rem', color: 'text.disabled', textTransform: 'uppercase', letterSpacing: '0.1em', bgcolor: 'white' }}>ITEM DETAILS</TableCell>
+            <TableCell sx={{ fontWeight: 1000, fontSize: '0.7rem', color: 'text.disabled', textTransform: 'uppercase', letterSpacing: '0.1em', bgcolor: 'white' }}>CATEGORY</TableCell>
+            <TableCell sx={{ fontWeight: 1000, fontSize: '0.7rem', color: 'text.disabled', textTransform: 'uppercase', letterSpacing: '0.1em', bgcolor: 'white' }}>PRICE</TableCell>
+            <TableCell sx={{ fontWeight: 1000, fontSize: '0.7rem', color: 'text.disabled', textTransform: 'uppercase', letterSpacing: '0.1em', bgcolor: 'white' }}>STATUS</TableCell>
+            <TableCell sx={{ fontWeight: 1000, fontSize: '0.7rem', color: 'text.disabled', textTransform: 'uppercase', letterSpacing: '0.1em', textAlign: "right", pr: 4, bgcolor: 'white' }}>ACTIONS</TableCell>
           </TableRow>
         </TableHead>
         <TableBody>
@@ -230,88 +253,92 @@ export default function ItemTable({
             <TableRow 
                 key={item.id} 
                 hover 
-                onClick={() => isMobile && onViewDetails(item)}
                 sx={{ 
-                    cursor: isMobile ? 'pointer' : 'default',
-                    '&:hover': {
-                        bgcolor: 'rgba(0,0,0,0.01) !important'
-                    }
+                  transition: 'all 0.2s ease',
+                  '&:hover': { bgcolor: alpha('#e9762b', 0.02) },
+                  '& .MuiTableCell-root': { py: 2, borderBottom: '1px solid', borderColor: alpha(theme.palette.divider, 0.04) }
                 }}
             >
-              <TableCell sx={{ py: 1 }}>
+              <TableCell sx={{ pl: 4 }}>
                 <Avatar
                   src={getImageUrl(item.image)}
                   variant="rounded"
-                  sx={{ width: 42, height: 42, bgcolor: "#FCF9EA", border: "1px solid #e8e4d8", borderRadius: '7px' }}
+                  sx={{ 
+                    width: 54, 
+                    height: 54, 
+                    bgcolor: "white", 
+                    border: "1px solid",
+                    borderColor: alpha(theme.palette.divider, 0.08), 
+                    borderRadius: '16px',
+                    boxShadow: '0 4px 12px rgba(0,0,0,0.03)'
+                  }}
                 >
-                  <ImageIcon sx={{ color: "#8d6e63", fontSize: 18 }} />
+                  <ImageIcon sx={{ color: alpha('#1a1a1a', 0.1), fontSize: 24 }} />
                 </Avatar>
               </TableCell>
-              <TableCell sx={{ py: 1 }}>
-                <Typography variant="body2" sx={{ fontWeight: 700, color: 'text.primary' }}>
+              <TableCell>
+                <Typography variant="body1" sx={{ fontWeight: 1000, color: '#1a1a1a', fontSize: '1rem', letterSpacing: '-0.01em' }}>
                   {item.name}
                 </Typography>
                 {item.code && (
-                  <Typography variant="caption" sx={{ color: 'text.secondary', fontWeight: 600 }}>
-                    CODE: {item.code}
+                  <Typography variant="caption" sx={{ color: 'text.disabled', fontWeight: 800, fontSize: '0.7rem', letterSpacing: '0.05em' }}>
+                    #{item.code.toUpperCase()}
                   </Typography>
                 )}
               </TableCell>
-              <TableCell sx={{ display: { xs: "none", sm: "table-cell" }, py: 1 }}>
+              <TableCell>
                 <Chip 
-                  label={item.category_name || "General"} 
+                  label={(item.category_name || "General").toUpperCase()} 
                   size="small" 
                   sx={{ 
-                    height: 20, 
+                    height: 24, 
                     fontSize: '0.65rem', 
-                    fontWeight: 700, 
-                    borderRadius: '7px',
-                    bgcolor: alpha('#000', 0.05)
+                    fontWeight: 1000, 
+                    borderRadius: '10px',
+                    bgcolor: alpha('#e9762b', 0.06),
+                    color: '#e9762b',
+                    border: '1px solid',
+                    borderColor: alpha('#e9762b', 0.1)
                   }} 
                 />
               </TableCell>
-              <TableCell sx={{ display: { xs: "none", md: "table-cell" }, py: 1 }}>
-                <Typography variant="body2" sx={{ fontWeight: 800, color: '#e9762b' }}>
-                  ₹{parseFloat(item.price).toFixed(2)}
+              <TableCell>
+                <Typography variant="body1" sx={{ fontWeight: 1000, color: '#1a1a1a', fontSize: '1.1rem' }}>
+                  ₹{parseFloat(item.price).toFixed(0)}
                 </Typography>
               </TableCell>
-              <TableCell sx={{ py: 1 }}>
+              <TableCell>
                 <Chip
                     label={item.is_enabled ? "ACTIVE" : "DISABLED"}
                     size="small"
                     sx={{ 
-                        fontWeight: 900, 
-                        height: 20,
-                        fontSize: '0.6rem',
-                        borderRadius: '4px',
-                        bgcolor: item.is_enabled ? alpha('#2e7d32', 0.1) : alpha('#757575', 0.1),
-                        color: item.is_enabled ? '#2e7d32' : '#757575'
+                        fontWeight: 1000, 
+                        height: 26,
+                        px: 1,
+                        fontSize: '0.65rem',
+                        borderRadius: '10px',
+                        bgcolor: item.is_enabled ? alpha('#10b981', 0.1) : alpha('#64748b', 0.1),
+                        color: item.is_enabled ? '#10b981' : '#64748b',
+                        border: '1px solid',
+                        borderColor: item.is_enabled ? alpha('#10b981', 0.2) : alpha('#64748b', 0.2),
                     }}
                 />
               </TableCell>
-              <TableCell sx={{ display: { xs: "none", md: "table-cell" }, py: 1, textAlign: 'right' }}>
-                <Typography variant="caption" sx={{ color: 'text.secondary', fontWeight: 600, fontSize: '0.7rem' }}>
-                    {formatDate(item.created_at)}
-                </Typography>
-              </TableCell>
-              <TableCell align="right" sx={{ py: 1 }}>
-                {/* Desktop View Actions */}
-                <Box 
-                    sx={{ display: { xs: "none", lg: "flex" }, justifyContent: "flex-end", gap: 0.5 }}
-                    onClick={(e) => e.stopPropagation()}
-                >
+              <TableCell align="right" sx={{ pr: 4 }}>
+                <Box sx={{ display: "flex", justifyContent: "flex-end", gap: 1.5 }}>
                   {canEdit && (
                     <Tooltip title="Edit Item">
                       <IconButton
                         size="small"
                         onClick={() => onEdit(item)}
                         sx={{ 
-                          bgcolor: alpha('#000', 0.03), 
-                          borderRadius: '7px',
-                          '&:hover': { bgcolor: alpha('#000', 0.08) }
+                          bgcolor: alpha('#e9762b', 0.05), 
+                          color: '#e9762b', 
+                          borderRadius: '12px',
+                          '&:hover': { bgcolor: '#e9762b', color: 'white' }
                         }}
                       >
-                        <EditIcon fontSize="small" />
+                        <EditIcon sx={{ fontSize: 18 }} />
                       </IconButton>
                     </Tooltip>
                   )}
@@ -321,30 +348,15 @@ export default function ItemTable({
                         size="small"
                         onClick={() => onDelete(item)}
                         sx={{ 
-                          color: 'error.main',
-                          bgcolor: alpha('#d32f2f', 0.05), 
-                          borderRadius: '7px',
-                          '&:hover': { bgcolor: alpha('#d32f2f', 0.1) }
+                          color: '#ef4444',
+                          bgcolor: alpha('#ef4444', 0.05), 
+                          borderRadius: '12px',
+                          '&:hover': { bgcolor: '#ef4444', color: 'white' }
                         }}
                       >
-                        <DeleteIcon fontSize="small" />
+                        <DeleteIcon sx={{ fontSize: 18 }} />
                       </IconButton>
                     </Tooltip>
-                  )}
-                </Box>
-
-                {/* Mobile/Tablet View Actions (Dropdown) */}
-                <Box 
-                    sx={{ display: { xs: "flex", lg: "none" }, justifyContent: "flex-end" }}
-                    onClick={(e) => e.stopPropagation()}
-                >
-                  {(canEdit || canDelete) && (
-                    <IconButton
-                      size="small"
-                      onClick={(e) => handleOpenMenu(e, item)}
-                    >
-                      <MoreVertIcon />
-                    </IconButton>
                   )}
                 </Box>
               </TableCell>
@@ -357,9 +369,7 @@ export default function ItemTable({
         anchorEl={anchorEl}
         open={Boolean(anchorEl)}
         onClose={handleCloseMenu}
-        anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
-        transformOrigin={{ vertical: 'top', horizontal: 'right' }}
-        slotProps={{ paper: { sx: { borderRadius: '12px' } } }}
+        slotProps={{ paper: { sx: { borderRadius: '16px', boxShadow: '0 10px 35px rgba(0,0,0,0.1)', mt: 1 } } }}
       >
         {canEdit && (
           <MenuItem onClick={() => {
@@ -369,7 +379,7 @@ export default function ItemTable({
             <ListItemIcon sx={{ color: activeItem?.is_enabled ? 'warning.main' : 'success.main' }}>
               {activeItem?.is_enabled ? <ToggleOffIcon fontSize="small" /> : <ToggleOnIcon fontSize="small" />}
             </ListItemIcon>
-            <ListItemText sx={{ '& .MuiTypography-root': { fontWeight: 600, fontSize: '0.85rem' } }}>
+            <ListItemText sx={{ '& .MuiTypography-root': { fontWeight: 800, fontSize: '0.85rem' } }}>
               {activeItem?.is_enabled ? 'Disable' : 'Enable'}
             </ListItemText>
           </MenuItem>
@@ -382,7 +392,7 @@ export default function ItemTable({
             <ListItemIcon sx={{ color: 'primary.main' }}>
               <EditIcon fontSize="small" />
             </ListItemIcon>
-            <ListItemText sx={{ '& .MuiTypography-root': { fontWeight: 600, fontSize: '0.85rem' } }}>Edit</ListItemText>
+            <ListItemText sx={{ '& .MuiTypography-root': { fontWeight: 800, fontSize: '0.85rem' } }}>Edit</ListItemText>
           </MenuItem>
         )}
         {canDelete && (
@@ -393,7 +403,7 @@ export default function ItemTable({
             <ListItemIcon sx={{ color: 'error.main' }}>
               <DeleteIcon fontSize="small" />
             </ListItemIcon>
-            <ListItemText sx={{ '& .MuiTypography-root': { fontWeight: 600, fontSize: '0.85rem' } }}>Delete</ListItemText>
+            <ListItemText sx={{ '& .MuiTypography-root': { fontWeight: 800, fontSize: '0.85rem' } }}>Delete</ListItemText>
           </MenuItem>
         )}
       </Menu>

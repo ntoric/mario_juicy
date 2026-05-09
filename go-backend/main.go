@@ -42,7 +42,7 @@ func main() {
 	defer sentry.Flush(2 * time.Second)
 
 	config.ConnectDatabase()
-	config.DB.AutoMigrate(&models.User{}, &models.Group{}, &models.MenuPermission{}, &models.SupportSettings{})
+	config.DB.AutoMigrate(&models.User{}, &models.Group{}, &models.SupportSettings{}, &models.Store{}, &models.Notification{}, &models.BusinessConfig{})
 	seedGroups()
 	seedSupportSettings()
 
@@ -88,6 +88,8 @@ func main() {
 	}
 
 	utils.Info("Server starting", zap.String("port", port))
+	
+
 	r.Run(":" + port)
 }
 
@@ -111,3 +113,5 @@ func seedSupportSettings() {
 		})
 	}
 }
+
+

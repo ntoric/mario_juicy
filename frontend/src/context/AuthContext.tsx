@@ -28,6 +28,7 @@ interface AuthContextType {
   isRole: (role: string) => boolean;
   setActiveStore: (id: number | null) => void;
   refreshActiveStore: () => Promise<void>;
+  fetchProfile: () => Promise<void>;
   logout: () => void;
 }
 
@@ -118,7 +119,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
-  const hasPermission = (permission: string) => {
+  const hasPermission = (permission: string): boolean => {
     if (!user) return false;
     const role = user.primary_role?.toUpperCase();
     if (role === 'SUPER_ADMIN') return true;
@@ -132,8 +133,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       'view_table_layout_access': 'tables_access',
       'access_to_payment_management': 'billing',
       'restaurants.view_order': 'live_order',
+      'restaurants.add_order': 'tables_access',
+      'restaurants.change_order': 'live_order',
+      'restaurants.delete_order': 'live_order',
       'restaurants.view_reservation': 'reservation',
+      'restaurants.add_reservation': 'reservation',
+      'restaurants.change_reservation': 'reservation',
       'restaurants.view_invoice': 'billing',
+      'restaurants.view_table': 'tables_access',
       'catalogs.view_category': 'categories',
       'catalogs.add_category': 'categories',
       'catalogs.change_category': 'categories',
@@ -147,14 +154,27 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       'users.change_user': 'users_management',
       'users.delete_user': 'users_management',
       'core.view_taxconfiguration': 'store_settings',
+      'core.change_taxconfiguration': 'store_settings',
     };
 
     const mappedPermission = legacyMapping[permission];
     if (mappedPermission && user.allowed_menus?.includes(mappedPermission)) return true;
 
-    // Special case for take order: can be either tables or parcel
+    // Special case for take order: can be either tables or parcel or live order
     if (permission === 'access_to_take_order') {
-        return (user.allowed_menus?.includes('tables_access') || user.allowed_menus?.includes('parcel_order')) ?? false;
+        return (
+          hasPermission('tables_access') || 
+          hasPermission('parcel_order') || 
+          hasPermission('live_order')
+        );
+    }
+
+    // Reverse check: if we are checking for a modern key (e.g. 'tables_access'),
+    // see if the user has any of the legacy permissions that map to it.
+    for (const [legacyKey, modernKey] of Object.entries(legacyMapping)) {
+      if (modernKey === permission && user.permissions.includes(legacyKey)) {
+        return true;
+      }
     }
 
     return !!(user.permissions.includes(permission) || user.permissions.includes(`users.${permission}`));
@@ -204,6 +224,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       storeLoading,
       setActiveStore,
       refreshActiveStore,
+      fetchProfile,
       logout
     }}>
       {children}

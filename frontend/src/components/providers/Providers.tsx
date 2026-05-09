@@ -8,6 +8,7 @@ import { backofficeTheme } from "@/theme/backofficeTheme";
 import { WebSocketProvider } from '../../context/WebSocketContext';
 import { ToastProvider } from '../../context/ToastContext';
 import { AuthProvider } from '../../context/AuthContext';
+import { ConfirmProvider } from '../../context/ConfirmContext';
 
 export function Providers({ children }: { children: React.ReactNode }) {
   return (
@@ -15,11 +16,13 @@ export function Providers({ children }: { children: React.ReactNode }) {
       <ThemeProvider theme={backofficeTheme}>
         <CssBaseline />
         <ToastProvider>
-          <AuthProvider>
-            <WebSocketProvider>
-              {children}
-            </WebSocketProvider>
-          </AuthProvider>
+          <ConfirmProvider>
+            <AuthProvider>
+              <WebSocketProvider>
+                {children}
+              </WebSocketProvider>
+            </AuthProvider>
+          </ConfirmProvider>
         </ToastProvider>
       </ThemeProvider>
     </AppRouterCacheProvider>

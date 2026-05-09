@@ -62,6 +62,7 @@ import {
   Notifications as NotificationsIcon,
   Add as AddIcon,
   ContactSupport as SupportIcon,
+  SettingsApplications as SettingsApplicationsIcon,
 } from "@mui/icons-material";
 import Fab from "@mui/material/Fab";
 import { restaurantService, Table } from "@/services/restaurantService";
@@ -309,6 +310,44 @@ export default function BackofficeLayout({ children }: { children: React.ReactNo
   const [fetchingTables, setFetchingTables] = useState(false);
   const [isParcel, setIsParcel] = useState(false);
 
+  // Pull to refresh logic
+  const [pullDistance, setPullDistance] = useState(0);
+  const [isRefreshing, setIsRefreshing] = useState(false);
+  const touchStartRef = useRef<number | null>(null);
+  const contentRef = useRef<HTMLDivElement>(null);
+
+  const handleTouchStart = (e: React.TouchEvent) => {
+    if (contentRef.current && contentRef.current.scrollTop === 0) {
+      touchStartRef.current = e.touches[0].clientY;
+    }
+  };
+
+  const handleTouchMove = (e: React.TouchEvent) => {
+    if (touchStartRef.current !== null && contentRef.current && contentRef.current.scrollTop === 0) {
+      const currentY = e.touches[0].clientY;
+      const distance = currentY - touchStartRef.current;
+      if (distance > 0) {
+        setPullDistance(Math.min(distance * 0.5, 80));
+      }
+    }
+  };
+
+  const handleTouchEnd = () => {
+    if (pullDistance > 50) {
+      handleRefresh();
+    }
+    setPullDistance(0);
+    touchStartRef.current = null;
+  };
+
+  const handleRefresh = () => {
+    setIsRefreshing(true);
+    // Give a small delay for visual feedback then reload
+    setTimeout(() => {
+      window.location.reload();
+    }, 500);
+  };
+
   const handleOpenQuickOrder = async () => {
     setIsParcel(false);
     setSelectedTableForOrder(null);
@@ -407,7 +446,7 @@ export default function BackofficeLayout({ children }: { children: React.ReactNo
         { text: "Parcel", icon: <ShoppingBagIcon />, path: "/backoffice/restaurant/takeaway", menuKey: "parcel_order" },
         { text: "Reservations", icon: <ReservationIcon />, path: "/backoffice/restaurant/reservations", menuKey: "reservation" },
         { text: "Live Orders", icon: <OrdersIcon />, path: "/backoffice/restaurant/orders", menuKey: "live_order" },
-        { text: "Kitchen Display", icon: <KitchenIcon />, path: "/backoffice/restaurant/kitchen", menuKey: "live_order" },
+        { text: "Kitchen Display", icon: <KitchenIcon />, path: "/backoffice/restaurant/kitchen", menuKey: "kitchen_display" },
         { text: "Billing", icon: <ReceiptIcon />, path: "/backoffice/billing", menuKey: "billing" },
       ],
     },
@@ -421,7 +460,7 @@ export default function BackofficeLayout({ children }: { children: React.ReactNo
     {
       label: "Analytics",
       items: [
-        { text: "Reports", icon: <BarChartIcon />, path: "/backoffice/reports", menuKey: "reports", permission: "SUPER_ADMIN" },
+        { text: "Reports", icon: <BarChartIcon />, path: "/backoffice/reports", menuKey: "reports" },
       ],
     },
     {
@@ -429,8 +468,8 @@ export default function BackofficeLayout({ children }: { children: React.ReactNo
       items: [
         { text: "Stores", icon: <StoreIcon />, path: "/backoffice/stores", menuKey: "stores", permission: "SUPER_ADMIN" },
         { text: "Users", icon: <PeopleIcon />, path: "/backoffice/users", menuKey: "users_management" },
-        { text: "Menu Permissions", icon: <LockPersonIcon />, path: "/backoffice/settings/menu-permissions", menuKey: "menu_permissions", permission: "SUPER_ADMIN" },
-        { text: "Settings", icon: <SettingsIcon />, path: "/backoffice/settings", menuKey: "store_settings" },
+        { text: "Business Config", icon: <SettingsApplicationsIcon />, path: "/backoffice/settings/system", menuKey: "settings_system" },
+        { text: "System Config", icon: <SettingsIcon />, path: "/backoffice/settings", menuKey: "store_settings", permission: "SUPER_ADMIN" },
         { text: "Support", icon: <SupportIcon />, path: "/backoffice/support", menuKey: "support" },
       ],
     },
@@ -448,13 +487,49 @@ export default function BackofficeLayout({ children }: { children: React.ReactNo
         if (item.menuKey === 'kitchen_display' && !activeStore.is_kitchen_step_enabled) return false;
       }
 
-      // 2. Role/Permission based filtering
+      // 2. Role-based filtering
       if (isRole("SUPER_ADMIN")) return true;
       if (item.permission === "SUPER_ADMIN") return false;
 
-      // Dashboard and Support are visible to all authenticated users
-      if (item.menuKey === 'dashboard' || item.menuKey === 'support') return true;
+      // Dashboard: Administrator, Manager
+      if (item.menuKey === 'dashboard') {
+        return isRole('ADMIN') || isRole('MANAGER');
+      }
 
+      // Table Map, Parcel, Reservation, Live Orders, Kitchen Display: All roles (toggles already handled above)
+      if (['tables_access', 'parcel_order', 'reservation', 'live_order', 'kitchen_display'].includes(item.menuKey || '')) {
+        return true;
+      }
+
+      // Billing: Administrator, Cashier
+      if (item.menuKey === 'billing') {
+        return isRole('ADMIN') || isRole('CASHIER');
+      }
+
+      // Categories, Items: Administrator, Manager, Cashier
+      if (['categories', 'items'].includes(item.menuKey || '')) {
+        return isRole('ADMIN') || isRole('MANAGER') || isRole('CASHIER');
+      }
+
+      // Reports: Administrator, Manager
+      if (item.menuKey === 'reports') {
+        return isRole('ADMIN') || isRole('MANAGER');
+      }
+
+      // Users: Administrator, Manager
+      if (item.menuKey === 'users_management') {
+        return isRole('ADMIN') || isRole('MANAGER');
+      }
+
+      // Business Config: Administrator, Cashier
+      if (item.menuKey === 'settings_system') {
+        return isRole('ADMIN') || isRole('CASHIER');
+      }
+
+      // Support: All roles
+      if (item.menuKey === 'support') return true;
+
+      // Default to permission check or existing allowed_menus
       if (item.menuKey && user?.allowed_menus) {
         return user.allowed_menus.includes(item.menuKey);
       }
@@ -527,26 +602,32 @@ export default function BackofficeLayout({ children }: { children: React.ReactNo
           background: alpha(theme.palette.text.primary, 0.1),
         }
       }}>
-        {filteredSections.map((section) => (
-          <Box key={section.label}>
-            <SectionLabel label={section.label} expanded={expanded} />
-            <List disablePadding>
-              {section.items.map((item) => (
-                <SidebarItem
-                  key={item.path}
-                  item={item}
-                  pathname={pathname}
-                  expanded={expanded}
-                  onClick={() => {
-                    if (!open && !isMobile) setOpen(true);
-                    router.push(item.path);
-                    if (isMobile) setMobileOpen(false);
-                  }}
-                />
-              ))}
-            </List>
+        {loading ? (
+          <Box sx={{ display: 'flex', justifyContent: 'center', p: 4 }}>
+            <CircularProgress size={24} />
           </Box>
-        ))}
+        ) : (
+          filteredSections.map((section) => (
+            <Box key={section.label}>
+              <SectionLabel label={section.label} expanded={expanded} />
+              <List disablePadding>
+                {section.items.map((item) => (
+                  <SidebarItem
+                    key={item.path}
+                    item={item}
+                    pathname={pathname}
+                    expanded={expanded}
+                    onClick={() => {
+                      if (!open && !isMobile) setOpen(true);
+                      router.push(item.path);
+                      if (isMobile) setMobileOpen(false);
+                    }}
+                  />
+                ))}
+              </List>
+            </Box>
+          ))
+        )}
       </Box>
 
       <Box sx={{ p: 2, pb: isMobile ? 'calc(16px + env(safe-area-inset-bottom))' : 4 }}>
@@ -704,6 +785,22 @@ export default function BackofficeLayout({ children }: { children: React.ReactNo
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
               {!isMobile && <StoreSwitcher />}
 
+              {!isMobile && (
+                <Tooltip title="Refresh Application">
+                  <IconButton
+                    onClick={handleRefresh}
+                    sx={{
+                      bgcolor: theme.palette.background.default,
+                      borderRadius: '7px',
+                      border: '1px solid rgba(0,0,0,0.03)',
+                      '&:hover': { bgcolor: alpha(theme.palette.primary.main, 0.08) }
+                    }}
+                  >
+                    <RefreshIcon sx={{ color: '#94a3b8', fontSize: 22, animation: isRefreshing ? 'spin 1s linear infinite' : 'none' }} />
+                  </IconButton>
+                </Tooltip>
+              )}
+
               <IconButton sx={{
                 bgcolor: { xs: alpha('#ffffff', 0.15), md: theme.palette.background.default },
                 borderRadius: '7px',
@@ -781,6 +878,10 @@ export default function BackofficeLayout({ children }: { children: React.ReactNo
         </AppBar>
 
         <Box
+          ref={contentRef}
+          onTouchStart={handleTouchStart}
+          onTouchMove={handleTouchMove}
+          onTouchEnd={handleTouchEnd}
           sx={{
             position: "relative",
             flexGrow: 1,
@@ -793,8 +894,37 @@ export default function BackofficeLayout({ children }: { children: React.ReactNo
             flexDirection: 'column'
           }}
         >
+          {/* Pull to refresh indicator */}
+          <Box sx={{
+            position: 'absolute',
+            top: 0,
+            left: 0,
+            right: 0,
+            height: pullDistance,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            overflow: 'hidden',
+            transition: 'height 0.1s ease',
+            zIndex: 10,
+            bgcolor: alpha(theme.palette.primary.main, 0.05)
+          }}>
+            <RefreshIcon sx={{
+              color: theme.palette.primary.main,
+              transform: `rotate(${pullDistance * 4}deg)`,
+              opacity: pullDistance / 50
+            }} />
+          </Box>
+
           {children}
         </Box>
+
+        <style dangerouslySetInnerHTML={{ __html: `
+          @keyframes spin {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+          }
+        ` }} />
 
         {isMobile && (
           <>

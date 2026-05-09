@@ -28,9 +28,6 @@ func SetupRoutes(r *gin.Engine, hub *websocket.Hub) {
 			perms := users.Group("/", middleware.AuthMiddleware(), middleware.StoreMiddleware())
 			{
 				perms.GET("/groups/", controllers.GetGroups)
-				perms.GET("/menu-permissions/", controllers.GetMenuPermissions)
-				perms.POST("/menu-permissions/", controllers.CreateMenuPermission)
-				perms.PATCH("/menu-permissions/:id/", controllers.UpdateMenuPermission)
 			}
 		}
 
@@ -42,6 +39,7 @@ func SetupRoutes(r *gin.Engine, hub *websocket.Hub) {
 			stores.PATCH("/:id/", middleware.StoreMiddleware(), middleware.SuperuserMiddleware(), controllers.UpdateStore)
 			stores.DELETE("/:id/", middleware.SuperuserMiddleware(), controllers.DeleteStore)
 		}
+
 
 		// Catalog, Restaurant, Core, Reports all need Store isolation
 		protected := api.Group("/", middleware.AuthMiddleware(), middleware.StoreMiddleware())
@@ -119,12 +117,21 @@ func SetupRoutes(r *gin.Engine, hub *websocket.Hub) {
 			{
 				core.GET("/tax-configuration/", controllers.GetTaxConfiguration)
 				core.PUT("/tax-configuration/", middleware.PermissionMiddleware("store_settings"), controllers.UpdateTaxConfiguration)
+				core.GET("/business-config/", controllers.GetBusinessConfig)
+				core.POST("/business-config/", middleware.PermissionMiddleware("store_settings"), controllers.UpdateBusinessConfig)
 				core.POST("/system-reset/", middleware.SuperuserMiddleware(), controllers.SystemReset)
 			}
 
 			reports := protected.Group("/reports")
 			{
 				reports.GET("/dashboard/", controllers.GetDashboardStats)
+			}
+
+			notifications := protected.Group("/notifications")
+			{
+				notifications.GET("/", controllers.GetNotifications)
+				notifications.POST("/mark-all-read/", controllers.MarkAllNotificationsAsRead)
+				notifications.PATCH("/:id/mark-read/", controllers.MarkNotificationAsRead)
 			}
 		}
 

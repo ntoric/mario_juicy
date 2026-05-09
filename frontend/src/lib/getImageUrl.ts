@@ -15,7 +15,7 @@ export const getImageUrl = (path: string | null | undefined): string => {
   }
 
   // Deriving the base URL from the environment variable or fallback
-  const apiBase = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8020/api';
+  const apiBase = process.env.NEXT_PUBLIC_API_URL || 'https://mario-api.ntoric.com/api';
   const root = apiBase.split('/api')[0];
 
   // Check if it's an absolute URL (starts with http)

@@ -1,0 +1,18 @@
+.{
+  .artifact = "mario-pos-0.1.0-windows-ReleaseFast",
+  .target = "windows",
+  .version = "1.0.0",
+  .app_id = "com.ntoric.mario-pos",
+  .executable = "mario-pos.exe",
+  .optimize = "ReleaseFast",
+  .web_engine = "system",
+  .signing = "none",
+  .asset_count = 0,
+  .frontend = .{ .dist = "out", .entry = "index.html", .spa_fallback = true },
+
+  .capabilities = .{
+    "webview",
+    "js_bridge",
+
+  },
+}

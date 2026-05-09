@@ -1,43 +1,47 @@
-const { app, BrowserWindow, Menu, protocol, net, ipcMain } = require('electron');
+const { app, BrowserWindow, Menu, protocol, net, ipcMain, session } = require('electron');
 const path = require('path');
 const fs = require('fs');
 const { spawn } = require('child_process');
+const { pathToFileURL } = require('url');
 
-const isDev = !app.isPackaged;
+// Robust isDev check
+const isDev = !app.isPackaged || process.env.ELECTRON_IS_DEV === '1';
 let printerProcess = null;
 
 function startPrinterService() {
   const binaryName = process.platform === 'win32' ? 'mario-printer.exe' : 'mario-printer';
-  
+
   // In development, look in the sibling directory
   // In production, electron-builder will put it in resources/bin
-  const printerPath = isDev 
+  const printerPath = isDev
     ? path.join(__dirname, '..', 'mario-printer', binaryName)
     : path.join(process.resourcesPath, 'bin', binaryName);
 
   console.log('Starting printer service from:', printerPath);
 
   if (fs.existsSync(printerPath)) {
+    console.log('Spawning printer service...');
     try {
       printerProcess = spawn(printerPath, [], {
         stdio: 'inherit',
         windowsHide: true,
-        // Ensure the process is killed when the main process exits
         detached: false
       });
 
       printerProcess.on('error', (err) => {
-        console.error('Failed to start printer service:', err);
+        console.error('[Printer Service Error]:', err);
       });
 
       printerProcess.on('exit', (code) => {
-        console.log(`Printer service exited with code ${code}`);
+        console.log(`[Printer Service] Exited with code ${code}`);
       });
+
+      console.log('[Printer Service] Started successfully');
     } catch (err) {
-      console.error('Error spawning printer service:', err);
+      console.error('[Printer Service Spawn Error]:', err);
     }
   } else {
-    console.warn('Printer service binary not found at', printerPath);
+    console.error('[Printer Service] Binary NOT found at:', printerPath);
   }
 }
 
@@ -55,7 +59,16 @@ function stopPrinterService() {
 
 // Register the custom protocol as privileged
 protocol.registerSchemesAsPrivileged([
-  { scheme: 'app', privileges: { standard: true, secure: true, supportFetchAPI: true } }
+  {
+    scheme: 'app',
+    privileges: {
+      standard: true,
+      secure: true,
+      supportFetchAPI: true,
+      bypassCSP: false,
+      allowServiceWorkers: true
+    }
+  }
 ]);
 
 let mainWindow;
@@ -69,9 +82,10 @@ function createWindow() {
       nodeIntegration: false,
       contextIsolation: true,
       preload: path.join(__dirname, 'preload.js'),
+      sandbox: true,
     },
     title: "Mario Juicy",
-    icon: path.join(__dirname, 'public/favicon.ico'),
+    icon: path.join(__dirname, 'public/logo.png'),
     backgroundColor: '#E9762B',
     titleBarStyle: process.platform === 'darwin' ? 'hiddenInset' : 'default',
     autoHideMenuBar: true,
@@ -81,12 +95,27 @@ function createWindow() {
     Menu.setApplicationMenu(null);
   }
 
-  // Handle loading with custom protocol in production
+  // Set Content Security Policy
+  session.defaultSession.webRequest.onHeadersReceived((details, callback) => {
+    const csp = isDev
+      ? "default-src 'self' 'unsafe-inline' 'unsafe-eval' data: http://localhost:3000; connect-src 'self' http://localhost:3000 http://localhost:8020 ws://localhost:8020 http://localhost:8085 https://mario-api.ntoric.com wss://mario-api.ntoric.com; img-src 'self' data: blob:; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com;"
+      : "default-src 'self' app: 'unsafe-inline' data:; connect-src 'self' app: http: https: ws: wss:; img-src 'self' app: data: blob:; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; script-src 'self' 'unsafe-inline' 'unsafe-eval';";
+    
+    callback({
+      responseHeaders: {
+        ...details.responseHeaders,
+        'Content-Security-Policy': [csp]
+      }
+    });
+  });
+
   const startUrl = isDev
     ? 'http://localhost:3000'
     : 'app://./index.html';
 
-  mainWindow.loadURL(startUrl);
+  mainWindow.loadURL(startUrl).catch(err => {
+    console.error('Failed to load URL:', err);
+  });
 
   mainWindow.once('ready-to-show', () => {
     mainWindow.maximize();
@@ -98,7 +127,7 @@ function createWindow() {
   }
 
   mainWindow.on('closed', function () {
-    app.quit();
+    mainWindow = null;
   });
 }
 
@@ -109,7 +138,7 @@ ipcMain.handle('get-printers', async () => {
 
 ipcMain.handle('print-invoice', async (event, { html, printerName, paperSize }) => {
   const isSmall = paperSize === '2_INCH';
-  
+
   return new Promise((resolve, reject) => {
     let workerWindow = new BrowserWindow({
       show: false,
@@ -152,7 +181,7 @@ ipcMain.handle('print-invoice', async (event, { html, printerName, paperSize }) 
           },
           pageSize: {
             width: isSmall ? 58000 : 80000,
-            height: 250000 
+            height: 250000
           }
         };
         await workerWindow.webContents.print(printOptions);
@@ -178,7 +207,7 @@ ipcMain.handle('print-to-service', async (event, data) => {
       },
       body: JSON.stringify(data)
     });
-    
+
     if (response.ok) {
       return { success: true };
     } else {
@@ -196,44 +225,43 @@ ipcMain.on('quit-app', () => {
 });
 
 app.whenReady().then(() => {
-  // Set up the custom protocol handler
   if (!isDev) {
-    protocol.handle('app', (request) => {
-      const url = new URL(request.url);
-      let relativePath = url.hostname + url.pathname;
-      
-      // Clean up relative path if it starts with ./
-      if (relativePath.startsWith('./')) {
-        relativePath = relativePath.substring(2);
-      }
-      
-      // Remove leading slash for path join if needed
-      if (relativePath.startsWith('/')) {
-        relativePath = relativePath.substring(1);
-      }
+    protocol.handle('app', async (request) => {
+      try {
+        const url = new URL(request.url);
+        let relativePath = url.hostname + url.pathname;
 
-      let filePath = path.join(__dirname, 'out', relativePath);
+        // Clean up relative path
+        if (relativePath.startsWith('./')) relativePath = relativePath.substring(2);
+        if (relativePath.startsWith('/')) relativePath = relativePath.substring(1);
+        if (!relativePath || relativePath === '.') relativePath = 'index.html';
 
-      // Check if file exists direct
-      if (fs.existsSync(filePath) && fs.statSync(filePath).isFile()) {
-        return net.fetch(`file://${filePath}`);
-      }
+        let filePath = path.join(__dirname, 'out', relativePath);
 
-      // 1. Try adding .html (Next.js route mapping without trailing slash)
-      const htmlPath = filePath + '.html';
-      if (fs.existsSync(htmlPath) && fs.statSync(htmlPath).isFile()) {
-        return net.fetch(`file://${htmlPath}`);
-      }
-        
-      // 2. Try index.html within the path (Next.js route mapping with trailing slash)
-      const indexPath = path.join(filePath, 'index.html');
-      if (fs.existsSync(indexPath) && fs.statSync(indexPath).isFile()) {
-        return net.fetch(`file://${indexPath}`);
-      }
+        // 1. Direct file check
+        if (fs.existsSync(filePath) && fs.statSync(filePath).isFile()) {
+          return net.fetch(pathToFileURL(filePath).toString());
+        }
 
-      // 3. Fallback to main index.html for SPA client-side routing
-      const mainIndexPath = path.join(__dirname, 'out', 'index.html');
-      return net.fetch(`file://${mainIndexPath}`);
+        // 2. Try index.html for directories (Next.js trailingSlash: true)
+        const indexPath = path.join(filePath, 'index.html');
+        if (fs.existsSync(indexPath) && fs.statSync(indexPath).isFile()) {
+          return net.fetch(pathToFileURL(indexPath).toString());
+        }
+
+        // 3. Try .html extension (Next.js trailingSlash: false)
+        const htmlPath = filePath + '.html';
+        if (fs.existsSync(htmlPath) && fs.statSync(htmlPath).isFile()) {
+          return net.fetch(pathToFileURL(htmlPath).toString());
+        }
+
+        // 4. Fallback to main index.html for SPA routing
+        const mainIndexPath = path.join(__dirname, 'out', 'index.html');
+        return net.fetch(pathToFileURL(mainIndexPath).toString());
+      } catch (err) {
+        console.error('Protocol handler error:', err);
+        return new Response('Not Found', { status: 404 });
+      }
     });
   }
 

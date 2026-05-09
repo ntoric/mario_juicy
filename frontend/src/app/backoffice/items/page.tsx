@@ -13,6 +13,8 @@ import {
   Tooltip,
   InputAdornment,
   Stack,
+  useTheme,
+  keyframes,
 } from "@mui/material";
 import {
   Add as AddIcon,
@@ -27,7 +29,13 @@ import ItemForm from "@/components/backoffice/items/ItemForm";
 import DeleteConfirmDialog from "@/components/backoffice/items/DeleteConfirmDialog";
 import ItemDetails from "@/components/backoffice/items/ItemDetails";
 
+const spin = keyframes`
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+`;
+
 export default function ItemsPage() {
+  const theme = useTheme();
   const { hasPermission } = useAuth();
   const { showSuccess, showError } = useToast();
   const canAdd = hasPermission("items");
@@ -60,6 +68,12 @@ export default function ItemsPage() {
 
   useEffect(() => {
     fetchItems();
+  }, [fetchItems]);
+
+  useEffect(() => {
+    const handleRefresh = () => fetchItems();
+    window.addEventListener('app-refresh', handleRefresh);
+    return () => window.removeEventListener('app-refresh', handleRefresh);
   }, [fetchItems]);
 
   const filteredItems = useMemo(() => {
@@ -139,88 +153,136 @@ export default function ItemsPage() {
   }
 
   return (
-    <Box sx={{ p: { xs: 1.5, md: 2 }, height: '100%', display: 'flex', flexDirection: 'column' }}>
-      {/* Optimized Compact Header */}
-      <Box sx={{ 
-        mb: 2, 
-        display: 'flex', 
-        justifyContent: "space-between", 
-        alignItems: "center", 
-        gap: 2 
-      }}>
-        <Typography variant="h4" sx={{ fontWeight: 900, color: '#e9762b', fontSize: '1.5rem', whiteSpace: 'nowrap', display: { xs: 'none', lg: 'block' } }}>
-          Menu Items
-        </Typography>
+    <Box sx={{ position: 'relative', height: '100%', display: "flex", flexDirection: "column", p: { xs: 2, md: 3 }, overflow: 'hidden' }}>
+       {/* Decorative Background Elements */}
+      <Box sx={{ position: 'absolute', top: -120, right: -120, width: 450, height: 450, background: 'radial-gradient(circle, rgba(233,118,43,0.06) 0%, transparent 70%)', borderRadius: '50%', zIndex: 0, pointerEvents: 'none' }} />
+      <Box sx={{ position: 'absolute', bottom: -150, left: -150, width: 500, height: 500, background: 'radial-gradient(circle, rgba(255,184,0,0.05) 0%, transparent 70%)', borderRadius: '50%', zIndex: 0, pointerEvents: 'none' }} />
+      
+      <Box sx={{ position: 'relative', zIndex: 1, display: 'flex', flexDirection: 'column', height: '100%' }}>
+        {/* Modern Header Row */}
+        <Box sx={{ 
+          mb: 4, 
+          display: 'flex', 
+          justifyContent: 'space-between', 
+          alignItems: { xs: 'flex-start', sm: 'center' }, 
+          flexDirection: { xs: 'column', sm: 'row' },
+          gap: 3 
+        }}>
+          <Box>
+            <Typography variant="h3" sx={{ 
+              fontWeight: 1000, 
+              background: 'linear-gradient(90deg, #e9762b 0%, #ffb800 100%)', 
+              WebkitBackgroundClip: 'text', 
+              WebkitTextFillColor: 'transparent', 
+              fontSize: { xs: '2.5rem', md: '3rem' }, 
+              letterSpacing: '-0.04em',
+              lineHeight: 1
+            }}>
+              Menu Catalog
+            </Typography>
+            <Typography variant="body2" sx={{ color: 'text.secondary', fontWeight: 600, mt: 1, opacity: 0.8 }}>
+              Manage your food and beverage offerings.
+            </Typography>
+          </Box>
 
-        <Box sx={{ flexGrow: 1, maxWidth: { xs: '100%', sm: 400 } }}>
-          <TextField
-            fullWidth
-            placeholder="Search items, categories..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            size="small"
-            autoComplete="off"
-            slotProps={{
-              input: {
-                startAdornment: (
-                  <InputAdornment position="start">
-                    <SearchIcon sx={{ color: "text.secondary", fontSize: 20 }} />
-                  </InputAdornment>
-                ),
-                sx: { borderRadius: '12px', height: 44, bgcolor: 'white' }
-              }
-            }}
-          />
+          <Stack direction="row" spacing={2} sx={{ width: { xs: '100%', sm: 'auto' } }}>
+            <Box sx={{ flexGrow: 1, maxWidth: { xs: '100%', sm: 350 } }}>
+              <TextField
+                fullWidth
+                placeholder="Search items, categories..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                size="small"
+                autoComplete="off"
+                slotProps={{
+                  input: {
+                    startAdornment: (
+                      <InputAdornment position="start">
+                        <SearchIcon sx={{ color: "#e9762b", fontSize: 22 }} />
+                      </InputAdornment>
+                    ),
+                    sx: { 
+                      borderRadius: '16px', 
+                      height: 48, 
+                      bgcolor: 'white', 
+                      border: '1px solid',
+                      borderColor: theme.palette.divider,
+                      boxShadow: '0 4px 12px rgba(0,0,0,0.02)',
+                      fontWeight: 700
+                    }
+                  }
+                }}
+              />
+            </Box>
+
+            <Tooltip title="Refresh Catalog">
+              <IconButton 
+                onClick={fetchItems} 
+                sx={{ 
+                  bgcolor: 'white', 
+                  border: '1px solid',
+                  borderColor: theme.palette.divider, 
+                  borderRadius: '16px', 
+                  width: 48, 
+                  height: 48,
+                  boxShadow: '0 4px 12px rgba(0,0,0,0.02)',
+                  transition: 'all 0.3s ease',
+                  '&:hover': { transform: 'rotate(180deg)', color: '#e9762b' }
+                }}
+              >
+                <RefreshIcon sx={{ animation: loading ? `${spin} 1s linear infinite` : 'none' }} />
+              </IconButton>
+            </Tooltip>
+
+            {canAdd && (
+              <Button
+                variant="contained"
+                startIcon={<AddIcon />}
+                onClick={handleOpenCreate}
+                sx={{ 
+                  borderRadius: '16px', 
+                  height: 48, 
+                  px: 3, 
+                  fontWeight: 1000,
+                  background: 'linear-gradient(135deg, #1a1a1a 0%, #333 100%)',
+                  boxShadow: '0 8px 20px rgba(0,0,0,0.15)',
+                  '&:hover': { transform: 'translateY(-2px)', boxShadow: '0 12px 30px rgba(0,0,0,0.2)' }
+                }}
+              >
+                ADD ITEM
+              </Button>
+            )}
+          </Stack>
         </Box>
 
-        <Stack direction="row" spacing={1.5} sx={{ alignItems: 'center' }}>
-          <Tooltip title="Refresh Catalog">
-            <IconButton 
-              onClick={fetchItems} 
-              sx={{ bgcolor: 'white', border: '1px solid #e8e4d8', borderRadius: '12px', width: 44, height: 44 }}
-            >
-              <RefreshIcon />
-            </IconButton>
-          </Tooltip>
+        {error && (
+          <Alert severity="error" sx={{ mb: 4, borderRadius: '16px', border: '1px solid rgba(239, 68, 68, 0.15)' }} onClose={() => setError(null)}>
+            {error}
+          </Alert>
+        )}
 
-          {canAdd && (
-            <Button
-              variant="contained"
-              startIcon={<AddIcon />}
-              onClick={handleOpenCreate}
-              sx={{ borderRadius: '12px', height: 44, px: 3, fontWeight: 800 }}
-            >
-              ADD ITEM
-            </Button>
+        <Box sx={{ flexGrow: 1, overflowY: 'auto', px: 0.5, pb: 4, '&::-webkit-scrollbar': { width: 6 }, '&::-webkit-scrollbar-thumb': { bgcolor: 'rgba(233,118,43,0.2)', borderRadius: 3 } }}>
+          {loading ? (
+            <Box sx={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", height: 400, gap: 2 }}>
+              <CircularProgress size={40} thickness={4} sx={{ color: '#e9762b' }} />
+              <Typography color="text.secondary" variant="body2" sx={{ fontWeight: 800 }}>Fetching catalog...</Typography>
+            </Box>
+          ) : (
+            <ItemTable
+              items={filteredItems}
+              onEdit={handleOpenEdit}
+              onDelete={(item) => {
+                setItemToDelete(item);
+                setDeleteOpen(true);
+              }}
+              onToggleStatus={handleToggleStatus}
+              onViewDetails={handleOpenDetails}
+              canEdit={canEdit}
+              canDelete={canDelete}
+            />
           )}
-        </Stack>
-      </Box>
-
-      {error && (
-        <Alert severity="error" sx={{ mb: 3, borderRadius: '12px' }} onClose={() => setError(null)}>
-          {error}
-        </Alert>
-      )}
-
-      {loading ? (
-        <Box sx={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", py: 10, gap: 2 }}>
-          <CircularProgress size={40} thickness={4} />
-          <Typography color="text.secondary" variant="body2" sx={{ fontWeight: 700 }}>Fetching catalog...</Typography>
         </Box>
-      ) : (
-        <ItemTable
-          items={filteredItems}
-          onEdit={handleOpenEdit}
-          onDelete={(item) => {
-            setItemToDelete(item);
-            setDeleteOpen(true);
-          }}
-          onToggleStatus={handleToggleStatus}
-          onViewDetails={handleOpenDetails}
-          canEdit={canEdit}
-          canDelete={canDelete}
-        />
-      )}
+      </Box>
 
       <DeleteConfirmDialog
         open={deleteOpen}

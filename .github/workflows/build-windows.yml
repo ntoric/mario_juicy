@@ -1,0 +1,68 @@
+name: Build Windows App
+
+on:
+  push:
+    branches: [ main, master ]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Setup Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.22'
+          cache-dependency-path: mario-printer/go.sum
+
+      - name: Build Mario Printer (Go)
+        run: |
+          cd mario-printer
+          $env:GOOS="windows"
+          $env:GOARCH="amd64"
+          go build -o mario-printer.exe main.go
+        shell: pwsh
+
+      - name: Install Frontend Dependencies
+        run: |
+          cd frontend
+          npm install
+
+      - name: Build Frontend (Next.js export)
+        run: |
+          cd frontend
+          npm run build
+        env:
+          NEXT_PUBLIC_API_URL: ${{ secrets.NEXT_PUBLIC_API_URL }}
+          NEXT_PUBLIC_SENTRY_DSN: ${{ secrets.NEXT_PUBLIC_SENTRY_DSN }}
+
+      - name: Build Windows App (Electron)
+        run: |
+          cd frontend
+          # electron-builder looks for the printer binary in the location specified in package.json
+          # We built it in mario-printer/mario-printer.exe
+          # package.json says: "from": "../mario-printer/mario-printer"
+          # On Windows, electron-builder handles .exe extension automatically usually,
+          # but let's ensure it's in the right spot.
+          cp ../mario-printer/mario-printer.exe ../mario-printer/mario-printer
+          npx electron-builder --win --x64
+        shell: pwsh
+
+      - name: Upload Artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: mario-pos-windows
+          path: |
+            frontend/dist/*.exe
+            frontend/dist/*.blockmap

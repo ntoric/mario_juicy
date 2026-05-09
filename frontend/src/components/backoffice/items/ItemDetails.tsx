@@ -14,9 +14,12 @@ import {
   Stack,
   Paper,
   Grid,
+  useTheme,
+  alpha,
+  keyframes,
 } from "@mui/material";
 import {
-  ChevronLeft as ChevronLeftIcon,
+  ArrowBack as ArrowBackIcon,
   Image as ImageIcon,
   Tag as TagIcon,
   Category as CategoryIcon,
@@ -26,6 +29,11 @@ import {
 } from "@mui/icons-material";
 import { Item } from "@/services/itemService";
 import { getImageUrl } from "@/lib/getImageUrl";
+
+const fadeIn = keyframes`
+  from { opacity: 0; }
+  to { opacity: 1; }
+`;
 
 interface ItemDetailsProps {
   item: Item;
@@ -40,33 +48,80 @@ export default function ItemDetails({
   onEdit,
   canEdit = true,
 }: ItemDetailsProps) {
+  const theme = useTheme();
+
   return (
     <Box sx={{ 
-      flexGrow: 1,
-      bgcolor: '#fdfdfd',
+      flexGrow: 1, 
+      bgcolor: '#fcfcfc', 
       display: 'flex', 
       flexDirection: 'column',
       minHeight: '100%',
-      animation: 'slideInRight 0.2s ease-out',
-      '@keyframes slideInRight': {
-        from: { transform: 'translateX(100%)' },
-        to: { transform: 'translateX(0)' }
-      }
+      animation: `${fadeIn} 0.3s ease-out`,
+      position: 'relative',
+      p: { xs: 2, md: 4 }
     }}>
-      {/* Header */}
-      <Box sx={{ p: 2, borderBottom: '1px solid #e8e4d8', display: 'flex', alignItems: 'center', gap: 2, bgcolor: 'white' }}>
-        <IconButton onClick={onClose} sx={{ color: 'text.secondary' }}>
-          <ChevronLeftIcon />
-        </IconButton>
-        <Typography variant="h6" sx={{ fontWeight: 900 }}>Item Details</Typography>
-      </Box>
+      {/* Background Blobs */}
+      <Box sx={{ position: 'absolute', top: -100, right: -100, width: 400, height: 400, background: 'radial-gradient(circle, rgba(233,118,43,0.05) 0%, transparent 70%)', borderRadius: '50%', zIndex: 0 }} />
+      
+      <Box sx={{ position: 'relative', zIndex: 1, maxWidth: 1000, mx: 'auto', width: '100%' }}>
+        <Box sx={{ mb: 4, display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexDirection: { xs: 'column', sm: 'row' }, gap: 3 }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+            <IconButton 
+              onClick={onClose} 
+              sx={{ 
+                bgcolor: 'white', 
+                border: '1px solid', 
+                borderColor: alpha(theme.palette.divider, 0.1), 
+                borderRadius: '12px',
+                boxShadow: '0 4px 12px rgba(0,0,0,0.03)',
+                '&:hover': { bgcolor: alpha('#e9762b', 0.05), color: '#e9762b' }
+              }}
+            >
+              <ArrowBackIcon />
+            </IconButton>
+            <Box>
+              <Typography variant="h4" sx={{ fontWeight: 1000, letterSpacing: '-0.02em', color: '#1a1a1a' }}>
+                Item Overview
+              </Typography>
+              <Typography variant="body2" sx={{ color: 'text.secondary', fontWeight: 600 }}>
+                Detailed technical specifications and analytics for this item.
+              </Typography>
+            </Box>
+          </Box>
+          {canEdit && (
+            <Button 
+              variant="contained" 
+              onClick={() => onEdit(item)}
+              startIcon={<EditIcon />}
+              sx={{ 
+                borderRadius: '16px', 
+                fontWeight: 1000, 
+                px: 4, 
+                height: 48,
+                background: 'linear-gradient(135deg, #1a1a1a 0%, #333 100%)',
+                boxShadow: '0 8px 20px rgba(0,0,0,0.15)',
+                '&:hover': { transform: 'translateY(-2px)', boxShadow: '0 12px 30px rgba(0,0,0,0.2)' }
+              }}
+            >
+              EDIT ITEM
+            </Button>
+          )}
+        </Box>
 
-      <Box sx={{ flexGrow: 1, overflowY: 'auto', p: { xs: 2, md: 4 }, bgcolor: '#f9f9f9' }}>
-        <Grid container spacing={4} sx={{ justifyContent: 'center' }}>
-          <Grid size={{ xs: 12, md: 9, lg: 8 }}>
-            <Paper sx={{ borderRadius: '24px', overflow: 'hidden', border: '1px solid #e8e4d8', boxShadow: '0 8px 32px rgba(0,0,0,0.03)' }}>
-              {/* Image Banner */}
-              <Box sx={{ height: { xs: 240, md: 340 }, bgcolor: "#FCF9EA", position: 'relative' }}>
+        <Grid container spacing={3}>
+          <Grid size={{ xs: 12, md: 4 }}>
+            <Card sx={{ 
+              borderRadius: '32px', 
+              border: '1px solid', 
+              borderColor: alpha(theme.palette.divider, 0.08), 
+              boxShadow: '0 20px 50px rgba(0,0,0,0.04)',
+              bgcolor: 'rgba(255, 255, 255, 0.8)',
+              backdropFilter: 'blur(10px)',
+              overflow: 'hidden',
+              height: '100%'
+            }}>
+              <Box sx={{ height: 300, bgcolor: alpha('#e9762b', 0.02), position: 'relative', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                 {item.image ? (
                   <img
                     src={getImageUrl(item.image)}
@@ -74,98 +129,120 @@ export default function ItemDetails({
                     style={{ width: "100%", height: "100%", objectFit: "cover" }}
                   />
                 ) : (
-                  <Box sx={{ height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                    <ImageIcon sx={{ fontSize: 100, color: "#e8e4d8" }} />
-                  </Box>
-                )}
-                {canEdit && (
-                  <Button
-                    variant="contained"
-                    startIcon={<EditIcon />}
-                    onClick={() => onEdit(item)}
-                    sx={{ position: 'absolute', right: 24, bottom: 24, borderRadius: '12px', fontWeight: 800, px: 3, py: 1.5, boxShadow: '0 8px 24px rgba(0,0,0,0.2)' }}
-                  >
-                    EDIT ITEM
-                  </Button>
+                  <ImageIcon sx={{ fontSize: 80, color: alpha('#1a1a1a', 0.1) }} />
                 )}
               </Box>
+              <Box sx={{ p: 3 }}>
+                <Typography variant="h5" sx={{ fontWeight: 1000, color: '#1a1a1a', mb: 1 }}>{item.name}</Typography>
+                <Stack direction="row" spacing={1} sx={{ mb: 2 }}>
+                  <Chip
+                    label={item.is_enabled ? "ACTIVE" : "DISABLED"}
+                    size="small"
+                    sx={{ 
+                        fontWeight: 1000, 
+                        height: 24,
+                        fontSize: '0.65rem',
+                        borderRadius: '8px',
+                        bgcolor: item.is_enabled ? alpha('#10b981', 0.1) : alpha('#64748b', 0.1),
+                        color: item.is_enabled ? '#10b981' : '#64748b',
+                    }}
+                  />
+                  <Chip
+                    label={(item.category_name || "Uncategorized").toUpperCase()}
+                    size="small"
+                    sx={{ 
+                        fontWeight: 1000, 
+                        height: 24,
+                        fontSize: '0.65rem',
+                        borderRadius: '8px',
+                        bgcolor: alpha('#e9762b', 0.1),
+                        color: '#e9762b',
+                    }}
+                  />
+                </Stack>
+                <Typography variant="h3" sx={{ fontWeight: 1000, color: '#e9762b' }}>
+                  ₹{parseFloat(item.price).toFixed(0)}
+                </Typography>
+              </Box>
+            </Card>
+          </Grid>
 
-              <Box sx={{ p: { xs: 3, md: 5 } }}>
-                <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", mb: 4 }}>
+          <Grid size={{ xs: 12, md: 8 }}>
+            <Stack spacing={3} sx={{ height: '100%' }}>
+              <Card sx={{ 
+                p: 4, 
+                borderRadius: '32px', 
+                border: '1px solid', 
+                borderColor: alpha(theme.palette.divider, 0.08), 
+                boxShadow: '0 20px 50px rgba(0,0,0,0.04)',
+                bgcolor: 'rgba(255, 255, 255, 0.8)',
+                backdropFilter: 'blur(10px)',
+                flexGrow: 1
+              }}>
+                <Typography variant="overline" sx={{ fontWeight: 1000, color: '#e9762b', mb: 2, display: 'block', letterSpacing: '0.1em' }}>ITEM SPECIFICATIONS</Typography>
+                
+                <Stack spacing={4}>
                   <Box>
-                    <Typography variant="h3" sx={{ fontWeight: 900, mb: 1, color: 'text.primary' }}>
-                      {item.name}
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 1 }}>
+                      <DescriptionIcon sx={{ color: alpha('#1a1a1a', 0.4) }} fontSize="small" />
+                      <Typography variant="subtitle2" sx={{ fontWeight: 1000, color: 'text.secondary' }}>Description</Typography>
+                    </Box>
+                    <Typography variant="body1" sx={{ fontWeight: 600, color: '#1a1a1a', lineHeight: 1.7 }}>
+                      {item.description || "No description provided for this item."}
                     </Typography>
-                    <Stack direction="row" spacing={1.5} sx={{ alignItems: 'center' }}>
-                      <Chip
-                        label={item.is_enabled ? "ACTIVE" : "DISABLED"}
-                        color={item.is_enabled ? "success" : "default"}
-                        sx={{ fontWeight: 900, borderRadius: '8px', px: 1 }}
-                      />
-                      {item.category_name && (
-                        <Chip
-                          icon={<CategoryIcon sx={{ fontSize: '1rem !important' }} />}
-                          label={item.category_name.toUpperCase()}
-                          variant="outlined"
-                          sx={{ fontWeight: 800, borderRadius: '8px', border: '1.5px solid #e8e4d8' }}
-                        />
-                      )}
-                    </Stack>
                   </Box>
-                  <Typography variant="h3" color="primary.main" sx={{ fontWeight: 900 }}>
-                    ₹{parseFloat(item.price).toFixed(2)}
-                  </Typography>
-                </Box>
 
-                <Divider sx={{ mb: 4 }} />
-
-                <Grid container spacing={5}>
-                  <Grid size={{ xs: 12, md: 7 }}>
-                    <Box sx={{ mb: 4 }}>
-                      <Typography variant="overline" sx={{ fontWeight: 900, color: 'text.disabled', mb: 1.5, display: 'block' }}>DESCRIPTION</Typography>
-                      <Typography variant="body1" sx={{ fontWeight: 600, color: 'text.secondary', lineHeight: 1.8, fontSize: '1.1rem' }}>
-                        {item.description || "No description available for this item."}
-                      </Typography>
-                    </Box>
-
-                    <Box>
-                      <Typography variant="overline" sx={{ fontWeight: 900, color: 'text.disabled', mb: 1.5, display: 'block' }}>SPECIFICATIONS</Typography>
-                      <Stack spacing={3}>
-                        <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
-                          <Avatar sx={{ bgcolor: '#f0f0f0', color: 'text.secondary' }}><TagIcon /></Avatar>
-                          <Box>
-                            <Typography variant="caption" sx={{ fontWeight: 800, color: 'text.disabled' }}>ITEM CODE</Typography>
-                            <Typography variant="body1" sx={{ fontWeight: 800 }}>{item.code || "---"}</Typography>
-                          </Box>
+                  <Grid container spacing={3}>
+                    <Grid size={{ xs: 12, sm: 6 }}>
+                      <Box sx={{ p: 2, bgcolor: alpha('#1a1a1a', 0.02), borderRadius: '16px', border: '1px solid', borderColor: alpha(theme.palette.divider, 0.05) }}>
+                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 0.5 }}>
+                          <TagIcon sx={{ color: alpha('#1a1a1a', 0.4) }} fontSize="small" />
+                          <Typography variant="caption" sx={{ fontWeight: 1000, color: 'text.disabled' }}>ITEM CODE</Typography>
                         </Box>
-                      </Stack>
-                    </Box>
+                        <Typography variant="h6" sx={{ fontWeight: 1000, color: '#1a1a1a' }}>{item.code || "N/A"}</Typography>
+                      </Box>
+                    </Grid>
+                    <Grid size={{ xs: 12, sm: 6 }}>
+                      <Box sx={{ p: 2, bgcolor: alpha('#1a1a1a', 0.02), borderRadius: '16px', border: '1px solid', borderColor: alpha(theme.palette.divider, 0.05) }}>
+                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 0.5 }}>
+                          <CategoryIcon sx={{ color: alpha('#1a1a1a', 0.4) }} fontSize="small" />
+                          <Typography variant="caption" sx={{ fontWeight: 1000, color: 'text.disabled' }}>CATEGORY ID</Typography>
+                        </Box>
+                        <Typography variant="h6" sx={{ fontWeight: 1000, color: '#1a1a1a' }}>#{item.category || "0"}</Typography>
+                      </Box>
+                    </Grid>
                   </Grid>
 
-                  <Grid size={{ xs: 12, md: 5 }}>
-                    <Paper sx={{ p: 3, bgcolor: '#fcfcfc', border: '1px solid #e8e4d8', borderRadius: '16px' }}>
-                      <Typography variant="overline" sx={{ fontWeight: 900, color: 'text.disabled', mb: 2, display: 'block' }}>TIMESTAMPS</Typography>
-                      <Stack spacing={2.5}>
-                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-                          <CalendarIcon sx={{ color: 'text.disabled' }} />
-                          <Box>
-                            <Typography variant="caption" sx={{ fontWeight: 800, color: 'text.disabled' }}>CREATED ON</Typography>
-                            <Typography variant="body2" sx={{ fontWeight: 700 }}>{new Date(item.created_at).toLocaleDateString(undefined, { dateStyle: 'long' })}</Typography>
+                  <Box>
+                    <Typography variant="overline" sx={{ fontWeight: 1000, color: '#e9762b', mb: 2, display: 'block', letterSpacing: '0.1em' }}>TIMESTAMPS & AUDIT</Typography>
+                    <Grid container spacing={2}>
+                      <Grid size={{ xs: 12, sm: 6 }}>
+                        <Stack direction="row" spacing={2} sx={{ alignItems: 'center' }}>
+                          <Box sx={{ width: 40, height: 40, borderRadius: '12px', bgcolor: alpha('#e9762b', 0.05), display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                            <CalendarIcon sx={{ color: '#e9762b', fontSize: 20 }} />
                           </Box>
-                        </Box>
-                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-                          <CalendarIcon sx={{ color: 'text.disabled' }} />
                           <Box>
-                            <Typography variant="caption" sx={{ fontWeight: 800, color: 'text.disabled' }}>LAST UPDATED</Typography>
-                            <Typography variant="body2" sx={{ fontWeight: 700 }}>{new Date(item.updated_at).toLocaleDateString(undefined, { dateStyle: 'long' })}</Typography>
+                            <Typography variant="caption" sx={{ fontWeight: 1000, color: 'text.disabled', display: 'block' }}>CREATED AT</Typography>
+                            <Typography variant="body2" sx={{ fontWeight: 800 }}>{new Date(item.created_at).toLocaleDateString(undefined, { dateStyle: 'long' })}</Typography>
                           </Box>
-                        </Box>
-                      </Stack>
-                    </Paper>
-                  </Grid>
-                </Grid>
-              </Box>
-            </Paper>
+                        </Stack>
+                      </Grid>
+                      <Grid size={{ xs: 12, sm: 6 }}>
+                        <Stack direction="row" spacing={2} sx={{ alignItems: 'center' }}>
+                          <Box sx={{ width: 40, height: 40, borderRadius: '12px', bgcolor: alpha('#ffb800', 0.05), display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                            <CalendarIcon sx={{ color: '#ffb800', fontSize: 20 }} />
+                          </Box>
+                          <Box>
+                            <Typography variant="caption" sx={{ fontWeight: 1000, color: 'text.disabled', display: 'block' }}>LAST UPDATED</Typography>
+                            <Typography variant="body2" sx={{ fontWeight: 800 }}>{new Date(item.updated_at).toLocaleDateString(undefined, { dateStyle: 'long' })}</Typography>
+                          </Box>
+                        </Stack>
+                      </Grid>
+                    </Grid>
+                  </Box>
+                </Stack>
+              </Card>
+            </Stack>
           </Grid>
         </Grid>
       </Box>

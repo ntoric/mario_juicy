@@ -30,7 +30,7 @@ export const WebSocketProvider = ({ children }: { children: ReactNode }) => {
   const subscribersRef = useRef<{ [key: string]: Set<(payload: any) => void> }>({});
 
   const connect = () => {
-    let apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8020/api';
+    let apiUrl = process.env.NEXT_PUBLIC_API_URL || 'https://mario-api.ntoric.com/api';
 
     // Fallback logic for accessing from network IP or mobile
     if (typeof window !== 'undefined' && window.location.hostname !== 'localhost') {
@@ -100,7 +100,8 @@ export const WebSocketProvider = ({ children }: { children: ReactNode }) => {
       };
 
       ws.onerror = (error) => {
-        console.error('[WS] Error observed:', error);
+        console.error('[WS] Connection error for URL:', wsUrl, '. ReadyState:', ws.readyState);
+        console.error('[WS] Error event details:', error);
       };
 
       socketRef.current = ws;

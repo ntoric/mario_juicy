@@ -47,37 +47,52 @@ export default function RestaurantSettings() {
     }
   }, [activeStoreId]);
 
+  const [serviceStatus, setServiceStatus] = useState<'online' | 'offline' | 'checking'>('checking');
+
   const detectPrinters = async () => {
+    let allPrinters: any[] = [];
+    let serviceOnline = false;
+
+    // 1. Try Go printer service
     try {
-      const response = await fetch('http://localhost:8085/printers');
+      const response = await fetch('http://localhost:8085/printers', { signal: AbortSignal.timeout(2000) });
       if (response.ok) {
-        const detectedPrinters = await response.json();
-        if (detectedPrinters && detectedPrinters.length > 0) {
-          setPrinters(detectedPrinters.map((p: any) => ({
-            name: p.name,
-            vendor_id: p.vendor_id,
-            product_id: p.product_id,
-            address: p.address,
-            type: p.type || 'USB'
-          })));
-          return;
+        const detected = await response.json();
+        if (Array.isArray(detected)) {
+          allPrinters = [...detected];
+          serviceOnline = true;
         }
       }
     } catch (err) {
       console.warn("Go printer service not reachable:", err);
     }
+    setServiceStatus(serviceOnline ? 'online' : 'offline');
 
+    // 2. Try Electron system printers (as fallback or addition)
     try {
       if (typeof window !== 'undefined' && (window as any).api) {
         const systemPrinters = await (window as any).api.getPrinters();
-        setPrinters(systemPrinters.map((p: any) => ({
-          name: p.name,
-          type: 'System'
-        })));
+        
+        // Use a map to track names and avoid duplicates, giving priority to Go service details
+        const printerMap = new Map();
+        allPrinters.forEach(p => printerMap.set(p.name, p));
+        
+        systemPrinters.forEach((p: any) => {
+          if (!printerMap.has(p.name)) {
+            printerMap.set(p.name, {
+              name: p.name,
+              type: 'System'
+            });
+          }
+        });
+        
+        allPrinters = Array.from(printerMap.values());
       }
     } catch (err) {
       console.error("Failed to detect system printers:", err);
     }
+
+    setPrinters(allPrinters);
   };
 
   const fetchStoreSettings = async () => {
@@ -248,7 +263,23 @@ export default function RestaurantSettings() {
             <Box sx={{ mt: 3 }}>
               <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2 }}>
                 <Box>
-                  <Typography variant="subtitle1" sx={{ fontWeight: 600 }}>Select Printer</Typography>
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 0.5 }}>
+                    <Typography variant="subtitle1" sx={{ fontWeight: 600 }}>Select Printer</Typography>
+                    <Box 
+                      sx={{ 
+                        px: 1, py: 0.25, borderRadius: '4px', fontSize: '0.65rem', fontWeight: 800,
+                        bgcolor: serviceStatus === 'online' ? alpha('#4caf50', 0.1) : alpha('#f44336', 0.1),
+                        color: serviceStatus === 'online' ? '#4caf50' : '#f44336',
+                        border: '1px solid',
+                        borderColor: serviceStatus === 'online' ? alpha('#4caf50', 0.2) : alpha('#f44336', 0.2),
+                        textTransform: 'uppercase',
+                        display: 'flex', alignItems: 'center', gap: 0.5
+                      }}
+                    >
+                      <Box sx={{ width: 6, height: 6, borderRadius: '50%', bgcolor: serviceStatus === 'online' ? '#4caf50' : '#f44336' }} />
+                      {serviceStatus === 'online' ? 'Service Online' : 'Service Offline'}
+                    </Box>
+                  </Box>
                   <Typography variant="body2" color="text.secondary">
                     Currently selected: <b>{settings.thermal_printer_name || "None"}</b> ({settings.thermal_printer_type})
                   </Typography>

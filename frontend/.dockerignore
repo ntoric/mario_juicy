@@ -1,0 +1,16 @@
+node_modules
+.next
+out
+dist
+.git
+.gitignore
+.dockerignore
+Dockerfile
+Dockerfile.production
+README.md
+npm-debug.log
+yarn-error.log
+.DS_Store
+.vscode
+.idea
+*.tsbuildinfo

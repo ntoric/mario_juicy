@@ -14,6 +14,8 @@ import {
   Paper,
   IconButton,
   Tooltip,
+  InputAdornment,
+  alpha
 } from "@mui/material";
 import {
   Refresh as RefreshIcon,
@@ -21,8 +23,10 @@ import {
   ShoppingBag as ShoppingBagIcon,
   AccountBalanceWallet as TaxIcon,
   TrendingUp as TrendingUpIcon,
+  CalendarToday as CalendarIcon
 } from "@mui/icons-material";
-// Helper functions for date handling without date-fns
+
+// Helper functions for date handling
 const formatDate = (date: Date) => {
   const d = new Date(date);
   const year = d.getFullYear();
@@ -43,19 +47,13 @@ import {
   TopItemsChart,
 } from "@/components/reports/ReportCharts";
 
-/**
- * Reports Dashboard Page
- * Displays various analytical reports and visualizations.
- */
 export default function ReportsPage() {
-  // Default range: current month
   const [startDate, setStartDate] = useState(formatDate(getStartOfMonth(new Date())));
   const [endDate, setEndDate] = useState(formatDate(getEndOfMonth(new Date())));
   
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   
-  // Data states
   const [summary, setSummary] = useState<ReportSummary | null>(null);
   const [dailySales, setDailySales] = useState<DailySales[]>([]);
   const [salesByCategory, setSalesByCategory] = useState<SalesByCategory[]>([]);
@@ -85,11 +83,7 @@ export default function ReportsPage() {
       setSalesByItem(items);
       setSalesByType(type);
     } catch (err: any) {
-      console.error("Failed to fetch reports:", {
-        status: err.status,
-        message: err.message,
-        data: err.data
-      });
+      console.error("Failed to fetch reports:", err);
       setError(err.message || "An error occurred while fetching reports.");
     } finally {
       setLoading(false);
@@ -106,74 +100,118 @@ export default function ReportsPage() {
     return () => window.removeEventListener('app-refresh', handleRefresh);
   }, [fetchReports]);
 
-  const handleFilter = () => {
-    fetchReports();
-  };
-
   return (
-    <Box sx={{ p: { xs: 1.5, md: 2 } }}>
-      {/* Optimized Header & Filters Row */}
+    <Box sx={{ 
+      position: 'relative', 
+      height: '100%', 
+      display: "flex", 
+      flexDirection: "column", 
+      p: { xs: 2, md: 3 }, 
+      overflowX: 'hidden',
+      overflowY: 'auto'
+    }}>
+      {/* Decorative blobs */}
+      <Box sx={{ position: 'absolute', top: -80, right: -80, width: 300, height: 300, background: 'radial-gradient(circle, rgba(233,118,43,0.08) 0%, transparent 70%)', borderRadius: '50%', zIndex: 0, pointerEvents: 'none' }} />
+      <Box sx={{ position: 'absolute', bottom: -80, left: -80, width: 350, height: 350, background: 'radial-gradient(circle, rgba(255,184,0,0.06) 0%, transparent 70%)', borderRadius: '50%', zIndex: 0, pointerEvents: 'none' }} />
+
+      {/* Header Row */}
       <Box sx={{ 
-        mb: 2, 
+        mb: 4, 
         display: 'flex', 
         justifyContent: "space-between", 
-        alignItems: "center",
-        flexDirection: { xs: "column", sm: "row" },
-        gap: 2
+        alignItems: { xs: "flex-start", sm: "center" },
+        flexDirection: { xs: "column", md: "row" },
+        gap: 3,
+        position: 'relative',
+        zIndex: 1
       }}>
-        <Typography variant="h4" sx={{ fontWeight: 500, color: '#e9762b', fontSize: '1.25rem', whiteSpace: 'nowrap', display: { xs: 'none', lg: 'block' } }}>
-          Reports
-        </Typography>
+        <Box>
+          <Typography variant="h4" sx={{ 
+            fontWeight: 950, 
+            fontSize: { xs: '1.75rem', md: '2.25rem' }, 
+            background: 'linear-gradient(90deg, #E9762B 0%, #FFB800 100%)', 
+            WebkitBackgroundClip: 'text', 
+            WebkitTextFillColor: 'transparent', 
+            letterSpacing: '-0.03em', 
+            mb: 0.5 
+          }}>
+            Analytical Reports
+          </Typography>
+          <Typography variant="body2" sx={{ color: 'text.secondary', fontWeight: 500, opacity: 0.8 }}>
+            Track your business performance and sales trends.
+          </Typography>
+        </Box>
         
-        <Stack direction="row" spacing={1} sx={{ alignItems: 'center', flexWrap: 'wrap', justifyContent: 'flex-end', flexGrow: 1 }}>
-          <TextField
-            type="date"
-            size="small"
-            value={startDate}
-            onChange={(e) => setStartDate(e.target.value)}
-            slotProps={{ 
-              inputLabel: { shrink: true },
-              input: { sx: { borderRadius: '7px', height: 40, bgcolor: 'white' } }
-            }}
-            sx={{ width: 140 }}
-          />
-          <Typography variant="caption" sx={{ fontWeight: 900, color: 'text.disabled' }}>TO</Typography>
-          <TextField
-            type="date"
-            size="small"
-            value={endDate}
-            onChange={(e) => setEndDate(e.target.value)}
-            slotProps={{ 
-              inputLabel: { shrink: true },
-              input: { sx: { borderRadius: '7px', height: 40, bgcolor: 'white' } }
-            }}
-            sx={{ width: 140 }}
-          />
+        <Stack 
+          direction={{ xs: "column", sm: "row" }} 
+          spacing={2} 
+          sx={{ 
+            alignItems: 'center', 
+            width: { xs: '100%', md: 'auto' },
+            p: 1,
+            bgcolor: 'rgba(233,118,43,0.04)',
+            borderRadius: '20px',
+            border: '1px solid rgba(233,118,43,0.1)'
+          }}
+        >
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, width: { xs: '100%', sm: 'auto' } }}>
+            <TextField
+              type="date"
+              size="small"
+              value={startDate}
+              onChange={(e) => setStartDate(e.target.value)}
+              slotProps={{ 
+                input: { 
+                  sx: { borderRadius: '14px', height: 44, bgcolor: 'white', border: 'none', fontWeight: 700, fontSize: '0.85rem' },
+                  startAdornment: <InputAdornment position="start"><CalendarIcon sx={{ fontSize: 18, color: '#E9762B' }} /></InputAdornment>
+                } 
+              }}
+              sx={{ width: { xs: '100%', sm: 160 } }}
+            />
+            <Typography variant="caption" sx={{ fontWeight: 900, color: 'text.disabled', display: { xs: 'none', sm: 'block' } }}>TO</Typography>
+            <TextField
+              type="date"
+              size="small"
+              value={endDate}
+              onChange={(e) => setEndDate(e.target.value)}
+              slotProps={{ 
+                input: { 
+                  sx: { borderRadius: '14px', height: 44, bgcolor: 'white', border: 'none', fontWeight: 700, fontSize: '0.85rem' },
+                  startAdornment: <InputAdornment position="start"><CalendarIcon sx={{ fontSize: 18, color: '#E9762B' }} /></InputAdornment>
+                } 
+              }}
+              sx={{ width: { xs: '100%', sm: 160 } }}
+            />
+          </Box>
           
-          <Tooltip title="Update Data">
-            <Button 
-              variant="contained" 
-              onClick={handleFilter} 
-              disabled={loading}
-              sx={{ height: 40, minWidth: 40, px: 1, borderRadius: '7px' }}
-            >
-              <RefreshIcon fontSize="small" />
-            </Button>
-          </Tooltip>
+          <Button 
+            variant="contained" 
+            onClick={fetchReports} 
+            disabled={loading}
+            sx={{ 
+              height: 44, 
+              minWidth: 44, 
+              borderRadius: '14px',
+              background: 'linear-gradient(135deg, #E9762B 0%, #D35400 100%)',
+              boxShadow: '0 8px 20px rgba(233,118,43,0.2)',
+              '&:hover': { transform: 'translateY(-2px)', boxShadow: '0 12px 24px rgba(233,118,43,0.3)' }
+            }}
+          >
+            <RefreshIcon sx={{ animation: loading ? 'spin 1s linear infinite' : 'none' }} />
+          </Button>
         </Stack>
       </Box>
 
-
-      {error && <Alert severity="error" sx={{ mb: 4, borderRadius: 3 }}>{error}</Alert>}
+      {error && <Alert severity="error" sx={{ mb: 4, borderRadius: '16px', border: '1px solid rgba(239, 68, 68, 0.2)' }}>{error}</Alert>}
 
       {loading ? (
-        <Box sx={{ display: "flex", justifyContent: "center", py: 10 }}>
-          <CircularProgress color="inherit" />
+        <Box sx={{ display: "flex", justifyContent: "center", alignItems: 'center', flexGrow: 1, minHeight: 400 }}>
+          <CircularProgress sx={{ color: '#E9762B' }} />
         </Box>
       ) : (
-        <>
+        <Box sx={{ position: 'relative', zIndex: 1 }}>
           {/* Summary Stats */}
-          <Grid container spacing={3} sx={{ mb: 4 }}>
+          <Grid container spacing={3} sx={{ mb: 5 }}>
             <Grid size={{ xs: 12, sm: 6, md: 3 }}>
               <SummaryCard 
                 label="Total Revenue" 
@@ -191,7 +229,7 @@ export default function ReportsPage() {
                 trend="+5.2%" 
                 trendType="up"
                 icon={<ReceiptIcon />} 
-                color="#FFD41D" 
+                color="#FFB800" 
               />
             </Grid>
             <Grid size={{ xs: 12, sm: 6, md: 3 }}>
@@ -212,34 +250,46 @@ export default function ReportsPage() {
             </Grid>
           </Grid>
 
-          {/* Charts Row 1 */}
-          <Grid container spacing={3} sx={{ mb: 4 }}>
-            <Grid size={{ xs: 12, md: 8 }}>
+          {/* Charts Rows */}
+          <Grid container spacing={3} sx={{ mb: 3 }}>
+            <Grid size={{ xs: 12, lg: 8 }}>
               <DailySalesChart data={dailySales} title="Daily Sales Trend" />
             </Grid>
-            <Grid size={{ xs: 12, md: 4 }}>
-              <PaymentMethodChart data={salesByPayment} title="Revenue by Payment Method" />
+            <Grid size={{ xs: 12, lg: 4 }}>
+              <PaymentMethodChart data={salesByPayment} title="Revenue by Payment" />
             </Grid>
-          </Grid>
-
-          {/* Charts Row 2 */}
-          <Grid container spacing={3}>
             <Grid size={{ xs: 12, md: 6 }}>
               <SalesByCategoryChart data={salesByCategory} title="Sales by Category" />
             </Grid>
             <Grid size={{ xs: 12, md: 6 }}>
-              <TopItemsChart data={salesByItem} title="Top 15 Selling Items (Qty)" />
+              <TopItemsChart data={salesByItem} title="Top Selling Items (Qty)" />
             </Grid>
           </Grid>
           
-          {/* Detailed breakdown link or footer */}
-          <Box sx={{ mt: 6, textAlign: "center", p: 4, borderRadius: 4, bgcolor: "rgba(233,118,43,0.02)", border: "1px dashed #e8e4d8" }}>
-            <Typography variant="body2" color="text.secondary">
+          {/* Footer Info Box */}
+          <Box sx={{ 
+            mt: 4, 
+            mb: 2,
+            textAlign: "center", 
+            p: 4, 
+            borderRadius: '24px', 
+            background: 'rgba(255, 255, 255, 0.5)',
+            border: "1px dashed rgba(233,118,43,0.3)",
+            backdropFilter: 'blur(10px)'
+          }}>
+            <Typography variant="body2" sx={{ color: 'text.secondary', fontWeight: 600, opacity: 0.8 }}>
               Need a more detailed CSV export? Contact your administrator for full data access.
             </Typography>
           </Box>
-        </>
+        </Box>
       )}
+
+      <style jsx global>{`
+        @keyframes spin {
+          from { transform: rotate(0deg); }
+          to { transform: rotate(360deg); }
+        }
+      `}</style>
     </Box>
   );
 }

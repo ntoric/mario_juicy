@@ -60,18 +60,12 @@ func StoreMiddleware() gin.HandlerFunc {
 			}
 
 			if !store.IsActive && !user.IsSuperuser {
-				// Special case: Allow GET /api/stores/:id/ to return store info even if inactive
-				// so the frontend can display the inactivity message and redirect to support.
-				isStoreGet := c.Request.Method == "GET" && (c.FullPath() == "/api/stores/:id/" || c.FullPath() == "/api/stores/:id")
-				
-				if !isStoreGet {
-					c.JSON(http.StatusForbidden, gin.H{
-						"error": "Store is currently inactive. Please contact support.",
-						"status": "INACTIVE",
-					})
-					c.Abort()
-					return
-				}
+				c.JSON(http.StatusForbidden, gin.H{
+					"error": "Store is currently inactive. Please contact support.",
+					"status": "INACTIVE",
+				})
+				c.Abort()
+				return
 			}
 			c.Set("active_store", store)
 		}

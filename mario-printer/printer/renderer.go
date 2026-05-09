@@ -47,14 +47,17 @@ func RenderInvoice(invoice Invoice, width string) []byte {
 	if invoice.Store.Branch != "" {
 		data = append(data, []byte(invoice.Store.Branch+"\n")...)
 	}
+	if invoice.Store.Location != "" {
+		data = append(data, []byte(invoice.Store.Location+"\n")...)
+	}
 	if invoice.Store.Phone != "" {
 		data = append(data, []byte("MOB : "+invoice.Store.Phone+"\n")...)
 	}
-	if invoice.Store.GSTIN != "" {
-		data = append(data, []byte("GSTIN : "+invoice.Store.GSTIN+"\n")...)
+	if invoice.Store.GSTNumber != "" {
+		data = append(data, []byte("GSTIN : "+invoice.Store.GSTNumber+"\n")...)
 	}
-	if invoice.Store.Fssai != "" {
-		data = append(data, []byte("FSSAI LIC NO : "+invoice.Store.Fssai+"\n")...)
+	if invoice.Store.FSSAILicNo != "" {
+		data = append(data, []byte("FSSAI LIC NO : "+invoice.Store.FSSAILicNo+"\n")...)
 	}
 
 	data = append(data, []byte("\n")...)

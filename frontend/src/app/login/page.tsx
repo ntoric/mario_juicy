@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useToast } from "@/context/ToastContext";
+import { useAuth } from "@/context/AuthContext";
 import { LogIn, User, Lock, Loader2, Store, Settings } from "lucide-react";
 import { fetcher } from "@/lib/api";
 import { setTokens, isAuthenticated } from "@/lib/auth";
@@ -19,6 +20,7 @@ const pacifico = Pacifico({
 export default function LoginPage() {
   const router = useRouter();
   const { showSuccess, showError } = useToast();
+  const { fetchProfile } = useAuth();
   const [isAuthenticating, setIsAuthenticating] = useState(false);
   const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState({
@@ -61,6 +63,7 @@ export default function LoginPage() {
       });
 
       setTokens(data.access, data.refresh);
+      await fetchProfile();
       showSuccess("Welcome back!", "You have successfully logged in.");
       router.push("/backoffice");
     } catch (error: any) {

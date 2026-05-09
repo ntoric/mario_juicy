@@ -1,9 +1,9 @@
 "use client";
 
 import React, { useMemo } from "react";
-import { Box, Paper, Typography, useTheme, Tooltip as MuiTooltip } from "@mui/material";
+import { Box, Paper, Typography, useTheme, Tooltip as MuiTooltip, alpha } from "@mui/material";
 
-const COLORS = ["#E9762B", "#FFD41D", "#CF0F0F", "#d35400", "#f39c12", "#c0392b", "#8d6e63"];
+const COLORS = ["#E9762B", "#FFB800", "#CF0F0F", "#d35400", "#f39c12", "#c0392b", "#8d6e63"];
 
 interface ChartProps {
   data: any[];
@@ -11,12 +11,28 @@ interface ChartProps {
   loading?: boolean;
 }
 
+const ChartContainer = ({ children, title }: { children: React.ReactNode, title: string }) => (
+  <Paper sx={{ 
+    p: 3, 
+    height: 400, 
+    display: "flex", 
+    flexDirection: "column",
+    borderRadius: '24px',
+    border: '1px solid rgba(255, 255, 255, 0.8)',
+    background: 'rgba(255, 255, 255, 0.75)',
+    backdropFilter: 'blur(20px)',
+    boxShadow: '0 8px 32px rgba(0,0,0,0.04)',
+    overflow: 'hidden'
+  }}>
+    <Typography variant="h6" sx={{ fontWeight: 900, mb: 3, color: '#2c1810', fontSize: '1.1rem', letterSpacing: '-0.01em' }}>{title}</Typography>
+    {children}
+  </Paper>
+);
+
 /**
  * DailySalesChart implemented with native SVG
  */
 export const DailySalesChart = ({ data, title }: ChartProps) => {
-  const theme = useTheme();
-  
   const points = useMemo(() => {
     if (!data || data.length === 0) return "";
     
@@ -40,14 +56,13 @@ export const DailySalesChart = ({ data, title }: ChartProps) => {
   const maxVal = Math.max(...(data?.map(d => Number(d.sales)) || [0]), 1);
 
   return (
-    <Paper sx={{ p: 3, height: 400, display: "flex", flexDirection: "column" }}>
-      <Typography variant="h6" sx={{ fontWeight: 700, mb: 3 }}>{title}</Typography>
+    <ChartContainer title={title}>
       <Box sx={{ width: "100%", flexGrow: 1, position: "relative" }}>
         {data && data.length > 0 ? (
           <svg viewBox="0 0 800 300" width="100%" height="100%" preserveAspectRatio="none">
             <defs>
-              <linearGradient id="lineGradient" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="0%" stopColor="#E9762B" stopOpacity="0.2" />
+              <linearGradient id="areaGradient" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stopColor="#E9762B" stopOpacity="0.15" />
                 <stop offset="100%" stopColor="#E9762B" stopOpacity="0" />
               </linearGradient>
             </defs>
@@ -59,7 +74,7 @@ export const DailySalesChart = ({ data, title }: ChartProps) => {
                 y1={300 * v} 
                 x2="800" 
                 y2={300 * v} 
-                stroke="#e8e4d8" 
+                stroke="rgba(233,118,43,0.1)" 
                 strokeWidth="1" 
                 strokeDasharray="4,4" 
               />
@@ -67,7 +82,7 @@ export const DailySalesChart = ({ data, title }: ChartProps) => {
             {/* Area under the line */}
             {data.length > 1 && (
               <polyline
-                fill="url(#lineGradient)"
+                fill="url(#areaGradient)"
                 stroke="none"
                 points={`0,300 ${points} 800,300`}
               />
@@ -77,10 +92,11 @@ export const DailySalesChart = ({ data, title }: ChartProps) => {
               <polyline
                 fill="none"
                 stroke="#E9762B"
-                strokeWidth="3"
+                strokeWidth="4"
                 strokeLinejoin="round"
                 strokeLinecap="round"
                 points={points}
+                style={{ filter: 'drop-shadow(0px 4px 8px rgba(233,118,43,0.2))' }}
               />
             )}
             {/* Data nodes */}
@@ -92,7 +108,7 @@ export const DailySalesChart = ({ data, title }: ChartProps) => {
                   key={i} 
                   cx={x} 
                   cy={y} 
-                  r="4" 
+                  r="5" 
                   fill="#E9762B" 
                   stroke="#fff" 
                   strokeWidth="2" 
@@ -107,14 +123,14 @@ export const DailySalesChart = ({ data, title }: ChartProps) => {
         )}
       </Box>
       {/* Legend/Labels */}
-      <Box sx={{ display: "flex", justifyContent: "space-between", mt: 1 }}>
+      <Box sx={{ display: "flex", justifyContent: "space-between", mt: 2 }}>
         {data && data.length > 0 && [data[0], data[Math.floor(data.length/2)], data[data.length-1]].map((d, i) => (
-          <Typography key={i} variant="caption" color="text.secondary">
+          <Typography key={i} variant="caption" sx={{ fontWeight: 700, color: 'text.secondary', opacity: 0.8 }}>
             {d.date}
           </Typography>
         ))}
       </Box>
-    </Paper>
+    </ChartContainer>
   );
 };
 
@@ -125,23 +141,22 @@ export const SalesByCategoryChart = ({ data, title }: ChartProps) => {
   const maxSales = Math.max(...(data?.map(d => Number(d.sales)) || [0]), 1);
 
   return (
-    <Paper sx={{ p: 3, height: 400, display: "flex", flexDirection: "column" }}>
-      <Typography variant="h6" sx={{ fontWeight: 700, mb: 3 }}>{title}</Typography>
-      <Box sx={{ display: "flex", flexDirection: "column", gap: 2, flexGrow: 1, overflowY: "auto" }}>
+    <ChartContainer title={title}>
+      <Box sx={{ display: "flex", flexDirection: "column", gap: 2.5, flexGrow: 1, overflowY: "auto", pr: 1 }}>
         {data && data.length > 0 ? data.map((d, i) => (
           <Box key={i}>
-            <Box sx={{ display: "flex", justifyContent: "space-between", mb: 0.5 }}>
-              <Typography variant="body2" sx={{ fontWeight: 600 }}>{d.category}</Typography>
-              <Typography variant="body2" color="text.secondary">₹{Number(d.sales).toLocaleString()}</Typography>
+            <Box sx={{ display: "flex", justifyContent: "space-between", mb: 0.75 }}>
+              <Typography variant="body2" sx={{ fontWeight: 800, color: '#2c1810' }}>{d.category}</Typography>
+              <Typography variant="body2" sx={{ fontWeight: 900, color: '#E9762B' }}>₹{Number(d.sales).toLocaleString()}</Typography>
             </Box>
-            <Box sx={{ width: "100%", height: 12, bgcolor: "#FCF9EA", borderRadius: 6, overflow: "hidden", border: "1px solid #e8e4d8" }}>
+            <Box sx={{ width: "100%", height: 10, bgcolor: 'rgba(233,118,43,0.06)', borderRadius: 10, overflow: "hidden" }}>
               <Box 
                 sx={{ 
                   width: `${(Number(d.sales) / maxSales) * 100}%`, 
                   height: "100%", 
-                  bgcolor: "#E9762B", 
-                  borderRadius: 6,
-                  transition: "width 0.8s ease-in-out"
+                  background: 'linear-gradient(90deg, #E9762B 0%, #FFB800 100%)', 
+                  borderRadius: 10,
+                  transition: "width 1s cubic-bezier(0.4, 0, 0.2, 1)"
                 }} 
               />
             </Box>
@@ -150,7 +165,7 @@ export const SalesByCategoryChart = ({ data, title }: ChartProps) => {
           <Typography color="text.secondary" sx={{ textAlign: "center", mt: 4 }}>No data available</Typography>
         )}
       </Box>
-    </Paper>
+    </ChartContainer>
   );
 };
 
@@ -173,37 +188,42 @@ export const PaymentMethodChart = ({ data, title }: ChartProps) => {
   }, [data, total]);
 
   return (
-    <Paper sx={{ p: 3, height: 400, display: "flex", flexDirection: "column" }}>
-      <Typography variant="h6" sx={{ fontWeight: 700, mb: 3 }}>{title}</Typography>
+    <ChartContainer title={title}>
       <Box sx={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", flexGrow: 1, gap: 4 }}>
         {data && data.length > 0 ? (
           <>
             <Box sx={{ 
-              width: 160, 
-              height: 160, 
+              width: 170, 
+              height: 170, 
               borderRadius: "50%", 
               background: donutGradient,
               position: "relative",
               display: "flex",
               alignItems: "center",
               justifyContent: "center",
-              boxShadow: "0 10px 15px -3px rgba(0,0,0,0.1)",
+              boxShadow: "0 12px 24px rgba(0,0,0,0.1)",
+              transition: 'transform 0.3s ease',
+              '&:hover': { transform: 'scale(1.05)' },
               "&::after": {
                 content: '""',
                 position: "absolute",
-                width: 100,
-                height: 100,
-                bgcolor: "background.paper",
-                borderRadius: "50%"
+                width: 110,
+                height: 110,
+                bgcolor: "white",
+                borderRadius: "50%",
+                boxShadow: 'inset 0 2px 8px rgba(0,0,0,0.05)'
               }
             }}>
-                <Typography variant="h6" sx={{ zIndex: 1, fontWeight: 700 }}>Pos</Typography>
+                <Box sx={{ zIndex: 1, textAlign: 'center' }}>
+                  <Typography variant="h5" sx={{ fontWeight: 950, color: '#2c1810' }}>Pos</Typography>
+                  <Typography variant="caption" sx={{ fontWeight: 700, color: 'text.secondary', display: 'block' }}>REVENUE</Typography>
+                </Box>
             </Box>
-            <Box sx={{ display: "flex", flexWrap: "wrap", justifyContent: "center", gap: 2 }}>
+            <Box sx={{ display: "flex", flexWrap: "wrap", justifyContent: "center", gap: 2.5 }}>
               {data.map((d, i) => (
                 <Box key={i} sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-                  <Box sx={{ width: 12, height: 12, borderRadius: 1, bgcolor: COLORS[i % COLORS.length] }} />
-                  <Typography variant="caption" sx={{ fontWeight: 600 }}>{d.method}</Typography>
+                  <Box sx={{ width: 12, height: 12, borderRadius: '4px', bgcolor: COLORS[i % COLORS.length] }} />
+                  <Typography variant="caption" sx={{ fontWeight: 800, color: 'text.secondary' }}>{d.method}</Typography>
                 </Box>
               ))}
             </Box>
@@ -212,7 +232,7 @@ export const PaymentMethodChart = ({ data, title }: ChartProps) => {
           <Typography color="text.secondary">No data available</Typography>
         )}
       </Box>
-    </Paper>
+    </ChartContainer>
   );
 };
 
@@ -223,20 +243,20 @@ export const TopItemsChart = ({ data, title }: ChartProps) => {
   const maxCount = Math.max(...(data?.map(d => Number(d.count)) || [0]), 1);
 
   return (
-    <Paper sx={{ p: 3, height: 400, display: "flex", flexDirection: "column" }}>
-      <Typography variant="h6" sx={{ fontWeight: 700, mb: 3 }}>{title}</Typography>
-      <Box sx={{ display: "flex", alignItems: "flex-end", gap: 2, flexGrow: 1, px: 2, pb: 2 }}>
+    <ChartContainer title={title}>
+      <Box sx={{ display: "flex", alignItems: "flex-end", gap: { xs: 1, sm: 2 }, flexGrow: 1, px: 1, pb: 4 }}>
         {data && data.length > 0 ? data.slice(0, 10).map((d, i) => (
            <MuiTooltip key={i} title={`${d.item}: ${d.count} units`} arrow>
-            <Box sx={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", gap: 1 }}>
+            <Box sx={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", gap: 1.5 }}>
               <Box 
                 sx={{ 
                   width: "100%", 
-                  height: `${(Number(d.count) / maxCount) * 200}px`, 
-                  bgcolor: "#FFD41D", 
-                  borderRadius: "4px 4px 0 0",
-                  transition: "height 0.8s ease-out",
-                  "&:hover": { bgcolor: "#f1c40f" }
+                  height: `${(Number(d.count) / maxCount) * 180}px`, 
+                  background: 'linear-gradient(180deg, #FFB800 0%, #E9762B 100%)', 
+                  borderRadius: "8px 8px 0 0",
+                  transition: "height 1s cubic-bezier(0.4, 0, 0.2, 1)",
+                  boxShadow: '0 4px 12px rgba(233,118,43,0.1)',
+                  "&:hover": { filter: 'brightness(1.1)', transform: 'translateY(-2px)' }
                 }} 
               />
               <Typography 
@@ -248,9 +268,11 @@ export const TopItemsChart = ({ data, title }: ChartProps) => {
                   width: "100%", 
                   textAlign: "center",
                   fontSize: 10,
+                  fontWeight: 800,
                   transform: "rotate(-45deg)",
-                  mt: 1,
-                  color: "text.secondary"
+                  mt: 1.5,
+                  color: "text.secondary",
+                  opacity: 0.8
                 }}
               >
                 {d.item}
@@ -263,6 +285,6 @@ export const TopItemsChart = ({ data, title }: ChartProps) => {
           </Box>
         )}
       </Box>
-    </Paper>
+    </ChartContainer>
   );
 };

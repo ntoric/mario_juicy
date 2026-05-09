@@ -1,6 +1,7 @@
 package main
 
 import (
+	"encoding/base64"
 	"fmt"
 	"net/http"
 
@@ -45,24 +46,48 @@ func main() {
 		c.JSON(200, devices)
 	})
 
-	// Print invoice
+	// Print raw data (ESC/POS) or PrintJob JSON
 	r.POST("/print", func(c *gin.Context) {
+		// Try to bind as PrintJob first (this is what the modern frontend sends)
 		var job printer.PrintJob
-		if err := c.BindJSON(&job); err != nil {
-			c.JSON(400, gin.H{"error": "Invalid request format: " + err.Error()})
+		if err := c.ShouldBindBodyWithJSON(&job); err == nil && job.Type != "" {
+			fmt.Printf("Received PrintJob for %s, type: %s\n", job.Printer.Name, job.Type)
+			err = printer.Print(job)
+			if err != nil {
+				fmt.Printf("Printing failed: %v\n", err)
+				c.JSON(500, gin.H{"error": "Printing failed: " + err.Error()})
+				return
+			}
+			c.JSON(http.StatusOK, gin.H{"message": "Printed successfully"})
 			return
 		}
 
-		fmt.Printf("Received print job for %s\n", job.Printer.VendorID)
+		// Fallback to RawPrintRequest for backward compatibility or direct ESC/POS printing
+		var req printer.RawPrintRequest
+		if err := c.ShouldBindBodyWithJSON(&req); err == nil && req.PrinterName != "" {
+			// Decode base64 data
+			data, err := base64.StdEncoding.DecodeString(req.Data)
+			if err != nil {
+				c.JSON(400, gin.H{"error": "Failed to decode base64 data: " + err.Error()})
+				return
+			}
 
-		err := printer.Print(job)
-		if err != nil {
-			fmt.Printf("Printing failed: %v\n", err)
-			c.JSON(500, gin.H{"error": "Printing failed: " + err.Error()})
+			fmt.Printf("Received raw print job for %s, length: %d\n", req.PrinterName, len(data))
+
+			// Get the appropriate printer service based on OS
+			svc := printer.GetPrinterService()
+			err = svc.Print(req.PrinterName, data)
+			if err != nil {
+				fmt.Printf("Printing failed: %v\n", err)
+				c.JSON(500, gin.H{"error": "Printing failed: " + err.Error()})
+				return
+			}
+
+			c.JSON(http.StatusOK, gin.H{"message": "Printed successfully"})
 			return
 		}
 
-		c.JSON(http.StatusOK, gin.H{"message": "Printed successfully"})
+		c.JSON(400, gin.H{"error": "Invalid request format. Expected PrintJob or RawPrintRequest JSON."})
 	})
 
 	fmt.Println("Mario Printer Service starting on :8085...")

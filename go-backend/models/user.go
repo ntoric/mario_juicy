@@ -34,14 +34,3 @@ func (Group) TableName() string {
 	return "auth_group"
 }
 
-type MenuPermission struct {
-	ID        uint   `gorm:"primaryKey" json:"id"`
-	GroupID   uint   `gorm:"column:group_id" json:"group"`
-	Group     Group  `gorm:"foreignKey:GroupID" json:"-"`
-	MenuKey   string `gorm:"column:menu_key;size:100;not null" json:"menu_key"`
-	IsEnabled bool   `gorm:"column:is_enabled;default:true" json:"is_enabled"`
-}
-
-func (MenuPermission) TableName() string {
-	return "users_menupermission"
-}

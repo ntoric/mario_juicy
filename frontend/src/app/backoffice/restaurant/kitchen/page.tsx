@@ -39,6 +39,7 @@ import {
 import { restaurantService, OrderItem } from '@/services/restaurantService';
 import { useAuth } from '@/hooks/useAuth';
 import { useWebSocket } from '@/hooks/useWebSocket';
+import { useToast } from '@/context/ToastContext';
 
 // ── Animations ──────────────────────────────────────────────────────────────
 const pulse = keyframes`
@@ -257,6 +258,7 @@ export default function KitchenDisplayPage() {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
   const { hasPermission } = useAuth();
+  const { showError, showSuccess } = useToast();
   
   const canViewKDS = hasPermission('live_order');
   const canManageKDS = hasPermission('live_order');
@@ -305,14 +307,14 @@ export default function KitchenDisplayPage() {
     try { 
       await restaurantService.attendItem(id); 
       fetchItems(); 
-    } catch (e: any) { alert(e.message); }
+    } catch (e: any) { showError(e.message); }
   };
 
   const handleReady = async (id: number) => {
     try { 
       await restaurantService.readyItem(id); 
       fetchItems(); 
-    } catch (e: any) { alert(e.message); }
+    } catch (e: any) { showError(e.message); }
   };
 
   const handleRejectClick = (id: number) => {
@@ -327,7 +329,7 @@ export default function KitchenDisplayPage() {
       await restaurantService.rejectItem(rejectId, rejectNote);
       setRejectOpen(false);
       fetchItems();
-    } catch (e: any) { alert(e.message); }
+    } catch (e: any) { showError(e.message); }
   };
 
   if (!canViewKDS && !loading) {
