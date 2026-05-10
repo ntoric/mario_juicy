@@ -53,17 +53,49 @@ func GetStores(c *gin.Context) {
 
 	response := []StoreResponse{}
 	for _, s := range stores {
+		// Fetch BusinessConfig for overrides
+		var businessConfig models.BusinessConfig
+		config.DB.Where("store_id = ?", s.ID).First(&businessConfig)
+
+		name := s.Name
+		branch := s.Branch
+		location := s.Location
+		mobile := s.Mobile
+		gstNumber := s.GSTNumber
+		fssaiLicNo := s.FSSAILicNo
+
+		if businessConfig.ID != 0 {
+			if businessConfig.ShopName != "" {
+				name = businessConfig.ShopName
+			}
+			if businessConfig.Branch != "" {
+				branch = businessConfig.Branch
+			}
+			if businessConfig.Location != "" {
+				location = businessConfig.Location
+			}
+			if businessConfig.Mobile != "" {
+				mobile = businessConfig.Mobile
+			}
+			if businessConfig.GSTIN != "" {
+				gstNumber = businessConfig.GSTIN
+			}
+			if businessConfig.FSSAILicNo != "" {
+				fssaiLicNo = businessConfig.FSSAILicNo
+			}
+		}
+
 		response = append(response, StoreResponse{
 			ID:                     s.ID,
-			Name:                   s.Name,
+			Name:                   name,
 			Address:                s.Address,
 			Phone:                  s.Phone,
 			Email:                  s.Email,
-			GSTNumber:              s.GSTNumber,
-			Location:               s.Location,
-			Branch:                 s.Branch,
-			FSSAILicNo:             s.FSSAILicNo,
-			Mobile:                 s.Mobile,
+			GSTNumber:              gstNumber,
+			Location:               location,
+			Branch:                 branch,
+			FSSAILicNo:             fssaiLicNo,
+			Mobile:                 mobile,
 			InvoicePrefix:          s.InvoicePrefix,
 			Logo:                   s.Logo,
 			IsActive:               s.IsActive,
@@ -90,17 +122,49 @@ func GetStore(c *gin.Context) {
 		return
 	}
 
+	// Fetch BusinessConfig for overrides
+	var businessConfig models.BusinessConfig
+	config.DB.Where("store_id = ?", s.ID).First(&businessConfig)
+
+	name := s.Name
+	branch := s.Branch
+	location := s.Location
+	mobile := s.Mobile
+	gstNumber := s.GSTNumber
+	fssaiLicNo := s.FSSAILicNo
+
+	if businessConfig.ID != 0 {
+		if businessConfig.ShopName != "" {
+			name = businessConfig.ShopName
+		}
+		if businessConfig.Branch != "" {
+			branch = businessConfig.Branch
+		}
+		if businessConfig.Location != "" {
+			location = businessConfig.Location
+		}
+		if businessConfig.Mobile != "" {
+			mobile = businessConfig.Mobile
+		}
+		if businessConfig.GSTIN != "" {
+			gstNumber = businessConfig.GSTIN
+		}
+		if businessConfig.FSSAILicNo != "" {
+			fssaiLicNo = businessConfig.FSSAILicNo
+		}
+	}
+
 	response := StoreResponse{
 		ID:                     s.ID,
-		Name:                   s.Name,
+		Name:                   name,
 		Address:                s.Address,
 		Phone:                  s.Phone,
 		Email:                  s.Email,
-		GSTNumber:              s.GSTNumber,
-		Location:               s.Location,
-		Branch:                 s.Branch,
-		FSSAILicNo:             s.FSSAILicNo,
-		Mobile:                 s.Mobile,
+		GSTNumber:              gstNumber,
+		Location:               location,
+		Branch:                 branch,
+		FSSAILicNo:             fssaiLicNo,
+		Mobile:                 mobile,
 		InvoicePrefix:          s.InvoicePrefix,
 		Logo:                   s.Logo,
 		IsActive:               s.IsActive,

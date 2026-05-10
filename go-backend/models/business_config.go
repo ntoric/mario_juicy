@@ -12,7 +12,7 @@ type BusinessConfig struct {
 	Branch      string    `gorm:"size:255" json:"branch"`
 	Location    string    `gorm:"size:255" json:"location"`
 	Mobile      string    `gorm:"size:20" json:"mobile"`
-	GSTIN       string    `gorm:"size:15" json:"gstin"`
+	GSTIN       string    `gorm:"size:25" json:"gstin"`
 	FSSAILicNo  string    `gorm:"size:50" json:"fssai_lic_no"`
 	CreatedAt   time.Time `json:"created_at"`
 	UpdatedAt   time.Time `json:"updated_at"`

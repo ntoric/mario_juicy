@@ -10,7 +10,7 @@ type Store struct {
 	Address                string    `gorm:"type:text;not null" json:"address"`
 	Phone                  string    `gorm:"size:20" json:"phone"`
 	Email                  string    `gorm:"size:254" json:"email"`
-	GSTNumber              string    `gorm:"column:gst_number;size:15" json:"gst_number"`
+	GSTNumber              string    `gorm:"column:gst_number;size:25" json:"gst_number"`
 	InvoicePrefix          string    `gorm:"column:invoice_prefix;size:10;default:'INV'" json:"invoice_prefix"`
 	Logo                   string    `gorm:"size:100" json:"logo"`
 	Location               string    `gorm:"size:255" json:"location"`

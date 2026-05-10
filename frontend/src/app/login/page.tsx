@@ -7,15 +7,8 @@ import { useAuth } from "@/context/AuthContext";
 import { LogIn, User, Lock, Loader2, Store, Settings } from "lucide-react";
 import { fetcher } from "@/lib/api";
 import { setTokens, isAuthenticated } from "@/lib/auth";
-import { Pacifico } from "next/font/google";
 // import Preloader from "@/components/ui/Preloader";
 import "./login.css";
-
-const pacifico = Pacifico({
-  subsets: ["latin"],
-  weight: "400",
-  display: "swap",
-});
 
 export default function LoginPage() {
   const router = useRouter();
@@ -102,7 +95,7 @@ export default function LoginPage() {
             style={{ width: '100%', height: '100%', objectFit: 'contain', animation: 'pulse-float 4s ease-in-out infinite' }} 
           />
         </div>
-        <h2 className={`mobile-brand-title ${pacifico.className}`}>Mario</h2>
+        <h2 className="mobile-brand-title font-pacifico">Mario</h2>
       </div>
 
       <div className="login-card">
@@ -131,7 +124,7 @@ export default function LoginPage() {
         </button>
 
         <header className="login-header">
-          <h1 className={`login-title ${pacifico.className}`}>Mario</h1>
+          <h1 className="login-title font-pacifico">Mario</h1>
           <p className="login-subtitle">Enter your credentials to access the POS</p>
         </header>
 

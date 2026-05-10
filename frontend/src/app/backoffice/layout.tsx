@@ -8,13 +8,6 @@ import { ThemeProvider } from "@mui/material/styles";
 import CssBaseline from "@mui/material/CssBaseline";
 import { backofficeTheme } from "@/theme/backofficeTheme";
 import BackofficeLayout from "@/components/backoffice/BackofficeLayout";
-import { Pacifico } from "next/font/google";
-
-const pacifico = Pacifico({
-  subsets: ["latin"],
-  weight: "400",
-  display: "swap",
-});
 
 export default function BackofficeRouteLayout({
   children,
@@ -41,7 +34,7 @@ export default function BackofficeRouteLayout({
     return (
       <div style={{ height: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#E9762B' }}>
         <h1 
-          className={pacifico.className} 
+          className="font-pacifico" 
           style={{ 
             color: 'white', 
             fontSize: '3.5rem', 

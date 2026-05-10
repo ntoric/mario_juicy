@@ -50,7 +50,7 @@ func UpdateBusinessConfig(c *gin.Context) {
 		businessConfig = input
 		businessConfig.StoreID = sid
 		if err := config.DB.Create(&businessConfig).Error; err != nil {
-			utils.ErrorResponse(c, http.StatusInternalServerError, "Failed to create business config")
+			utils.ErrorResponse(c, http.StatusInternalServerError, "Failed to create business config: "+err.Error())
 			return
 		}
 	} else {
@@ -63,7 +63,7 @@ func UpdateBusinessConfig(c *gin.Context) {
 		businessConfig.FSSAILicNo = input.FSSAILicNo
 		
 		if err := config.DB.Save(&businessConfig).Error; err != nil {
-			utils.ErrorResponse(c, http.StatusInternalServerError, "Failed to update business config")
+			utils.ErrorResponse(c, http.StatusInternalServerError, "Failed to update business config: "+err.Error())
 			return
 		}
 	}

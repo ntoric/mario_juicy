@@ -20,7 +20,8 @@ type Store struct {
 }
 
 type Customer struct {
-	Name string `json:"name"`
+	Name   string `json:"name"`
+	Mobile string `json:"mobile"`
 }
 
 type Item struct {
@@ -70,10 +71,23 @@ type Invoice struct {
 	Footer      []string `json:"footer"`
 }
 
+type KOT struct {
+	OrderID     uint     `json:"order_id"`
+	TableNumber string   `json:"table_number"`
+	WaiterName  string   `json:"waiter_name"`
+	Date        string   `json:"date"`
+	Items       []Item   `json:"items"`
+	Notes       string   `json:"notes"`
+	OrderType   string   `json:"order_type"` // DINE_IN or TAKE_AWAY
+	CustomerName   string `json:"customer_name"`
+	CustomerMobile string `json:"customer_mobile"`
+}
+
 type PrintJob struct {
-	Type    string        `json:"type"` // "invoice"
+	Type    string        `json:"type"` // "invoice", "kot"
 	Printer PrinterConfig `json:"printer"`
 	Invoice *Invoice      `json:"invoice,omitempty"`
+	KOT     *KOT          `json:"kot,omitempty"`
 }
 
 type Device struct {

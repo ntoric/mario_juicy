@@ -12,6 +12,8 @@ interface InvoicePrintProps {
     total_amount: string;
     payment_method: string;
     waiter_name: string;
+    customer_name?: string;
+    customer_mobile?: string;
     created_at: string;
       store_details?: {
         name: string;
@@ -92,6 +94,12 @@ interface InvoicePrintProps {
         </Box>
         <Typography sx={{ fontSize: 'inherit' }}>Payment Mode: {invoice.payment_method}</Typography>
         <Typography sx={{ fontSize: 'inherit', mt: 0.5 }}>DR Ref : {tableNumber || 'N/A'}</Typography>
+        {invoice.customer_name && invoice.customer_name !== 'Guest' && (
+          <Typography sx={{ fontSize: 'inherit', mt: 0.5 }}>Cust : {invoice.customer_name}</Typography>
+        )}
+        {invoice.customer_mobile && (
+          <Typography sx={{ fontSize: 'inherit' }}>Mob  : {invoice.customer_mobile}</Typography>
+        )}
       </Box>
 
       <Box sx={{ width: '100%', borderTop: '1px dashed black', my: 0.5 }} />

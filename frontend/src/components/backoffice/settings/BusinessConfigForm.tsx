@@ -166,7 +166,12 @@ export default function BusinessConfigForm() {
               value={formData.gstin}
               onChange={(e) => setFormData({ ...formData, gstin: e.target.value })}
               placeholder="e.g. 29AAAAA0000A1Z5"
-              slotProps={{ inputLabel: { shrink: true } }}
+              helperText="Indian GSTIN should be 15 characters"
+              slotProps={{ 
+                inputLabel: { shrink: true },
+                input: { sx: { borderRadius: '8px' } },
+                htmlInput: { maxLength: 25 }
+              }}
             />
           </Grid>
           <Grid size={{ xs: 12 }}>

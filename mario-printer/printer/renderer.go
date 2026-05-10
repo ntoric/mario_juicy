@@ -9,6 +9,9 @@ func RenderPrintJob(job PrintJob) ([]byte, error) {
 	if job.Type == "invoice" && job.Invoice != nil {
 		return RenderInvoice(*job.Invoice, job.Printer.PaperWidth), nil
 	}
+	if job.Type == "kot" && job.KOT != nil {
+		return RenderKOT(*job.KOT, job.Printer.PaperWidth), nil
+	}
 	return nil, fmt.Errorf("invalid job type or missing data")
 }
 
@@ -71,6 +74,12 @@ func RenderInvoice(invoice Invoice, width string) []byte {
 	// INFO SECTION
 	data = append(data, alignLeft...)
 	data = append(data, []byte("Date : "+invoice.Date+"\n")...)
+	if invoice.Customer.Name != "" && invoice.Customer.Name != "Guest" {
+		data = append(data, []byte("Cust : "+invoice.Customer.Name+"\n")...)
+	}
+	if invoice.Customer.Mobile != "" {
+		data = append(data, []byte("Mob  : "+invoice.Customer.Mobile+"\n")...)
+	}
 	if invoice.BillNo != "" {
 		data = append(data, []byte("Bill No: "+invoice.BillNo+"\n")...)
 	}
@@ -174,6 +183,65 @@ func RenderInvoice(invoice Invoice, width string) []byte {
 	// E & O.E
 	data = append(data, alignRight...)
 	data = append(data, []byte("E & O.E\n")...)
+
+	data = append(data, []byte("\n\n\n")...)
+	data = append(data, cutPaper...)
+
+	return data
+}
+
+func RenderKOT(kot KOT, width string) []byte {
+	initialize := []byte{0x1B, 0x40}
+	alignLeft := []byte{0x1B, 0x61, 0x00}
+	alignCenter := []byte{0x1B, 0x61, 0x01}
+	boldOn := []byte{0x1B, 0x45, 0x01}
+	boldOff := []byte{0x1B, 0x45, 0x00}
+	doubleSize := []byte{0x1D, 0x21, 0x11}
+	normalSize := []byte{0x1D, 0x21, 0x00}
+	cutPaper := []byte{0x1D, 0x56, 0x41, 0x10}
+
+	lineWidth := GetLineWidth(width)
+	var data []byte
+
+	data = append(data, initialize...)
+	data = append(data, alignCenter...)
+	data = append(data, boldOn...)
+	data = append(data, doubleSize...)
+	data = append(data, []byte("KITCHEN ORDER\n")...)
+	data = append(data, normalSize...)
+	data = append(data, boldOff...)
+	data = append(data, []byte("\n")...)
+
+	data = append(data, alignLeft...)
+	data = append(data, []byte(fmt.Sprintf("Order #%d\n", kot.OrderID))...)
+	data = append(data, []byte(fmt.Sprintf("Type: %s\n", kot.OrderType))...)
+	if kot.TableNumber != "" && kot.TableNumber != "Take Away" {
+		data = append(data, []byte(fmt.Sprintf("Table: %s\n", kot.TableNumber))...)
+	}
+	if kot.CustomerName != "" && kot.CustomerName != "Guest" {
+		data = append(data, []byte(fmt.Sprintf("Cust : %s\n", kot.CustomerName))...)
+	}
+	if kot.CustomerMobile != "" {
+		data = append(data, []byte(fmt.Sprintf("Mob  : %s\n", kot.CustomerMobile))...)
+	}
+	data = append(data, []byte(fmt.Sprintf("Date: %s\n", kot.Date))...)
+	if kot.WaiterName != "" {
+		data = append(data, []byte(fmt.Sprintf("Waiter: %s\n", kot.WaiterName))...)
+	}
+	data = append(data, []byte(strings.Repeat("-", lineWidth)+"\n")...)
+
+	// ITEMS
+	for _, item := range kot.Items {
+		data = append(data, boldOn...)
+		data = append(data, []byte(fmt.Sprintf("%-3.0f x %s\n", item.Qty, item.Name))...)
+		data = append(data, boldOff...)
+	}
+
+	if kot.Notes != "" {
+		data = append(data, []byte(strings.Repeat("-", lineWidth)+"\n")...)
+		data = append(data, []byte("NOTES:\n")...)
+		data = append(data, []byte(kot.Notes+"\n")...)
+	}
 
 	data = append(data, []byte("\n\n\n")...)
 	data = append(data, cutPaper...)

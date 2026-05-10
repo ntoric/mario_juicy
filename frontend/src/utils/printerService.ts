@@ -1,7 +1,7 @@
 import { toast } from 'sonner';
 
 export interface PrinterServiceData {
-  type: "invoice";
+  type: "invoice" | "kot";
   printer: {
     name: string;
     type: string;
@@ -10,16 +10,19 @@ export interface PrinterServiceData {
     address: string;
     paper_width: "2inch" | "3inch";
   };
-  invoice: {
+  invoice?: {
     store: {
       name: string;
       branch: string;
-      gstin: string;
-      fssai: string;
+      location: string;
+      gst_number: string;
+      fssai_lic_no: string;
       phone: string;
+      address: string;
     };
     customer: {
       name: string;
+      mobile: string;
     };
     invoice_no: string;
     bill_no: string;
@@ -56,6 +59,20 @@ export interface PrinterServiceData {
       size: number;
     };
     footer: string[];
+  };
+  kot?: {
+    order_id: number;
+    table_number: string;
+    waiter_name: string;
+    date: string;
+    items: Array<{
+      name: string;
+      qty: number;
+    }>;
+    notes: string;
+    order_type: string;
+    customer_name?: string;
+    customer_mobile?: string;
   };
 }
 
@@ -100,13 +117,16 @@ export const mapToPrinterServiceData = (invoice: any, orderItems: any[], storeOv
     invoice: {
       store: {
         name: store?.name || store?.Name || "Mario Juicy",
-        branch: store?.location || store?.Location || store?.branch_name || "Main Branch",
-        gstin: store?.gst_number || store?.GSTNumber || store?.gstin || "",
-        fssai: store?.fssai_lic_no || store?.FSSAILicNo || store?.fssai || "",
-        phone: store?.phone || store?.Phone || store?.mobile || store?.Mobile || store?.contact || ""
+        branch: store?.branch || store?.Branch || "Main Branch",
+        location: store?.location || store?.Location || "",
+        gst_number: store?.gst_number || store?.GSTNumber || store?.gstin || "",
+        fssai_lic_no: store?.fssai_lic_no || store?.FSSAILicNo || store?.fssai || "",
+        phone: store?.phone || store?.Phone || store?.mobile || store?.Mobile || store?.contact || "",
+        address: store?.address || store?.Address || ""
       },
       customer: {
-        name: invoice.customer_name || invoice.CustomerName || "Guest"
+        name: invoice.customer_name || invoice.CustomerName || "Guest",
+        mobile: invoice.customer_mobile || invoice.CustomerMobile || ""
       },
       invoice_no: invoice.invoice_number || invoice.InvoiceNumber || "",
       bill_no: (invoice.invoice_number || invoice.InvoiceNumber || "").split('-').pop() || invoice.invoice_number || invoice.InvoiceNumber || "",
@@ -166,9 +186,9 @@ export const printInvoice = async (invoice: any, items: any[], storeOverride?: a
   if (!store?.thermal_printer_name) {
     console.warn('Printer not configured for store:', store);
     toast.info("Printer not selected", {
-      description: "Please configure a thermal printer in Store Settings to print invoices."
+      description: "Please configure a thermal printer in Store Settings."
     });
-    return true;
+    return false;
   }
 
   // IF SYSTEM PRINTER: Try native print if possible
@@ -199,6 +219,82 @@ export const printInvoice = async (invoice: any, items: any[], storeOverride?: a
   }
 
   // TRY 2: Electron Bridge (via preload script)
+  if (typeof window !== 'undefined' && (window as any).api) {
+    const api = (window as any).api;
+    if (api.printToService) {
+      try {
+        await api.printToService(printData);
+        return true;
+      } catch (e) {
+        console.error("Local service print via bridge failed:", e);
+      }
+    }
+  }
+
+  return false;
+};
+
+export const mapToKOTData = (order: any, items: any[], store: any): PrinterServiceData => {
+  const formattedItems = (items || []).map(item => ({
+    name: item?.item_details?.name || "Unknown Item",
+    qty: item?.quantity || 1
+  }));
+
+  return {
+    type: "kot",
+    printer: {
+      name: store?.thermal_printer_name || "",
+      type: (store?.thermal_printer_type || 'usb').toLowerCase(),
+      vendor_id: store?.thermal_printer_vendor_id || "0x0fe6",
+      product_id: store?.thermal_printer_product_id || "0x811e",
+      address: store?.thermal_printer_address || "",
+      paper_width: (store?.thermal_printer_size === '2_INCH' ? '2inch' : '3inch') as "2inch" | "3inch"
+    },
+    kot: {
+      order_id: order.id,
+      table_number: order.table_details?.number || order.table_number || "Take Away",
+      waiter_name: order.waiter_name || "Staff",
+      date: new Date().toLocaleString('en-IN', {
+        day: '2-digit',
+        month: '2-digit',
+        year: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit',
+        hour12: true
+      }),
+      items: formattedItems,
+      notes: order.notes || "",
+      order_type: order.order_type || "TAKE_AWAY",
+      customer_name: order.customer_name || "",
+      customer_mobile: order.customer_mobile || ""
+    }
+  };
+};
+
+export const printKOT = async (order: any, items: any[], store: any): Promise<boolean> => {
+  if (!order) return false;
+
+  const printData = mapToKOTData(order, items || [], store);
+
+  // CHECK: If printer is not selected
+  if (!store?.thermal_printer_name) {
+    console.warn('Printer not configured');
+    toast.info("Printer not selected");
+    return false;
+  }
+
+  try {
+    const response = await fetch('http://localhost:8085/print', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(printData)
+    });
+    if (response.ok) return true;
+  } catch (e) {
+    console.warn("Direct fetch to printer service failed:", e);
+  }
+
+  // TRY 2: Electron Bridge
   if (typeof window !== 'undefined' && (window as any).api) {
     const api = (window as any).api;
     if (api.printToService) {

@@ -70,15 +70,8 @@ import OrderDialog from "@/components/backoffice/restaurant/OrderDialog";
 import Avatar from "@mui/material/Avatar";
 import Tooltip from "@mui/material/Tooltip";
 import { useAuth } from "@/context/AuthContext";
-import { Pacifico } from "next/font/google";
 import { useToast } from "@/context/ToastContext";
 import StoreSwitcher from './StoreSwitcher';
-
-const pacifico = Pacifico({
-  subsets: ["latin"],
-  weight: "400",
-  display: "swap",
-});
 
 const drawerWidth = 260;
 
@@ -571,7 +564,7 @@ export default function BackofficeLayout({ children }: { children: React.ReactNo
                 ml: 2,
                 fontWeight: 900,
                 color: theme.palette.primary.main,
-                fontFamily: pacifico.style.fontFamily,
+                fontFamily: "'Pacifico', cursive",
                 fontSize: '1.2rem'
               }}
             >

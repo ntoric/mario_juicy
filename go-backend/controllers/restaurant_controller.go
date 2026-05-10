@@ -280,6 +280,11 @@ func MapOrderToResponse(o models.Order) OrderResponse {
 		waiterName = o.Waiter.Username
 	}
 
+	var invoiceResp interface{}
+	if o.Invoice != nil {
+		invoiceResp = MapInvoiceToResponse(*o.Invoice)
+	}
+
 	return OrderResponse{
 		ID:              o.ID,
 		Table:           o.TableID,
@@ -295,7 +300,7 @@ func MapOrderToResponse(o models.Order) OrderResponse {
 		TotalAmount:     fmt.Sprintf("%.2f", o.TotalAmount),
 		Notes:           o.Notes,
 		Items:           itemResps,
-		Invoice:         o.Invoice,
+		Invoice:         invoiceResp,
 		CreatedAt:       o.CreatedAt.Format("2006-01-02T15:04:05.999Z07:00"),
 		UpdatedAt:       o.UpdatedAt.Format("2006-01-02T15:04:05.999Z07:00"),
 	}
@@ -953,7 +958,9 @@ func MapInvoiceToResponse(inv models.Invoice) interface{} {
 
 	// Fetch BusinessConfig for overrides
 	var businessConfig models.BusinessConfig
-	if inv.StoreID != nil {
+	if inv.Store.ID != 0 {
+		config.DB.Where("store_id = ?", inv.Store.ID).First(&businessConfig)
+	} else if inv.StoreID != nil {
 		config.DB.Where("store_id = ?", *inv.StoreID).First(&businessConfig)
 	}
 
@@ -991,20 +998,22 @@ func MapInvoiceToResponse(inv models.Invoice) interface{} {
 	}
 
 	return gin.H{
-		"id":             inv.ID,
-		"invoice_number": inv.InvoiceNumber,
-		"order":          inv.OrderID,
-		"table_number":   tableNumber,
-		"items":          items,
-		"subtotal":       fmt.Sprintf("%.2f", inv.Subtotal),
-		"tax_amount":     fmt.Sprintf("%.2f", inv.TaxAmount),
-		"tax_details":    taxDetails,
-		"total_amount":   fmt.Sprintf("%.2f", inv.TotalAmount),
-		"payment_method": inv.PaymentMethod,
-		"waiter":         inv.WaiterID,
-		"waiter_name":    waiterName,
-		"created_at":     inv.CreatedAt.Format("2006-01-02T15:04:05.999Z07:00"),
-		"store_details":  storeDetails,
+		"id":              inv.ID,
+		"invoice_number":  inv.InvoiceNumber,
+		"order":           inv.OrderID,
+		"table_number":    tableNumber,
+		"items":           items,
+		"subtotal":        fmt.Sprintf("%.2f", inv.Subtotal),
+		"tax_amount":      fmt.Sprintf("%.2f", inv.TaxAmount),
+		"tax_details":     taxDetails,
+		"total_amount":    fmt.Sprintf("%.2f", inv.TotalAmount),
+		"payment_method":  inv.PaymentMethod,
+		"waiter":          inv.WaiterID,
+		"waiter_name":     waiterName,
+		"customer_name":   inv.Order.CustomerName,
+		"customer_mobile": inv.Order.CustomerMobile,
+		"created_at":      inv.CreatedAt.Format("2006-01-02T15:04:05.999Z07:00"),
+		"store_details":   storeDetails,
 	}
 }
 

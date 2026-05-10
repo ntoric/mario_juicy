@@ -1,5 +1,8 @@
 /* Premium POS Design System - Vanilla CSS */
-@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap');
+
+.font-pacifico {
+  font-family: 'Pacifico', cursive;
+}
 
 :root {
   /* Core Palette */

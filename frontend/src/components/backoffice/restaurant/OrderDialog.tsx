@@ -37,6 +37,7 @@ import { OrderStatusChip, ItemStatusChip } from './StatusChips';
 import CheckoutDialog from './CheckoutDialog';
 import InvoicePreviewDialog from './InvoicePreviewDialog';
 import InvoicePrint from './InvoicePrint';
+import KOTPrint from './KOTPrint';
 import { getImageUrl } from '@/utils/image';
 import { useWebSocket } from '@/hooks/useWebSocket';
 import { useConfirm } from '@/context/ConfirmContext';
@@ -466,6 +467,14 @@ const OrderDialog: React.FC<OrderDialogProps> = ({ open, onClose, table, initial
       const orderData = await restaurantService.getOrder(order.id);
       setOrder(orderData);
       onOrderUpdated();
+      
+      // Auto-print KOT for new items
+      const newItems = (orderData.items || []).filter((i: any) => i.status === 'PREPARING');
+      if (newItems.length > 0) {
+        const { printKOT } = await import('@/utils/printerService');
+        await printKOT(orderData, newItems, activeStore);
+      }
+      
       showSuccess("Success", "Sent to Kitchen (KOT)");
     } catch (e: any) { 
       showError('Error', e.message || 'Failed to send to kitchen'); 
@@ -577,11 +586,29 @@ const OrderDialog: React.FC<OrderDialogProps> = ({ open, onClose, table, initial
   };
 
   const handlePrint = async () => {
-    const invoiceEl = document.getElementById('thermal-invoice-container');
-    if (!invoiceEl || !order?.invoice) return;
+    if (!order?.invoice) return;
+    try {
+      const { printInvoice } = await import('@/utils/printerService');
+      const success = await printInvoice(order.invoice, order.items || [], activeStore);
+      if (!success) {
+        showError("Print Failed", "Could not connect to the printer service.");
+      }
+    } catch (e: any) {
+      showError("Print Error", e.message || "An error occurred while printing.");
+    }
+  };
 
-    const { printInvoice } = await import('@/utils/printerService');
-    await printInvoice(order.invoice, order.items || [], activeStore);
+  const handlePrintKOT = async () => {
+    if (!order) return;
+    try {
+      const { printKOT } = await import('@/utils/printerService');
+      const success = await printKOT(order, order.items || [], activeStore);
+      if (!success) {
+        showError("Print Failed", "Could not connect to the printer service.");
+      }
+    } catch (e: any) {
+      showError("Print Error", e.message || "An error occurred while printing.");
+    }
   };
 
   const fallbackPrint = (html: string) => {
@@ -660,6 +687,17 @@ const OrderDialog: React.FC<OrderDialogProps> = ({ open, onClose, table, initial
       actions.push(
         <Button key="payment" variant="contained" color="secondary" size="small" onClick={() => setCheckoutOpen(true)} sx={{ fontWeight: 950, borderRadius: '16px', flexGrow: 1, py: 1.5, bgcolor: '#6a1b9a' }}>PAY</Button>
       );
+    }
+
+    if ((order?.items || []).length > 0) {
+      actions.push(
+        <Button key="print-kot" variant="outlined" size="small" onClick={handlePrintKOT} sx={{ fontWeight: 950, borderRadius: '16px', flexGrow: 1, py: 1.5, borderColor: '#e9762b', color: '#e9762b' }}>PRINT KOT</Button>
+      );
+      if (order?.invoice) {
+        actions.push(
+          <Button key="print-bill" variant="outlined" size="small" onClick={handlePrint} sx={{ fontWeight: 950, borderRadius: '16px', flexGrow: 1, py: 1.5, borderColor: '#2e7d32', color: '#2e7d32' }}>PRINT BILL</Button>
+        );
+      }
     }
     }
 
@@ -857,6 +895,32 @@ const OrderDialog: React.FC<OrderDialogProps> = ({ open, onClose, table, initial
             )}
             {order?.order_type !== 'TAKE_AWAY' && order?.invoice && order?.status !== 'COMPLETED' && (
               <Button variant="contained" fullWidth onClick={() => setCheckoutOpen(true)} sx={{ fontWeight: 950, py: 1.5, borderRadius: '16px', bgcolor: '#6a1b9a', boxShadow: '0 8px 20px rgba(106, 27, 154, 0.2)' }}>PROCEED TO PAYMENT</Button>
+            )}
+            {(order?.items || []).length > 0 && (
+              <Stack direction="row" spacing={1.5}>
+                <Button 
+                  variant="outlined" 
+                  fullWidth 
+                  size="small"
+                  startIcon={<PrintIcon />}
+                  onClick={handlePrintKOT}
+                  sx={{ fontWeight: 950, py: 1, borderRadius: '12px', borderColor: '#e9762b', color: '#e9762b' }}
+                >
+                  KITCHEN BILL
+                </Button>
+                {order?.invoice && (
+                  <Button 
+                    variant="outlined" 
+                    fullWidth 
+                    size="small"
+                    startIcon={<BillIcon />}
+                    onClick={handlePrint}
+                    sx={{ fontWeight: 950, py: 1, borderRadius: '12px', borderColor: '#2e7d32', color: '#2e7d32' }}
+                  >
+                    INVOICE BILL
+                  </Button>
+                )}
+              </Stack>
             )}
           </Stack>
         )}
@@ -1260,6 +1324,9 @@ const OrderDialog: React.FC<OrderDialogProps> = ({ open, onClose, table, initial
       <Box sx={{ display: 'none' }}>
         <div id="thermal-invoice-container">
           {order?.invoice && <InvoicePrint invoice={order.invoice} orderItems={order.items || []} tableNumber={table?.number || order.table_number || ''} />}
+        </div>
+        <div id="thermal-kot-container">
+          {order && <KOTPrint order={order} items={order.items || []} store={activeStore} />}
         </div>
       </Box>
 
