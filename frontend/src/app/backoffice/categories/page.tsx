@@ -523,7 +523,7 @@ export default function CategoryPage() {
 
         <TableContainer sx={{ 
           flexGrow: 1, 
-          overflow: 'hidden', 
+          overflow: 'auto', 
           borderRadius: "32px", 
           border: '1px solid',
           borderColor: alpha(theme.palette.divider, 0.08), 

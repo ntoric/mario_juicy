@@ -230,7 +230,7 @@ export default function ItemTable({
   return (
     <TableContainer sx={{ 
       borderRadius: "32px", 
-      overflow: "hidden", 
+      overflow: "auto", 
       border: '1px solid',
       borderColor: alpha(theme.palette.divider, 0.08), 
       boxShadow: '0 20px 60px rgba(0,0,0,0.04)',
