@@ -1,16 +1,20 @@
 package config
 
 import (
+	"context"
 	"fmt"
 	"log"
 	"os"
 
+	"github.com/go-redis/redis/v8"
 	"github.com/joho/godotenv"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 )
 
 var DB *gorm.DB
+var Redis *redis.Client
+var Ctx = context.Background()
 
 func LoadConfig() {
 	err := godotenv.Load()
@@ -38,4 +42,30 @@ func ConnectDatabase() {
 
 	DB = database
 	fmt.Println("Database connection established")
+}
+
+func ConnectRedis() {
+	redisAddr := os.Getenv("REDIS_URL")
+	if redisAddr == "" {
+		host := os.Getenv("REDIS_HOST")
+		if host == "" {
+			host = "redis"
+		}
+		port := os.Getenv("REDIS_PORT")
+		if port == "" {
+			port = "6379"
+		}
+		redisAddr = fmt.Sprintf("%s:%s", host, port)
+	}
+
+	Redis = redis.NewClient(&redis.Options{
+		Addr: redisAddr,
+	})
+
+	_, err := Redis.Ping(Ctx).Result()
+	if err != nil {
+		log.Println("Warning: Failed to connect to Redis:", err)
+	} else {
+		fmt.Println("Redis connection established")
+	}
 }

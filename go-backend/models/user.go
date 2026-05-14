@@ -15,7 +15,7 @@ type User struct {
 	Email       string     `gorm:"size:254" json:"email"`
 	IsStaff     bool       `gorm:"default:false" json:"is_staff"`
 	IsActive    bool       `gorm:"default:true" json:"is_active"`
-	DateJoined  time.Time  `gorm:"default:now()" json:"date_joined"`
+	DateJoined  time.Time  `gorm:"default:CURRENT_TIMESTAMP" json:"date_joined"`
 	StoreID     *uint      `gorm:"column:store_id" json:"store_id"`
 	Store       Store      `gorm:"foreignKey:StoreID" json:"store,omitempty"`
 	Groups      []Group    `gorm:"many2many:users_user_groups;foreignKey:ID;joinForeignKey:user_id;References:ID;joinReferences:group_id" json:"groups"`

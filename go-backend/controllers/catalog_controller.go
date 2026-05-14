@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"mario-backend/config"
 	"mario-backend/models"
+	"mario-backend/services"
 	"mario-backend/utils"
 	"net/http"
 
@@ -24,18 +25,28 @@ type CategoryResponse struct {
 }
 
 func GetCategories(c *gin.Context) {
+	storeIDVal, exists := c.Get("active_store_id")
+	if !exists {
+		utils.ErrorResponse(c, http.StatusBadRequest, "Store ID required")
+		return
+	}
+	storeID := storeIDVal.(uint)
+
+	cacheKey := services.GetCategoriesCacheKey(storeID)
+	var response []CategoryResponse
+	if services.GetCache(cacheKey, &response) {
+		utils.Debug("Cache hit for categories", zap.Uint("storeID", storeID))
+		utils.SuccessResponse(c, http.StatusOK, response)
+		return
+	}
+
 	var categories []models.Category
-	storeID, _ := c.Get("active_store_id")
-	utils.Debug("Fetching categories", zap.Any("storeID", storeID))
-	query := config.DB
-	if storeID != nil {
-		query = query.Where("store_id = ?", storeID)
+	utils.Debug("Fetching categories from DB", zap.Uint("storeID", storeID))
+	if err := config.DB.Where("store_id = ?", storeID).Find(&categories).Error; err != nil {
+		utils.Error("Failed to fetch categories", zap.Error(err), zap.Uint("storeID", storeID))
 	}
-	if err := query.Find(&categories).Error; err != nil {
-		utils.Error("Failed to fetch categories", zap.Error(err), zap.Any("storeID", storeID))
-	}
-	
-	response := []CategoryResponse{}
+
+	response = []CategoryResponse{}
 	for _, cat := range categories {
 		response = append(response, CategoryResponse{
 			ID:        cat.ID,
@@ -46,6 +57,8 @@ func GetCategories(c *gin.Context) {
 			UpdatedAt: cat.UpdatedAt.Format("2006-01-02T15:04:05.999Z07:00"),
 		})
 	}
+
+	services.SetCache(cacheKey, response, services.CacheExpiration)
 	utils.SuccessResponse(c, http.StatusOK, response)
 }
 
@@ -64,20 +77,31 @@ type ItemResponse struct {
 }
 
 func GetItems(c *gin.Context) {
-	var items []models.Item
-	storeID, _ := c.Get("active_store_id")
-	categoryID := c.Query("category_id")
-	utils.Debug("Fetching items", zap.Any("storeID", storeID), zap.String("categoryID", categoryID))
-	query := config.DB.Preload("Category")
-	if storeID != nil {
-		query = query.Where("store_id = ?", storeID)
+	storeIDVal, exists := c.Get("active_store_id")
+	if !exists {
+		utils.ErrorResponse(c, http.StatusBadRequest, "Store ID required")
+		return
 	}
+	storeID := storeIDVal.(uint)
+	categoryID := c.Query("category_id")
+
+	cacheKey := services.GetItemsCacheKey(storeID, categoryID)
+	var response []ItemResponse
+	if services.GetCache(cacheKey, &response) {
+		utils.Debug("Cache hit for items", zap.Uint("storeID", storeID), zap.String("categoryID", categoryID))
+		utils.SuccessResponse(c, http.StatusOK, response)
+		return
+	}
+
+	var items []models.Item
+	utils.Debug("Fetching items from DB", zap.Uint("storeID", storeID), zap.String("categoryID", categoryID))
+	query := config.DB.Preload("Category").Where("store_id = ?", storeID)
 	if categoryID != "" {
 		query = query.Where("category_id = ?", categoryID)
 	}
 	query.Find(&items)
 
-	response := []ItemResponse{}
+	response = []ItemResponse{}
 	for _, i := range items {
 		catName := ""
 		if i.Category.ID != 0 {
@@ -97,6 +121,8 @@ func GetItems(c *gin.Context) {
 			UpdatedAt:    i.UpdatedAt.Format("2006-01-02T15:04:05.999Z07:00"),
 		})
 	}
+
+	services.SetCache(cacheKey, response, services.CacheExpiration)
 	utils.SuccessResponse(c, http.StatusOK, response)
 }
 
@@ -160,6 +186,11 @@ func CreateCategory(c *gin.Context) {
 		return
 	}
 
+	// Invalidate Cache
+	if category.StoreID != nil {
+		services.InvalidateCache(services.GetCategoriesCacheKey(*category.StoreID))
+	}
+
 	utils.SuccessResponse(c, http.StatusCreated, category)
 }
 
@@ -196,15 +227,34 @@ func UpdateCategory(c *gin.Context) {
 		return
 	}
 
+	// Invalidate Cache
+	if category.StoreID != nil {
+		services.InvalidateCache(services.GetCategoriesCacheKey(*category.StoreID))
+	}
+
 	utils.SuccessResponse(c, http.StatusOK, category)
 }
 
 func DeleteCategory(c *gin.Context) {
 	id := c.Param("id")
+	var category models.Category
+	if err := config.DB.First(&category, id).Error; err != nil {
+		utils.ErrorResponse(c, http.StatusNotFound, "Category not found")
+		return
+	}
+
+	storeID := category.StoreID
+
 	if err := config.DB.Delete(&models.Category{}, id).Error; err != nil {
 		utils.ErrorResponse(c, http.StatusInternalServerError, "Failed to delete category")
 		return
 	}
+
+	// Invalidate Cache
+	if storeID != nil {
+		services.InvalidateCache(services.GetCategoriesCacheKey(*storeID))
+	}
+
 	utils.SuccessResponse(c, http.StatusOK, gin.H{"message": "Category deleted"})
 }
 
@@ -252,6 +302,14 @@ func CreateItem(c *gin.Context) {
 	if err := config.DB.Create(&item).Error; err != nil {
 		utils.ErrorResponse(c, http.StatusInternalServerError, "Failed to create item")
 		return
+	}
+
+	// Invalidate Cache
+	if item.StoreID != nil {
+		services.InvalidateCache(services.GetItemsCacheKey(*item.StoreID, ""))
+		if item.CategoryID != nil {
+			services.InvalidateCache(services.GetItemsCacheKey(*item.StoreID, fmt.Sprintf("%d", *item.CategoryID)))
+		}
 	}
 
 	utils.SuccessResponse(c, http.StatusCreated, item)
@@ -302,15 +360,41 @@ func UpdateItem(c *gin.Context) {
 		return
 	}
 
+	// Invalidate Cache
+	if item.StoreID != nil {
+		services.InvalidateCache(services.GetItemsCacheKey(*item.StoreID, ""))
+		if item.CategoryID != nil {
+			services.InvalidateCache(services.GetItemsCacheKey(*item.StoreID, fmt.Sprintf("%d", *item.CategoryID)))
+		}
+	}
+
 	utils.SuccessResponse(c, http.StatusOK, item)
 }
 
 func DeleteItem(c *gin.Context) {
 	id := c.Param("id")
+	var item models.Item
+	if err := config.DB.First(&item, id).Error; err != nil {
+		utils.ErrorResponse(c, http.StatusNotFound, "Item not found")
+		return
+	}
+
+	storeID := item.StoreID
+	categoryID := item.CategoryID
+
 	if err := config.DB.Delete(&models.Item{}, id).Error; err != nil {
 		utils.ErrorResponse(c, http.StatusInternalServerError, "Failed to delete item")
 		return
 	}
+
+	// Invalidate Cache
+	if storeID != nil {
+		services.InvalidateCache(services.GetItemsCacheKey(*storeID, ""))
+		if categoryID != nil {
+			services.InvalidateCache(services.GetItemsCacheKey(*storeID, fmt.Sprintf("%d", *categoryID)))
+		}
+	}
+
 	utils.SuccessResponse(c, http.StatusOK, gin.H{"message": "Item deleted"})
 }
 
@@ -328,6 +412,14 @@ func ToggleItemStatus(c *gin.Context) {
 		return
 	}
 
+	// Invalidate Cache
+	if item.StoreID != nil {
+		services.InvalidateCache(services.GetItemsCacheKey(*item.StoreID, ""))
+		if item.CategoryID != nil {
+			services.InvalidateCache(services.GetItemsCacheKey(*item.StoreID, fmt.Sprintf("%d", *item.CategoryID)))
+		}
+	}
+
 	utils.SuccessResponse(c, http.StatusOK, item)
 }
 
@@ -343,6 +435,11 @@ func ToggleCategoryStatus(c *gin.Context) {
 	if err := config.DB.Save(&category).Error; err != nil {
 		utils.ErrorResponse(c, http.StatusInternalServerError, "Failed to toggle status")
 		return
+	}
+
+	// Invalidate Cache
+	if category.StoreID != nil {
+		services.InvalidateCache(services.GetCategoriesCacheKey(*category.StoreID))
 	}
 
 	utils.SuccessResponse(c, http.StatusOK, category)

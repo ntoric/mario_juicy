@@ -5,6 +5,7 @@ import (
 	"mario-backend/middleware"
 	"mario-backend/models"
 	"mario-backend/routes"
+	"mario-backend/services"
 	"mario-backend/utils"
 	"mario-backend/websocket"
 	"os"
@@ -42,9 +43,13 @@ func main() {
 	defer sentry.Flush(2 * time.Second)
 
 	config.ConnectDatabase()
+	config.ConnectRedis()
 	config.DB.AutoMigrate(&models.User{}, &models.Group{}, &models.SupportSettings{}, &models.Store{}, &models.Notification{}, &models.BusinessConfig{})
 	seedGroups()
 	seedSupportSettings()
+
+	// Start Periodic Cleanup Cron
+	services.StartDataCleanupCron()
 
 	// Initialize Gin
 	r := gin.New()

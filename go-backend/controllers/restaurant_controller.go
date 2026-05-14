@@ -34,16 +34,27 @@ type TableResponse struct {
 }
 
 func GetTables(c *gin.Context) {
-	var tables []models.Table
-	storeID, _ := c.Get("active_store_id")
-	
-	query := config.DB.Preload("Store")
-	if storeID != nil {
-		query = query.Where("store_id = ?", storeID)
+	storeIDVal, exists := c.Get("active_store_id")
+	if !exists {
+		utils.ErrorResponse(c, http.StatusBadRequest, "Store ID required")
+		return
 	}
+	storeID := storeIDVal.(uint)
+
+	cacheKey := services.GetTablesCacheKey(storeID)
+	var response []TableResponse
+	if services.GetCache(cacheKey, &response) {
+		utils.Debug("Cache hit for tables", zap.Uint("storeID", storeID))
+		utils.SuccessResponse(c, http.StatusOK, response)
+		return
+	}
+
+	var tables []models.Table
+	utils.Debug("Fetching tables from DB", zap.Uint("storeID", storeID))
+	query := config.DB.Preload("Store").Where("store_id = ?", storeID)
 	query.Find(&tables)
 
-	response := []TableResponse{}
+	response = []TableResponse{}
 	for _, t := range tables {
 		// Calculate active orders
 		var activeOrders []models.Order
@@ -98,6 +109,7 @@ func GetTables(c *gin.Context) {
 		})
 	}
 
+	services.SetCache(cacheKey, response, services.CacheExpiration)
 	utils.SuccessResponse(c, http.StatusOK, response)
 }
 
@@ -119,6 +131,11 @@ func CreateTable(c *gin.Context) {
 	if err := config.DB.Create(&table).Error; err != nil {
 		utils.ErrorResponse(c, http.StatusInternalServerError, err.Error())
 		return
+	}
+
+	// Invalidate Cache
+	if table.StoreID != nil {
+		services.InvalidateCache(services.GetTablesCacheKey(*table.StoreID))
 	}
 
 	websocket.Broadcast("TABLE_UPDATED", table)
@@ -144,15 +161,33 @@ func UpdateTable(c *gin.Context) {
 		return
 	}
 
+	// Invalidate Cache
+	if table.StoreID != nil {
+		services.InvalidateCache(services.GetTablesCacheKey(*table.StoreID))
+	}
+
 	websocket.Broadcast("TABLE_UPDATED", table)
 	utils.SuccessResponse(c, http.StatusOK, table)
 }
 
 func DeleteTable(c *gin.Context) {
 	id := c.Param("id")
+	var table models.Table
+	if err := config.DB.First(&table, id).Error; err != nil {
+		utils.ErrorResponse(c, http.StatusNotFound, "Table not found")
+		return
+	}
+
+	storeID := table.StoreID
+
 	if err := config.DB.Delete(&models.Table{}, id).Error; err != nil {
 		utils.ErrorResponse(c, http.StatusInternalServerError, err.Error())
 		return
+	}
+
+	// Invalidate Cache
+	if storeID != nil {
+		services.InvalidateCache(services.GetTablesCacheKey(*storeID))
 	}
 
 	websocket.Broadcast("TABLE_UPDATED", gin.H{"id": id})
@@ -178,6 +213,12 @@ func UpdateTablePosition(c *gin.Context) {
 		return
 	}
 
+	// Invalidate Cache
+	storeIDVal, _ := c.Get("active_store_id")
+	if storeIDVal != nil {
+		services.InvalidateCache(services.GetTablesCacheKey(storeIDVal.(uint)))
+	}
+
 	websocket.Broadcast("TABLE_UPDATED", gin.H{"id": id})
 	utils.SuccessResponse(c, http.StatusOK, gin.H{"message": "Position updated"})
 }
@@ -188,6 +229,13 @@ func ReleaseTable(c *gin.Context) {
 		utils.ErrorResponse(c, http.StatusInternalServerError, err.Error())
 		return
 	}
+
+	// Invalidate Cache
+	storeIDVal, _ := c.Get("active_store_id")
+	if storeIDVal != nil {
+		services.InvalidateCache(services.GetTablesCacheKey(storeIDVal.(uint)))
+	}
+
 	websocket.Broadcast("TABLE_UPDATED", gin.H{"id": id})
 	utils.SuccessResponse(c, http.StatusOK, gin.H{"message": "Table released"})
 }
@@ -198,6 +246,13 @@ func RecalculateAllTableStatuses(c *gin.Context) {
 	for _, t := range tables {
 		services.UpdateTableStatus(t.ID)
 	}
+
+	// Invalidate Cache
+	storeIDVal, _ := c.Get("active_store_id")
+	if storeIDVal != nil {
+		services.InvalidateCache(services.GetTablesCacheKey(storeIDVal.(uint)))
+	}
+
 	websocket.Broadcast("TABLE_UPDATED", nil)
 	utils.SuccessResponse(c, http.StatusOK, gin.H{"message": "All statuses recalculated"})
 }
@@ -413,6 +468,11 @@ func CreateOrder(c *gin.Context) {
 		services.UpdateTableStatus(*order.TableID)
 	}
 
+	// Invalidate Table Cache
+	if order.StoreID != nil {
+		services.InvalidateCache(services.GetTablesCacheKey(*order.StoreID))
+	}
+
 	utils.Info("Order created", zap.Uint("orderID", order.ID), zap.String("type", order.OrderType), zap.String("customer", order.CustomerName))
 	// Re-fetch with preloads for complete response
 	config.DB.Preload("Table").Preload("Items.Item").Preload("Waiter").Preload("Invoice").First(&order, order.ID)
@@ -555,6 +615,11 @@ func UpdateOrder(c *gin.Context) {
 		return
 	}
 
+	// Invalidate Table Cache
+	if order.StoreID != nil {
+		services.InvalidateCache(services.GetTablesCacheKey(*order.StoreID))
+	}
+
 	websocket.Broadcast("ORDER_UPDATED", MapOrderToResponse(order))
 
 	// Create Notification for status change
@@ -585,6 +650,11 @@ func DeleteOrder(c *gin.Context) {
 		services.UpdateTableStatus(*tableID)
 	}
 
+	// Invalidate Table Cache
+	if order.StoreID != nil {
+		services.InvalidateCache(services.GetTablesCacheKey(*order.StoreID))
+	}
+
 	websocket.Broadcast("ORDER_DELETED", gin.H{"id": id})
 	utils.SuccessResponse(c, http.StatusOK, gin.H{"message": "Order deleted"})
 }
@@ -612,6 +682,11 @@ func SendToKitchen(c *gin.Context) {
 		config.DB.Model(&order).Update("status", status)
 	}
 
+	// Invalidate Table Cache
+	if order.StoreID != nil {
+		services.InvalidateCache(services.GetTablesCacheKey(*order.StoreID))
+	}
+
 	websocket.Broadcast("ORDER_UPDATED", gin.H{"id": order.ID, "status": status})
 	utils.SuccessResponse(c, http.StatusOK, gin.H{"message": "Sent to kitchen"})
 }
@@ -635,6 +710,11 @@ func ServeAllReady(c *gin.Context) {
 	config.DB.Model(&models.OrderItem{}).Where("order_id = ? AND status NOT IN ?", order.ID, []string{"SERVED", "CANCELLED"}).Count(&count)
 	if count == 0 {
 		config.DB.Model(&order).Update("status", "SERVED")
+	}
+
+	// Invalidate Table Cache
+	if order.StoreID != nil {
+		services.InvalidateCache(services.GetTablesCacheKey(*order.StoreID))
 	}
 
 	websocket.Broadcast("ORDER_UPDATED", gin.H{"id": order.ID, "status": "SERVED"})
@@ -665,6 +745,11 @@ func CancelOrder(c *gin.Context) {
 
 	if order.TableID != nil {
 		services.UpdateTableStatus(*order.TableID)
+	}
+
+	// Invalidate Table Cache
+	if order.StoreID != nil {
+		services.InvalidateCache(services.GetTablesCacheKey(*order.StoreID))
 	}
 
 	config.DB.Preload("Table").Preload("Items.Item").Preload("Waiter").Preload("Invoice").First(&order, id)
@@ -744,6 +829,12 @@ func ChangeOrderTable(c *gin.Context) {
 	}
 
 	config.DB.Preload("Table").Preload("Items.Item").Preload("Waiter").Preload("Invoice").First(&order, id)
+
+	// Invalidate Table Cache
+	if order.StoreID != nil {
+		services.InvalidateCache(services.GetTablesCacheKey(*order.StoreID))
+	}
+
 	websocket.Broadcast("ORDER_UPDATED", MapOrderToResponse(order))
 	websocket.Broadcast("TABLE_UPDATED", nil)
 
@@ -787,6 +878,11 @@ func UpdatePaymentStatus(c *gin.Context) {
 
 	if order.TableID != nil {
 		services.UpdateTableStatus(*order.TableID)
+	}
+
+	// Invalidate Table Cache
+	if order.StoreID != nil {
+		services.InvalidateCache(services.GetTablesCacheKey(*order.StoreID))
 	}
 
 	utils.SuccessResponse(c, http.StatusOK, MapOrderToResponse(order))
