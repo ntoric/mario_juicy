@@ -4,6 +4,8 @@ export interface Item {
   id: number;
   category: number | null;
   category_name: string | null;
+  store_id?: number;
+  store_name?: string;
   code: string | null;
   name: string;
   image: string | null;
@@ -22,8 +24,14 @@ export interface Category {
 }
 
 export const itemService = {
-  getItems: () => fetcher("/catalogs/items/"),
-  getCategories: () => fetcher("/catalogs/categories/"),
+  getItems: (storeId?: string | number) => {
+    const url = storeId ? `/catalogs/items/?store_id=${storeId}` : "/catalogs/items/";
+    return fetcher(url);
+  },
+  getCategories: (storeId?: string | number) => {
+    const url = storeId ? `/catalogs/categories/?store_id=${storeId}` : "/catalogs/categories/";
+    return fetcher(url);
+  },
   
   createItem: (formData: FormData) => fetcher("/catalogs/items/", {
     method: "POST",

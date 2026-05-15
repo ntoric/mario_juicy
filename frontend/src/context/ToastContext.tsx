@@ -51,7 +51,7 @@ export const ToastProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         duration={5000}
         toastOptions={{
           style: {
-            borderRadius: '12px',
+            borderRadius: '0.65rem',
             border: '1px solid #333',
             background: '#121212',
             color: '#fff',

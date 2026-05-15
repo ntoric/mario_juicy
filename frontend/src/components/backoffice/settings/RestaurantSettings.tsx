@@ -1,4 +1,5 @@
 "use client";
+import { useTheme, alpha } from "@mui/material/styles";
 
 import { useState, useEffect } from "react";
 import {
@@ -12,13 +13,14 @@ import {
   Stack,
   Divider,
   Button,
-  alpha,
-} from "@mui/material";
-import { Save as SaveIcon } from "@mui/icons-material";
+  } from "@mui/material";
+import { SaveOutlined as SaveIcon } from "@mui/icons-material";
 import { useAuth } from "@/hooks/useAuth";
 import { storeService } from "@/services/storeService";
 
 export default function RestaurantSettings() {
+  const theme = useTheme();
+
   const { activeStoreId, refreshActiveStore, loading: authLoading } = useAuth();
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -150,7 +152,7 @@ export default function RestaurantSettings() {
 
   if (!activeStoreId && !authLoading) {
     return (
-      <Alert severity="warning" sx={{ borderRadius: '7px' }}>
+      <Alert severity="warning" sx={{ borderRadius: '0.65rem' }}>
         No active store selected. Please select a store to view configuration.
       </Alert>
     );
@@ -158,11 +160,11 @@ export default function RestaurantSettings() {
 
   return (
     <Box sx={{ maxWidth: 800 }}>
-      {error && <Alert severity="error" sx={{ mb: 3, borderRadius: '7px' }}>{error}</Alert>}
+      {error && <Alert severity="error" sx={{ mb: 3, borderRadius: '0.65rem' }}>{error}</Alert>}
       
-      <Paper elevation={0} sx={{ border: '1px solid #e8e4d8', p: 4, borderRadius: '7px', bgcolor: 'white' }}>
+      <Paper elevation={0} sx={{ border: '1px solid #e8e4d8', p: 4, borderRadius: '0.65rem', bgcolor: 'white' }}>
         <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
-          <Typography variant="h6" sx={{ fontWeight: 800, fontSize: '1rem', color: '#e9762b', textTransform: 'uppercase' }}>
+          <Typography variant="h6" sx={{ fontWeight: 800, fontSize: '1rem', color: theme.palette.primary.main, textTransform: 'uppercase' }}>
             Store Configuration
           </Typography>
           <Button
@@ -170,7 +172,7 @@ export default function RestaurantSettings() {
             onClick={handleSaveSettings}
             disabled={saving}
             startIcon={saving ? <CircularProgress size={20} color="inherit" /> : <SaveIcon />}
-            sx={{ borderRadius: '8px', fontWeight: 800, px: 3 }}
+            sx={{ borderRadius: '0.65rem', fontWeight: 800, px: 3, height: 48 }}
           >
             {saving ? "SAVING..." : "SAVE SETTINGS"}
           </Button>
@@ -222,7 +224,7 @@ export default function RestaurantSettings() {
           <Divider />
 
           <Box>
-            <Typography variant="h6" sx={{ mb: 2, fontWeight: 800, fontSize: '1rem', color: '#e9762b', textTransform: 'uppercase' }}>
+            <Typography variant="h6" sx={{ mb: 2, fontWeight: 800, fontSize: '1rem', color: theme.palette.primary.main, textTransform: 'uppercase' }}>
               Printer Settings
             </Typography>
             <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
@@ -232,13 +234,13 @@ export default function RestaurantSettings() {
                   2-inch (58mm) for handheld/compact, 3-inch (80mm) for standard desktop printers.
                 </Typography>
               </Box>
-              <Stack direction="row" spacing={1} sx={{ bgcolor: alpha('#000', 0.05), p: 0.5, borderRadius: '7px' }}>
+              <Stack direction="row" spacing={1} sx={{ bgcolor: alpha('#000', 0.05), p: 0.5, borderRadius: '0.65rem' }}>
                 <Button
                   size="small"
                   variant={settings.thermal_printer_size === '2_INCH' ? 'contained' : 'text'}
                   onClick={() => setSettings({ ...settings, thermal_printer_size: '2_INCH' })}
                   sx={{ 
-                    borderRadius: '5px', fontWeight: 800, px: 2,
+                    borderRadius: '0.65rem', fontWeight: 800, px: 2,
                     bgcolor: settings.thermal_printer_size === '2_INCH' ? 'primary.main' : 'transparent',
                     color: settings.thermal_printer_size === '2_INCH' ? 'white' : 'text.primary',
                   }}
@@ -250,7 +252,7 @@ export default function RestaurantSettings() {
                   variant={settings.thermal_printer_size === '3_INCH' ? 'contained' : 'text'}
                   onClick={() => setSettings({ ...settings, thermal_printer_size: '3_INCH' })}
                   sx={{ 
-                    borderRadius: '5px', fontWeight: 800, px: 2,
+                    borderRadius: '0.65rem', fontWeight: 800, px: 2,
                     bgcolor: settings.thermal_printer_size === '3_INCH' ? 'primary.main' : 'transparent',
                     color: settings.thermal_printer_size === '3_INCH' ? 'white' : 'text.primary',
                   }}
@@ -267,7 +269,7 @@ export default function RestaurantSettings() {
                     <Typography variant="subtitle1" sx={{ fontWeight: 600 }}>Select Printer</Typography>
                     <Box 
                       sx={{ 
-                        px: 1, py: 0.25, borderRadius: '4px', fontSize: '0.65rem', fontWeight: 800,
+                        px: 1, py: 0.25, borderRadius: '0.65rem', fontSize: '0.65rem', fontWeight: 800,
                         bgcolor: serviceStatus === 'online' ? alpha('#4caf50', 0.1) : alpha('#f44336', 0.1),
                         color: serviceStatus === 'online' ? '#4caf50' : '#f44336',
                         border: '1px solid',
@@ -284,7 +286,7 @@ export default function RestaurantSettings() {
                     Currently selected: <b>{settings.thermal_printer_name || "None"}</b> ({settings.thermal_printer_type})
                   </Typography>
                 </Box>
-                <Button size="small" variant="outlined" onClick={detectPrinters} sx={{ borderRadius: '7px', fontWeight: 700 }}>
+                <Button size="small" variant="outlined" onClick={detectPrinters} sx={{ borderRadius: '0.65rem', fontWeight: 700 }}>
                   Refresh List
                 </Button>
               </Box>
@@ -307,8 +309,8 @@ export default function RestaurantSettings() {
                         p: 1.5, display: 'flex', alignItems: 'center', justifyContent: 'space-between',
                         border: '1px solid',
                         borderColor: settings.thermal_printer_name === printer.name ? 'primary.main' : '#e8e4d8',
-                        borderRadius: '7px', cursor: 'pointer',
-                        bgcolor: settings.thermal_printer_name === printer.name ? alpha('#e9762b', 0.05) : 'transparent',
+                        borderRadius: '0.65rem', cursor: 'pointer',
+                        bgcolor: settings.thermal_printer_name === printer.name ? alpha(theme.palette.primary.main, 0.05) : 'transparent',
                         '&:hover': { borderColor: 'primary.main' }
                       }}
                     >
@@ -325,7 +327,7 @@ export default function RestaurantSettings() {
                   ))}
                 </Stack>
               ) : (
-                <Alert severity="warning" sx={{ borderRadius: '7px' }}>
+                <Alert severity="warning" sx={{ borderRadius: '0.65rem' }}>
                   No printers detected.
                 </Alert>
               )}
@@ -340,7 +342,7 @@ export default function RestaurantSettings() {
         onClose={() => setSuccess(false)}
         anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
       >
-        <Alert onClose={() => setSuccess(false)} severity="success" sx={{ width: '100%', borderRadius: '5px', bgcolor: 'primary.main', color: 'white' }}>
+        <Alert onClose={() => setSuccess(false)} severity="success" sx={{ width: '100%', borderRadius: '0.65rem', bgcolor: 'primary.main', color: 'white' }}>
           Settings saved successfully
         </Alert>
       </Snackbar>

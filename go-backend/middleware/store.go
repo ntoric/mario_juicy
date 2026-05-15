@@ -24,6 +24,15 @@ func StoreMiddleware() gin.HandlerFunc {
 		storeIDStr := c.GetHeader("X-Store-ID")
 		var requestedStoreID uint
 
+		// Validation logic
+		isBusinessOwner := false
+		for _, g := range user.Groups {
+			if g.Name == "BUSINESS_OWNER" {
+				isBusinessOwner = true
+				break
+			}
+		}
+
 		if storeIDStr != "" {
 			sid, err := strconv.ParseUint(storeIDStr, 10, 32)
 			if err != nil {
@@ -34,15 +43,14 @@ func StoreMiddleware() gin.HandlerFunc {
 			requestedStoreID = uint(sid)
 		} else if user.StoreID != nil {
 			requestedStoreID = *user.StoreID
-		} else if !user.IsSuperuser {
+		} else if !user.IsSuperuser && !isBusinessOwner {
 			c.JSON(http.StatusForbidden, gin.H{"error": "User is not assigned to any store"})
 			c.Abort()
 			return
 		}
 
-		// Validation logic
-		if !user.IsSuperuser {
-			// If not superuser, they can ONLY access their own store
+		if !user.IsSuperuser && !isBusinessOwner {
+			// If not superuser or business owner, they can ONLY access their own store
 			if user.StoreID == nil || *user.StoreID != requestedStoreID {
 				c.JSON(http.StatusForbidden, gin.H{"error": "Access denied to this store"})
 				c.Abort()
@@ -59,7 +67,7 @@ func StoreMiddleware() gin.HandlerFunc {
 				return
 			}
 
-			if !store.IsActive && !user.IsSuperuser {
+			if !store.IsActive && !user.IsSuperuser && !isBusinessOwner {
 				c.JSON(http.StatusForbidden, gin.H{
 					"error": "Store is currently inactive. Please contact support.",
 					"status": "INACTIVE",

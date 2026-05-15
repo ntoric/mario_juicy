@@ -72,7 +72,7 @@ const InvoicePreviewDialog: React.FC<InvoicePreviewDialogProps> = ({
             size="small"
             startIcon={<DownloadIcon />} 
             onClick={onDownload}
-            sx={{ borderRadius: '8px', fontWeight: 800 }}
+            sx={{ borderRadius: '0.65rem', fontWeight: 800 }}
           >
             Download
           </Button>
@@ -81,7 +81,7 @@ const InvoicePreviewDialog: React.FC<InvoicePreviewDialogProps> = ({
             size="small"
             startIcon={<PrintIcon />} 
             onClick={onPrint}
-            sx={{ borderRadius: '8px', fontWeight: 800 }}
+            sx={{ borderRadius: '0.65rem', fontWeight: 800 }}
           >
             Print
           </Button>
@@ -102,7 +102,7 @@ const InvoicePreviewDialog: React.FC<InvoicePreviewDialogProps> = ({
           maxWidth: '500px',
           bgcolor: 'white',
           p: 4,
-          borderRadius: '16px',
+          borderRadius: '0.65rem',
           boxShadow: '0 8px 32px rgba(0,0,0,0.05)',
           height: 'fit-content'
         }}>

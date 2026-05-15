@@ -27,12 +27,12 @@ import {
   CardContent,
 } from "@mui/material";
 import {
-  Edit as EditIcon,
-  Delete as DeleteIcon,
-  Image as ImageIcon,
-  MoreVert as MoreVertIcon,
-  ToggleOn as ToggleOnIcon,
-  ToggleOff as ToggleOffIcon,
+  EditOutlined as EditIcon,
+  DeleteOutlined as DeleteIcon,
+  ImageOutlined as ImageIcon,
+  MoreVertOutlined as MoreVertIcon,
+  ToggleOnOutlined as ToggleOnIcon,
+  ToggleOffOutlined as ToggleOffIcon,
 } from "@mui/icons-material";
 import { Item } from "@/services/itemService";
 import { getImageUrl } from "@/lib/getImageUrl";
@@ -85,13 +85,13 @@ export default function ItemTable({
         p: 8, 
         textAlign: "center", 
         bgcolor: 'rgba(255,255,255,0.4)', 
-        borderRadius: '32px', 
+        borderRadius: '0.65rem', 
         border: '2px dashed',
         borderColor: alpha(theme.palette.divider, 0.1),
         backdropFilter: 'blur(10px)'
       }}>
-        <Box sx={{ p: 3, borderRadius: '24px', bgcolor: alpha('#e9762b', 0.05), display: 'inline-flex', mb: 2 }}>
-          <ImageIcon sx={{ fontSize: 48, color: '#e9762b', opacity: 0.5 }} />
+        <Box sx={{ p: 3, borderRadius: '0.65rem', bgcolor: alpha(theme.palette.primary.main, 0.05), display: 'inline-flex', mb: 2 }}>
+          <ImageIcon sx={{ fontSize: 48, color: theme.palette.primary.main, opacity: 0.5 }} />
         </Box>
         <Typography variant="h6" sx={{ fontWeight: 1000, color: 'text.secondary' }}>No items found</Typography>
         <Typography variant="body2" color="text.secondary" sx={{ fontWeight: 600 }}>Your menu items will appear here once added.</Typography>
@@ -108,7 +108,7 @@ export default function ItemTable({
               <MuiCard 
                 onClick={() => onViewDetails?.(item)}
                 sx={{ 
-                  borderRadius: '24px', 
+                  borderRadius: '0.65rem', 
                   overflow: 'hidden', 
                   border: '1px solid',
                   borderColor: alpha(theme.palette.divider, 0.08),
@@ -116,14 +116,14 @@ export default function ItemTable({
                   bgcolor: 'rgba(255, 255, 255, 0.7)',
                   backdropFilter: 'blur(10px)',
                   transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
-                  '&:hover': { transform: 'translateY(-4px)', boxShadow: '0 10px 25px rgba(0,0,0,0.06)', borderColor: '#e9762b' }
+                  '&:hover': { transform: 'translateY(-4px)', boxShadow: '0 10px 25px rgba(0,0,0,0.06)', borderColor: theme.palette.primary.main }
                 }}
               >
                 <Box sx={{ display: 'flex', position: 'relative' }}>
                   <Avatar
                     src={getImageUrl(item.image)}
                     variant="square"
-                    sx={{ width: 100, height: 100, bgcolor: alpha('#e9762b', 0.02), borderRight: '1px solid', borderColor: alpha(theme.palette.divider, 0.05) }}
+                    sx={{ width: 100, height: 100, bgcolor: alpha(theme.palette.primary.main, 0.02), borderRight: '1px solid', borderColor: alpha(theme.palette.divider, 0.05) }}
                   >
                     <ImageIcon sx={{ color: alpha('#1a1a1a', 0.1) }} />
                   </Avatar>
@@ -140,9 +140,9 @@ export default function ItemTable({
                             height: 18, 
                             fontSize: '0.6rem', 
                             fontWeight: 800, 
-                            borderRadius: '6px',
-                            bgcolor: alpha('#e9762b', 0.08),
-                            color: '#e9762b'
+                            borderRadius: '0.65rem',
+                            bgcolor: alpha(theme.palette.primary.main, 0.08),
+                            color: theme.palette.primary.main
                           }} 
                         />
                       </Box>
@@ -168,7 +168,7 @@ export default function ItemTable({
                           height: 20, 
                           fontSize: '0.6rem', 
                           fontWeight: 1000,
-                          borderRadius: '8px',
+                          borderRadius: '0.65rem',
                           bgcolor: item.is_enabled ? alpha('#10b981', 0.1) : alpha('#64748b', 0.1),
                           color: item.is_enabled ? '#10b981' : '#64748b'
                         }}
@@ -185,7 +185,7 @@ export default function ItemTable({
           anchorEl={anchorEl}
           open={Boolean(anchorEl)}
           onClose={handleCloseMenu}
-          slotProps={{ paper: { sx: { borderRadius: '16px', boxShadow: '0 10px 35px rgba(0,0,0,0.1)', mt: 1 } } }}
+          slotProps={{ paper: { sx: { borderRadius: '0.65rem', boxShadow: '0 10px 35px rgba(0,0,0,0.1)', mt: 1 } } }}
         >
           {canEdit && (
             <MenuItem onClick={() => {
@@ -229,7 +229,7 @@ export default function ItemTable({
 
   return (
     <TableContainer sx={{ 
-      borderRadius: "32px", 
+      borderRadius: "0.65rem", 
       overflow: "auto", 
       border: '1px solid',
       borderColor: alpha(theme.palette.divider, 0.08), 
@@ -255,7 +255,7 @@ export default function ItemTable({
                 hover 
                 sx={{ 
                   transition: 'all 0.2s ease',
-                  '&:hover': { bgcolor: alpha('#e9762b', 0.02) },
+                  '&:hover': { bgcolor: alpha(theme.palette.primary.main, 0.02) },
                   '& .MuiTableCell-root': { py: 2, borderBottom: '1px solid', borderColor: alpha(theme.palette.divider, 0.04) }
                 }}
             >
@@ -269,7 +269,7 @@ export default function ItemTable({
                     bgcolor: "white", 
                     border: "1px solid",
                     borderColor: alpha(theme.palette.divider, 0.08), 
-                    borderRadius: '16px',
+                    borderRadius: '0.65rem',
                     boxShadow: '0 4px 12px rgba(0,0,0,0.03)'
                   }}
                 >
@@ -294,11 +294,11 @@ export default function ItemTable({
                     height: 24, 
                     fontSize: '0.65rem', 
                     fontWeight: 1000, 
-                    borderRadius: '10px',
-                    bgcolor: alpha('#e9762b', 0.06),
-                    color: '#e9762b',
+                    borderRadius: '0.65rem',
+                    bgcolor: alpha(theme.palette.primary.main, 0.06),
+                    color: theme.palette.primary.main,
                     border: '1px solid',
-                    borderColor: alpha('#e9762b', 0.1)
+                    borderColor: alpha(theme.palette.primary.main, 0.1)
                   }} 
                 />
               </TableCell>
@@ -316,7 +316,7 @@ export default function ItemTable({
                         height: 26,
                         px: 1,
                         fontSize: '0.65rem',
-                        borderRadius: '10px',
+                        borderRadius: '0.65rem',
                         bgcolor: item.is_enabled ? alpha('#10b981', 0.1) : alpha('#64748b', 0.1),
                         color: item.is_enabled ? '#10b981' : '#64748b',
                         border: '1px solid',
@@ -332,10 +332,10 @@ export default function ItemTable({
                         size="small"
                         onClick={() => onEdit(item)}
                         sx={{ 
-                          bgcolor: alpha('#e9762b', 0.05), 
-                          color: '#e9762b', 
-                          borderRadius: '12px',
-                          '&:hover': { bgcolor: '#e9762b', color: 'white' }
+                          bgcolor: alpha(theme.palette.primary.main, 0.05), 
+                          color: theme.palette.primary.main, 
+                          borderRadius: '0.65rem',
+                          '&:hover': { bgcolor: theme.palette.primary.main, color: 'white' }
                         }}
                       >
                         <EditIcon sx={{ fontSize: 18 }} />
@@ -350,7 +350,7 @@ export default function ItemTable({
                         sx={{ 
                           color: '#ef4444',
                           bgcolor: alpha('#ef4444', 0.05), 
-                          borderRadius: '12px',
+                          borderRadius: '0.65rem',
                           '&:hover': { bgcolor: '#ef4444', color: 'white' }
                         }}
                       >
@@ -369,7 +369,7 @@ export default function ItemTable({
         anchorEl={anchorEl}
         open={Boolean(anchorEl)}
         onClose={handleCloseMenu}
-        slotProps={{ paper: { sx: { borderRadius: '16px', boxShadow: '0 10px 35px rgba(0,0,0,0.1)', mt: 1 } } }}
+        slotProps={{ paper: { sx: { borderRadius: '0.65rem', boxShadow: '0 10px 35px rgba(0,0,0,0.1)', mt: 1 } } }}
       >
         {canEdit && (
           <MenuItem onClick={() => {

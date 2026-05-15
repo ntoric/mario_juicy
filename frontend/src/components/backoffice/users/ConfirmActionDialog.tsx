@@ -39,7 +39,7 @@ const ConfirmActionDialog: React.FC<ConfirmActionDialogProps> = ({
       slotProps={{
         paper: {
           sx: {
-            borderRadius: 3,
+            borderRadius: '0.65rem',
             p: 1,
             maxWidth: 400
           }
@@ -57,7 +57,7 @@ const ConfirmActionDialog: React.FC<ConfirmActionDialogProps> = ({
           onClick={onClose} 
           variant="outlined" 
           color="inherit"
-          sx={{ borderRadius: 2, flex: 1, borderColor: '#eee' }}
+          sx={{ borderRadius: '0.65rem', flex: 1, borderColor: '#eee' }}
         >
           {cancelText}
         </Button>
@@ -65,7 +65,7 @@ const ConfirmActionDialog: React.FC<ConfirmActionDialogProps> = ({
           onClick={onConfirm} 
           variant="contained" 
           color={confirmColor}
-          sx={{ borderRadius: 2, flex: 1, boxShadow: 'none' }}
+          sx={{ borderRadius: '0.65rem', flex: 1, boxShadow: 'none' }}
           autoFocus
         >
           {confirmText}

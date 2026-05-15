@@ -15,6 +15,7 @@ interface UserProfile {
   first_name: string;
   last_name: string;
   store: Store | null;
+  must_change_password: boolean;
 }
 
 interface AuthContextType {
@@ -51,9 +52,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setUser(data);
       
       const isSuperAdmin = data.primary_role === 'SUPER_ADMIN';
+      const isBusinessOwner = data.primary_role === 'BUSINESS_OWNER';
+      const isGlobalUser = isSuperAdmin || isBusinessOwner;
       const savedStoreId = localStorage.getItem('activeStoreId');
       
-      if (isSuperAdmin) {
+      if (isGlobalUser) {
         if (savedStoreId) {
           setActiveStoreId(parseInt(savedStoreId));
         } else if (data.store) {

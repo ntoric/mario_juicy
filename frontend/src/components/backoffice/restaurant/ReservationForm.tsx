@@ -86,7 +86,7 @@ const ReservationForm: React.FC<ReservationFormProps> = ({
           onClick={handleSubmit}
           startIcon={loading ? <CircularProgress size={20} color="inherit" /> : <SaveIcon />}
           disabled={loading}
-          sx={{ borderRadius: '12px', fontWeight: 800, px: 3 }}
+          sx={{ borderRadius: '0.65rem', fontWeight: 800, px: 3 }}
         >
           {initialData ? 'UPDATE' : 'CREATE'}
         </Button>
@@ -95,7 +95,7 @@ const ReservationForm: React.FC<ReservationFormProps> = ({
       <Box sx={{ flexGrow: 1, overflowY: 'auto', p: { xs: 2, md: 4 }, bgcolor: '#f9f9f9' }}>
         <Grid container spacing={4} sx={{ justifyContent: 'center' }}>
           <Grid size={{ xs: 12, md: 8, lg: 6 }}>
-            <Paper sx={{ p: 4, borderRadius: '24px', border: '1px solid #e8e4d8', boxShadow: '0 8px 32px rgba(0,0,0,0.03)' }}>
+            <Paper sx={{ p: 4, borderRadius: '0.65rem', border: '1px solid #e8e4d8', boxShadow: '0 8px 32px rgba(0,0,0,0.03)' }}>
               <Stack spacing={4}>
                 <Box>
                   <Typography variant="overline" sx={{ fontWeight: 900, color: 'primary.main', mb: 2, display: 'block' }}>GUEST INFORMATION</Typography>
@@ -104,14 +104,14 @@ const ReservationForm: React.FC<ReservationFormProps> = ({
                       <TextField
                         fullWidth label="Customer Name" name="customer_name"
                         value={formData.customer_name} onChange={handleChange} required
-                        slotProps={{ input: { sx: { borderRadius: '12px', bgcolor: 'white' } } }}
+                        slotProps={{ input: { sx: { borderRadius: '0.65rem', bgcolor: 'white' } } }}
                       />
                     </Grid>
                     <Grid size={{ xs: 12, sm: 6 }}>
                       <TextField
                         fullWidth label="Customer Phone" name="customer_phone"
                         value={formData.customer_phone} onChange={handleChange} required
-                        slotProps={{ input: { sx: { borderRadius: '12px', bgcolor: 'white' } } }}
+                        slotProps={{ input: { sx: { borderRadius: '0.65rem', bgcolor: 'white' } } }}
                       />
                     </Grid>
                   </Grid>
@@ -126,7 +126,7 @@ const ReservationForm: React.FC<ReservationFormProps> = ({
                       <TextField
                         fullWidth select label="Table" name="table"
                         value={formData.table} onChange={handleChange} required
-                        slotProps={{ input: { sx: { borderRadius: '12px', bgcolor: 'white' } } }}
+                        slotProps={{ input: { sx: { borderRadius: '0.65rem', bgcolor: 'white' } } }}
                       >
                         {tables.map((table) => (
                           <MenuItem key={table.id} value={table.id}>
@@ -139,7 +139,7 @@ const ReservationForm: React.FC<ReservationFormProps> = ({
                       <TextField
                         fullWidth label="Number of Guests" name="number_of_guests" type="number"
                         value={formData.number_of_guests} onChange={handleChange} required
-                        slotProps={{ input: { sx: { borderRadius: '12px', bgcolor: 'white' } } }}
+                        slotProps={{ input: { sx: { borderRadius: '0.65rem', bgcolor: 'white' } } }}
                       />
                     </Grid>
                     <Grid size={{ xs: 12 }}>
@@ -148,7 +148,7 @@ const ReservationForm: React.FC<ReservationFormProps> = ({
                         value={formData.reservation_time} onChange={handleChange} required
                         slotProps={{ 
                           inputLabel: { shrink: true },
-                          input: { sx: { borderRadius: '12px', bgcolor: 'white' } } 
+                          input: { sx: { borderRadius: '0.65rem', bgcolor: 'white' } } 
                         }}
                       />
                     </Grid>
@@ -156,7 +156,7 @@ const ReservationForm: React.FC<ReservationFormProps> = ({
                       <TextField
                         fullWidth label="Special Notes" name="notes" multiline rows={3}
                         value={formData.notes} onChange={handleChange}
-                        slotProps={{ input: { sx: { borderRadius: '12px', bgcolor: 'white' } } }}
+                        slotProps={{ input: { sx: { borderRadius: '0.65rem', bgcolor: 'white' } } }}
                       />
                     </Grid>
                   </Grid>

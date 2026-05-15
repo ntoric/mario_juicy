@@ -85,7 +85,7 @@ export default function SupportPage() {
             sx={{
               p: 4,
               height: "100%",
-              borderRadius: "24px",
+              borderRadius: '0.65rem',
               background: `linear-gradient(135deg, #ffffff 0%, ${alpha(theme.palette.primary.main, 0.03)} 100%)`,
               border: `1px solid ${alpha(theme.palette.primary.main, 0.08)}`,
               boxShadow: "0 20px 40px rgba(0,0,0,0.02)",
@@ -100,7 +100,7 @@ export default function SupportPage() {
               sx={{
                 width: 60,
                 height: 60,
-                borderRadius: "16px",
+                borderRadius: '0.65rem',
                 bgcolor: alpha(theme.palette.primary.main, 0.1),
                 display: "flex",
                 alignItems: "center",
@@ -123,7 +123,7 @@ export default function SupportPage() {
               href={`mailto:${supportEmail}`}
               sx={{
                 py: 1.5,
-                borderRadius: "12px",
+                borderRadius: '0.65rem',
                 fontWeight: 800,
                 fontSize: "1rem",
                 boxShadow: `0 8px 20px ${alpha(theme.palette.primary.main, 0.25)}`,
@@ -139,7 +139,7 @@ export default function SupportPage() {
             sx={{
               p: 4,
               height: "100%",
-              borderRadius: "24px",
+              borderRadius: '0.65rem',
               background: `linear-gradient(135deg, #ffffff 0%, ${alpha(theme.palette.secondary.main, 0.03)} 100%)`,
               border: `1px solid ${alpha(theme.palette.secondary.main, 0.08)}`,
               boxShadow: "0 20px 40px rgba(0,0,0,0.02)",
@@ -154,7 +154,7 @@ export default function SupportPage() {
               sx={{
                 width: 60,
                 height: 60,
-                borderRadius: "16px",
+                borderRadius: '0.65rem',
                 bgcolor: alpha(theme.palette.secondary.main, 0.1),
                 display: "flex",
                 alignItems: "center",
@@ -178,7 +178,7 @@ export default function SupportPage() {
               href={`tel:${supportPhone.replace(/\s/g, "")}`}
               sx={{
                 py: 1.5,
-                borderRadius: "12px",
+                borderRadius: '0.65rem',
                 fontWeight: 800,
                 fontSize: "1rem",
                 color: "white",
@@ -205,7 +205,7 @@ export default function SupportPage() {
                 <Paper
                   sx={{
                     p: 3,
-                    borderRadius: "16px",
+                    borderRadius: '0.65rem',
                     display: "flex",
                     alignItems: "center",
                     gap: 2,
@@ -241,7 +241,7 @@ export default function SupportPage() {
             sx={{
               p: 4,
               mt: 4,
-              borderRadius: "24px",
+              borderRadius: '0.65rem',
               bgcolor: "#1e293b",
               color: "white",
               display: "flex",

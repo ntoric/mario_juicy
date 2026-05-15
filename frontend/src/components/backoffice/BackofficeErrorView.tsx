@@ -1,5 +1,5 @@
 "use client";
-
+import { useTheme } from "@mui/material/styles";
 import Link from "next/link";
 import { Box, Typography, Button, Container } from "@mui/material";
 
@@ -20,6 +20,7 @@ export default function BackofficeErrorView({
   actionHref = "/backoffice",
   onAction,
 }: BackofficeErrorViewProps) {
+  const theme = useTheme();
   return (
     <Container maxWidth="md">
       <Box
@@ -47,7 +48,7 @@ export default function BackofficeErrorView({
         >
           {code}
         </Typography>
-        
+
         <Box sx={{ maxWidth: 450, mb: 4 }}>
           <Typography variant="h4" sx={{ mb: 2, fontWeight: 700 }}>
             {title}
@@ -63,16 +64,16 @@ export default function BackofficeErrorView({
             size="large"
             onClick={onAction}
             sx={{
-              bgcolor: "#E9762B",
+              bgcolor: theme.palette.primary.main,
               color: "white",
               px: 4,
               py: 1.5,
-              borderRadius: 2,
+              borderRadius: '0.65rem',
               fontSize: "1rem",
               fontWeight: 700,
               textTransform: "none",
               "&:hover": {
-                bgcolor: "#d35400",
+                bgcolor: theme.palette.primary.dark,
                 transform: "translateY(-2px)",
                 transition: "all 0.2s ease-in-out",
               },
@@ -87,16 +88,16 @@ export default function BackofficeErrorView({
             variant="contained"
             size="large"
             sx={{
-              bgcolor: "#E9762B",
+              bgcolor: theme.palette.primary.main,
               color: "white",
               px: 4,
               py: 1.5,
-              borderRadius: 2,
+              borderRadius: '0.65rem',
               fontSize: "1rem",
               fontWeight: 700,
               textTransform: "none",
               "&:hover": {
-                bgcolor: "#d35400",
+                bgcolor: theme.palette.primary.dark,
                 transform: "translateY(-2px)",
                 transition: "all 0.2s ease-in-out",
               },

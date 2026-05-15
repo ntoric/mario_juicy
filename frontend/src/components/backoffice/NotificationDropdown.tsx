@@ -17,9 +17,9 @@ import {
   CircularProgress,
 } from '@mui/material';
 import {
-  Notifications as NotificationsIcon,
-  Circle as CircleIcon,
-  AccessTime as TimeIcon
+  NotificationsOutlined as NotificationsIcon,
+  CircleOutlined as CircleIcon,
+  AccessTimeOutlined as TimeIcon
 } from '@mui/icons-material';
 import { notificationService, Notification } from '@/services/notificationService';
 import { useRouter } from 'next/navigation';
@@ -127,7 +127,7 @@ export default function NotificationDropdown() {
         onClick={handleClick}
         sx={{
           bgcolor: { xs: alpha('#ffffff', 0.15), md: theme.palette.background.default },
-          borderRadius: '7px',
+          borderRadius: '0.65rem',
           border: { xs: '1px solid rgba(255,255,255,0.1)', md: '1px solid rgba(0,0,0,0.03)' },
           '&:hover': { bgcolor: { xs: alpha('#ffffff', 0.25), md: alpha(theme.palette.primary.main, 0.08) } }
         }}
@@ -152,10 +152,11 @@ export default function NotificationDropdown() {
         }}
         slotProps={{
           paper: {
+            className: 'glass-effect',
             sx: {
               width: 360,
               maxHeight: 500,
-              borderRadius: '16px',
+              borderRadius: '0.65rem',
               mt: 1.5,
               boxShadow: '0 10px 40px rgba(0,0,0,0.1)',
               border: '1px solid #f1f5f9',

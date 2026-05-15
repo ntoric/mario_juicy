@@ -99,7 +99,7 @@ func main() {
 }
 
 func seedGroups() {
-	roles := []string{"SUPER_ADMIN", "ADMIN", "MANAGER", "CASHIER", "STAFF"}
+	roles := []string{"SUPER_ADMIN", "BUSINESS_OWNER", "ADMIN", "MANAGER", "CASHIER", "STAFF"}
 	for _, role := range roles {
 		var group models.Group
 		if err := config.DB.Where("name = ?", role).First(&group).Error; err != nil {

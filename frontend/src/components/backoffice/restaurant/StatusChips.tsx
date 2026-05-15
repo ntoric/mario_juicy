@@ -13,7 +13,7 @@ export const TableStatusChip: React.FC<{ status: string } & Partial<ChipProps>> 
   };
 
   const { color, label } = getColors() as any;
-  return <Chip label={label} color={color} size="small" variant="outlined" {...props} />;
+  return <Chip label={label} color={color} size="small" variant="outlined" {...props} sx={{ borderRadius: '0.65rem', fontWeight: 700, ...props.sx }} />;
 };
 
 export const OrderStatusChip: React.FC<{ status: string; orderType?: string } & Partial<ChipProps>> = ({ status, orderType, ...props }) => {
@@ -41,7 +41,7 @@ export const OrderStatusChip: React.FC<{ status: string; orderType?: string } & 
   };
 
   const { color, label } = getColors() as any;
-  return <Chip label={label} color={color} size="small" {...props} />;
+  return <Chip label={label} color={color} size="small" {...props} sx={{ borderRadius: '0.65rem', fontWeight: 700, ...props.sx }} />;
 };
 
 export const ItemStatusChip: React.FC<{ status: string; orderType?: string } & Partial<ChipProps>> = ({ status, orderType, ...props }) => {
@@ -65,6 +65,6 @@ export const ItemStatusChip: React.FC<{ status: string; orderType?: string } & P
   };
 
   const { color, label } = getColors() as any;
-  return <Chip label={label} color={color} size="small" variant="filled" {...props} />;
+  return <Chip label={label} color={color} size="small" variant="filled" {...props} sx={{ borderRadius: '0.65rem', fontWeight: 700, ...props.sx }} />;
 };
 

@@ -88,7 +88,7 @@ export default function LoginPage() {
     <div className={`login-container animate-fade-in`}>
       {/* Branding section for mobile/desktop */}
       <div className="login-brand-section">
-        <div className="brand-icon-wrapper" style={{ overflow: 'hidden', padding: 0, backgroundColor: 'white', borderRadius: '22px', border: '2px solid #E9762B' }}>
+        <div className="brand-icon-wrapper" style={{ overflow: 'hidden', padding: 0, backgroundColor: 'white', borderRadius: '0.65rem', border: '2px solid #E9762B' }}>
           <img 
             src="/mario_juicy_logo.png" 
             alt="Mario Logo" 
@@ -211,7 +211,7 @@ export default function LoginPage() {
           <div style={{
             backgroundColor: 'white',
             padding: '30px',
-            borderRadius: '24px',
+            borderRadius: '0.65rem',
             width: '100%',
             maxWidth: '400px',
             boxShadow: '0 20px 60px rgba(0,0,0,0.2)'

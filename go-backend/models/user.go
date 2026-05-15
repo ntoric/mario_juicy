@@ -18,7 +18,8 @@ type User struct {
 	DateJoined  time.Time  `gorm:"default:CURRENT_TIMESTAMP" json:"date_joined"`
 	StoreID     *uint      `gorm:"column:store_id" json:"store_id"`
 	Store       Store      `gorm:"foreignKey:StoreID" json:"store,omitempty"`
-	Groups      []Group    `gorm:"many2many:users_user_groups;foreignKey:ID;joinForeignKey:user_id;References:ID;joinReferences:group_id" json:"groups"`
+	Groups             []Group    `gorm:"many2many:users_user_groups;foreignKey:ID;joinForeignKey:user_id;References:ID;joinReferences:group_id" json:"groups"`
+	MustChangePassword bool       `gorm:"default:false" json:"must_change_password"`
 }
 
 func (User) TableName() string {

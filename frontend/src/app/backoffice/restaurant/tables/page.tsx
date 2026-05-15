@@ -48,6 +48,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { useWebSocket } from '@/hooks/useWebSocket';
 import { useConfirm } from '@/context/ConfirmContext';
 import { useToast } from '@/context/ToastContext';
+import PageHeader from "@/components/backoffice/PageHeader";
 
 // ── Status config ─────────────────────────────────────────────────────────────
 
@@ -71,7 +72,7 @@ const HtmlTooltip = styled(({ className, ...props }: TooltipProps) => (
     fontSize: theme.typography.pxToRem(12),
     border: '1px solid #dadde9',
     boxShadow: '0 10px 40px rgba(0,0,0,0.12)',
-    borderRadius: '16px',
+    borderRadius: '0.65rem',
     padding: '16px'
   },
   [`& .${tooltipClasses.arrow}`]: {
@@ -286,8 +287,8 @@ export default function TableMapPage() {
       <Box sx={{ minWidth: 180 }}>
         <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1.5, pb: 1, borderBottom: '1px solid rgba(0,0,0,0.06)' }}>
           <Typography sx={{ fontWeight: 900, fontSize: '0.85rem' }}>Order #{order.id}</Typography>
-          <Box sx={{ px: 1, py: 0.2, bgcolor: alpha('#E9762B', 0.1), borderRadius: '6px' }}>
-             <Typography sx={{ fontSize: '0.65rem', fontWeight: 900, color: '#E9762B' }}>{order.status}</Typography>
+          <Box sx={{ px: 1, py: 0.2, bgcolor: alpha(theme.palette.primary.main, 0.1), borderRadius: '0.65rem' }}>
+             <Typography sx={{ fontSize: '0.65rem', fontWeight: 900, color: theme.palette.primary.main }}>{order.status}</Typography>
           </Box>
         </Box>
 
@@ -310,7 +311,7 @@ export default function TableMapPage() {
         
         <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <Typography sx={{ fontWeight: 900, fontSize: '0.75rem' }}>Total Amount</Typography>
-          <Typography sx={{ fontWeight: 950, fontSize: '0.9rem', color: '#E9762B' }}>₹{order.total_amount}</Typography>
+          <Typography sx={{ fontWeight: 950, fontSize: '0.9rem', color: theme.palette.primary.main }}>₹{order.total_amount}</Typography>
         </Box>
       </Box>
     );
@@ -326,36 +327,20 @@ export default function TableMapPage() {
       position: 'relative'
     }}>
       {/* Decorative blobs */}
-      <Box sx={{ position: 'absolute', top: -80, right: -80, width: 300, height: 300, background: 'radial-gradient(circle, rgba(233,118,43,0.08) 0%, transparent 70%)', borderRadius: '50%', zIndex: 0, pointerEvents: 'none' }} />
+      <Box sx={{ position: 'absolute', top: -80, right: -80, width: 300, height: 300, background: `radial-gradient(circle, ${alpha(theme.palette.primary.main, 0.08)} 0%, transparent 70%)`, borderRadius: '50%', zIndex: 0, pointerEvents: 'none' }} />
       
-      {/* Header Row */}
-      <Box sx={{ 
-        mb: 2, 
-        display: 'flex', 
-        justifyContent: "space-between", 
-        alignItems: "center", 
-        gap: 2,
-        position: 'relative',
-        zIndex: 1,
-        bgcolor: 'white',
-        p: 2,
-        borderRadius: '20px',
-        boxShadow: '0 4px 20px rgba(0,0,0,0.03)',
-        border: '1px solid',
-        borderColor: alpha(theme.palette.divider, 0.05)
-      }}>
+      <PageHeader>
         <Box>
-          <Typography variant="h6" sx={{ 
-            fontWeight: 1000, 
+          <Typography variant="h4" sx={{ 
+            fontWeight: 600, 
             letterSpacing: '-0.02em', 
             mb: 0,
-            color: '#1a1a1a',
-            fontSize: '1.25rem'
+            background: `linear-gradient(90deg, ${theme.palette.primary.main} 0%, ${theme.palette.secondary.main} 100%)`, 
+            WebkitBackgroundClip: 'text', 
+            WebkitTextFillColor: 'transparent',
+            fontSize: '2rem'
           }}>
             Floor Layout
-          </Typography>
-          <Typography variant="caption" sx={{ color: 'text.disabled', fontWeight: 850, letterSpacing: '0.05em', textTransform: 'uppercase', fontSize: '0.65rem' }}>
-            {tables.length} TABLES • {counts['OCCUPIED'] || 0} ACTIVE
           </Typography>
         </Box>
 
@@ -368,10 +353,10 @@ export default function TableMapPage() {
               sx={{ 
                 height: 28,
                 fontWeight: 900, 
-                bgcolor: filterStatus === null ? alpha('#e9762b', 0.1) : 'transparent',
-                color: filterStatus === null ? '#e9762b' : 'text.disabled',
+                bgcolor: filterStatus === null ? alpha(theme.palette.primary.main, 0.1) : 'transparent',
+                color: filterStatus === null ? theme.palette.primary.main : 'text.disabled',
                 border: '1px solid',
-                borderColor: filterStatus === null ? '#e9762b' : alpha(theme.palette.divider, 0.1),
+                borderColor: filterStatus === null ? theme.palette.primary.main : alpha(theme.palette.divider, 0.1),
               }} 
             />
             {Object.entries(STATUS_CONFIG).map(([status, cfg]) => (
@@ -392,7 +377,7 @@ export default function TableMapPage() {
             ))}
           </Box>
 
-          <IconButton onClick={fetchTables} disabled={loading} size="small" sx={{ bgcolor: alpha('#000', 0.03), borderRadius: '10px' }}>
+          <IconButton onClick={fetchTables} disabled={loading} size="small" sx={{ bgcolor: alpha('#000', 0.03), borderRadius: '0.65rem', width: 48, height: 48 }}>
             <RefreshIcon sx={{ fontSize: 18, animation: loading ? 'spin 1s linear infinite' : 'none' }} />
           </IconButton>
 
@@ -405,12 +390,13 @@ export default function TableMapPage() {
                   onClick={sweepLayout}
                   startIcon={<SweepIcon sx={{ fontSize: 16 }} />}
                   sx={{ 
-                    borderRadius: '12px', 
-                    height: 36, 
+                    borderRadius: '0.65rem', 
+                    height: 48, 
+                    px: 3,
                     fontWeight: 950,
-                    borderColor: '#e9762b',
-                    color: '#e9762b',
-                    '&:hover': { bgcolor: alpha(theme.palette.primary.main, 0.05), borderColor: '#e9762b' }
+                    borderColor: theme.palette.primary.main,
+                    color: theme.palette.primary.main,
+                    '&:hover': { bgcolor: alpha(theme.palette.primary.main, 0.05), borderColor: theme.palette.primary.main }
                   }}
                 >
                   SWEEP
@@ -422,21 +408,21 @@ export default function TableMapPage() {
                 size="small"
                 startIcon={editMode ? <SaveIcon sx={{ fontSize: 16 }} /> : <EditModeIcon sx={{ fontSize: 16 }} />}
                 sx={{ 
-                  borderRadius: '12px', 
+                  borderRadius: '0.65rem', 
                   fontWeight: 950,
-                  height: 36,
-                  px: 2,
-                  bgcolor: editMode ? '#e9762b' : 'transparent',
-                  borderColor: '#e9762b',
-                  color: editMode ? 'white' : '#e9762b',
-                  '&:hover': { bgcolor: editMode ? '#d66a27' : alpha('#e9762b', 0.05), borderColor: '#e9762b' }
+                  height: 48,
+                  px: 3,
+                  bgcolor: editMode ? theme.palette.primary.main : 'transparent',
+                  borderColor: theme.palette.primary.main,
+                  color: editMode ? 'white' : theme.palette.primary.main,
+                  '&:hover': { bgcolor: editMode ? '#d66a27' : alpha(theme.palette.primary.main, 0.05), borderColor: theme.palette.primary.main }
                 }}
               >
                 {editMode ? 'FINISH' : 'DESIGN'}
               </Button>
 
               {editMode && Object.keys(pending).length > 0 && (
-                <Button variant="contained" size="small" onClick={saveLayout} disabled={saving} sx={{ borderRadius: '12px', height: 36, fontWeight: 950, bgcolor: '#2e7d32' }}>
+                <Button variant="contained" size="small" onClick={saveLayout} disabled={saving} sx={{ borderRadius: '0.65rem', height: 48, px: 3, fontWeight: 950, bgcolor: '#2e7d32' }}>
                   {saving ? <CircularProgress size={16} color="inherit" /> : 'SAVE'}
                 </Button>
               )}
@@ -448,11 +434,11 @@ export default function TableMapPage() {
                   onClick={() => setAddOpen(true)}
                   startIcon={<AddIcon sx={{ fontSize: 16 }} />}
                   sx={{ 
-                    borderRadius: '12px', 
-                    height: 36, 
+                    borderRadius: '0.65rem', 
+                    height: 48, 
+                    px: 3,
                     fontWeight: 950,
-                    bgcolor: '#e9762b',
-                    px: 2,
+                    bgcolor: theme.palette.primary.main,
                     '&:hover': { bgcolor: '#d66a27' }
                   }}
                 >
@@ -462,9 +448,9 @@ export default function TableMapPage() {
             </Box>
           )}
         </Stack>
-      </Box>
+      </PageHeader>
 
-      {error && <Alert severity="error" sx={{ mb: 3, borderRadius: '16px' }} onClose={() => setError(null)}>{error}</Alert>}
+      {error && <Alert severity="error" sx={{ mb: 3, borderRadius: '0.65rem' }} onClose={() => setError(null)}>{error}</Alert>}
 
       {/* Main Canvas */}
       <Paper
@@ -478,7 +464,7 @@ export default function TableMapPage() {
           flexGrow: 1,
           border: '1px solid',
           borderColor: alpha(theme.palette.divider, 0.08),
-          borderRadius: '24px',
+          borderRadius: '0.65rem',
           overflow: 'hidden',
           bgcolor: 'white',
           backgroundImage: `
@@ -490,7 +476,7 @@ export default function TableMapPage() {
           userSelect: 'none',
           touchAction: 'none',
           boxShadow: 'inset 0 2px 20px rgba(0,0,0,0.01)',
-          outline: editMode ? `2px dashed ${alpha('#e9762b', 0.4)}` : 'none',
+          outline: editMode ? `2px dashed ${alpha(theme.palette.primary.main, 0.4)}` : 'none',
           outlineOffset: '-4px'
         }}
       >
@@ -498,7 +484,7 @@ export default function TableMapPage() {
         
         {loading && (
           <Box sx={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 100, bgcolor: 'rgba(255,255,255,0.6)', backdropFilter: 'blur(4px)' }}>
-            <CircularProgress sx={{ color: '#e9762b' }} />
+            <CircularProgress sx={{ color: theme.palette.primary.main }} />
           </Box>
         )}
 
@@ -538,8 +524,8 @@ export default function TableMapPage() {
                   aspectRatio: '1',
                   bgcolor: cfg.bg,
                   backdropFilter: 'blur(6px)',
-                  border: isDragging ? '2px solid #e9762b' : `1px solid ${cfg.border}`,
-                  borderRadius: '20px',
+                  border: isDragging ? `2px solid ${theme.palette.primary.main}` : `1px solid ${cfg.border}`,
+                  borderRadius: '0.65rem',
                   display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
                   cursor: editMode ? 'grab' : 'pointer',
                   boxShadow: isDragging 
@@ -554,7 +540,7 @@ export default function TableMapPage() {
                   animation: table.status === 'OCCUPIED' ? 'statusPulse 3s infinite' : 'none',
                   '&:hover': !editMode ? { 
                     transform: 'translateY(-4px)',
-                    borderColor: '#e9762b',
+                    borderColor: theme.palette.primary.main,
                     boxShadow: '0 12px 30px rgba(0,0,0,0.06)',
                     zIndex: 50
                   } : {}
@@ -572,7 +558,7 @@ export default function TableMapPage() {
                 }} />
 
                 <Typography sx={{ 
-                  fontWeight: 1000, 
+                  fontWeight: 600, 
                   color: cfg.text, 
                   fontSize: { xs: '1.15rem', sm: '1.35rem' }, 
                   lineHeight: 1, 
@@ -593,7 +579,7 @@ export default function TableMapPage() {
                       position: 'absolute', 
                       bottom: -18, 
                       bgcolor: 'white', 
-                      borderRadius: '10px', 
+                      borderRadius: '0.65rem', 
                       boxShadow: '0 8px 24px rgba(0,0,0,0.1)', 
                       p: 0.4,
                       border: '1px solid',
@@ -602,7 +588,7 @@ export default function TableMapPage() {
                     }}
                     onPointerDown={e => e.stopPropagation()}
                   >
-                    <IconButton size="small" onClick={(e) => { e.stopPropagation(); setEditTable(table); setEditOpen(true); }} sx={{ color: '#e9762b', p: 0.4 }}><EditIcon sx={{ fontSize: 14 }} /></IconButton>
+                    <IconButton size="small" onClick={(e) => { e.stopPropagation(); setEditTable(table); setEditOpen(true); }} sx={{ color: theme.palette.primary.main, p: 0.4 }}><EditIcon sx={{ fontSize: 14 }} /></IconButton>
                     <IconButton 
                       size="small" 
                       color="error" 
@@ -638,17 +624,17 @@ export default function TableMapPage() {
         open={addOpen} 
         onClose={() => setAddOpen(false)}
         slotProps={{
-          paper: { sx: { borderRadius: '24px', p: 1, maxWidth: 380, width: '100%' } }
+          paper: { sx: { borderRadius: '0.65rem', p: 1, maxWidth: 380, width: '100%' } }
         }}
       >
-        <DialogTitle sx={{ fontWeight: 1000, pb: 1, fontSize: '1.5rem', letterSpacing: '-0.02em' }}>Add Table</DialogTitle>
+        <DialogTitle sx={{ fontWeight: 600, pb: 1, fontSize: '1.5rem', letterSpacing: '-0.02em' }}>Add Table</DialogTitle>
         <DialogContent>
           <Stack spacing={2} sx={{ mt: 1 }}>
-            <TextField label="Table Number" size="small" fullWidth autoFocus value={addForm.number} onChange={e => setAddForm(f => ({ ...f, number: e.target.value }))} slotProps={{ input: { sx: { borderRadius: '12px', fontWeight: 800 } } }} />
-            <TextField label="Capacity" size="small" type="number" fullWidth value={addForm.capacity} onChange={e => setAddForm(f => ({ ...f, capacity: e.target.value }))} slotProps={{ input: { sx: { borderRadius: '12px', fontWeight: 800 } } }} />
-            <TextField select label="Status" size="small" fullWidth value={addForm.status} onChange={e => setAddForm(f => ({ ...f, status: e.target.value }))} slotProps={{ input: { sx: { borderRadius: '12px', fontWeight: 800 } } }}>
+            <TextField label="Table Number" size="small" fullWidth autoFocus value={addForm.number} onChange={e => setAddForm(f => ({ ...f, number: e.target.value }))} slotProps={{ input: { sx: { borderRadius: '0.65rem', fontWeight: 800 } } }} />
+            <TextField label="Capacity" size="small" type="number" fullWidth value={addForm.capacity} onChange={e => setAddForm(f => ({ ...f, capacity: e.target.value }))} slotProps={{ input: { sx: { borderRadius: '0.65rem', fontWeight: 800 } } }} />
+            <TextField select label="Status" size="small" fullWidth value={addForm.status} onChange={e => setAddForm(f => ({ ...f, status: e.target.value }))} slotProps={{ input: { sx: { borderRadius: '0.65rem', fontWeight: 800 } } }}>
               {Object.entries(STATUS_CONFIG).map(([val, cfg]) => (
-                <MenuItem key={val} value={val} sx={{ borderRadius: '10px', mx: 1, my: 0.3, minHeight: 36 }}>
+                <MenuItem key={val} value={val} sx={{ borderRadius: '0.65rem', mx: 1, my: 0.3, minHeight: 36 }}>
                   <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                     <Box sx={{ width: 8, height: 8, borderRadius: '50%', bgcolor: cfg.dot }} /> 
                     <Typography sx={{ fontWeight: 800, fontSize: '0.85rem' }}>{cfg.label}</Typography>
@@ -695,7 +681,7 @@ export default function TableMapPage() {
               finally { setAddLoading(false); }
             }}
             disabled={!addForm.number || addLoading}
-            sx={{ borderRadius: '14px', height: 40, fontWeight: 1000, bgcolor: '#e9762b' }}
+            sx={{ borderRadius: '0.65rem', height: 40, fontWeight: 600, bgcolor: theme.palette.primary.main }}
           >
             {addLoading ? <CircularProgress size={20} color="inherit" /> : 'CREATE'}
           </Button>
@@ -707,17 +693,17 @@ export default function TableMapPage() {
         open={editOpen} 
         onClose={() => setEditOpen(false)}
         slotProps={{
-          paper: { sx: { borderRadius: '24px', p: 1, maxWidth: 380, width: '100%' } }
+          paper: { sx: { borderRadius: '0.65rem', p: 1, maxWidth: 380, width: '100%' } }
         }}
       >
-        <DialogTitle sx={{ fontWeight: 1000, pb: 1, fontSize: '1.5rem' }}>Edit Table</DialogTitle>
+        <DialogTitle sx={{ fontWeight: 600, pb: 1, fontSize: '1.5rem' }}>Edit Table</DialogTitle>
         <DialogContent>
           <Stack spacing={2} sx={{ mt: 1 }}>
-            <TextField label="Table Number" size="small" fullWidth value={editTable?.number || ''} onChange={e => setEditTable(t => t ? { ...t, number: e.target.value } : null)} slotProps={{ input: { sx: { borderRadius: '12px', fontWeight: 800 } } }} />
-            <TextField label="Capacity" size="small" type="number" fullWidth value={editTable?.capacity || ''} onChange={e => setEditTable(t => t ? { ...t, capacity: Number(e.target.value) } : null)} slotProps={{ input: { sx: { borderRadius: '12px', fontWeight: 800 } } }} />
-            <TextField select label="Status" size="small" fullWidth value={editTable?.status || 'VACANT'} onChange={e => setEditTable(t => t ? { ...t, status: e.target.value as any } : null)} slotProps={{ input: { sx: { borderRadius: '12px', fontWeight: 800 } } }}>
+            <TextField label="Table Number" size="small" fullWidth value={editTable?.number || ''} onChange={e => setEditTable(t => t ? { ...t, number: e.target.value } : null)} slotProps={{ input: { sx: { borderRadius: '0.65rem', fontWeight: 800 } } }} />
+            <TextField label="Capacity" size="small" type="number" fullWidth value={editTable?.capacity || ''} onChange={e => setEditTable(t => t ? { ...t, capacity: Number(e.target.value) } : null)} slotProps={{ input: { sx: { borderRadius: '0.65rem', fontWeight: 800 } } }} />
+            <TextField select label="Status" size="small" fullWidth value={editTable?.status || 'VACANT'} onChange={e => setEditTable(t => t ? { ...t, status: e.target.value as any } : null)} slotProps={{ input: { sx: { borderRadius: '0.65rem', fontWeight: 800 } } }}>
               {Object.entries(STATUS_CONFIG).map(([val, cfg]) => (
-                <MenuItem key={val} value={val} sx={{ borderRadius: '10px', mx: 1, my: 0.3, minHeight: 36 }}>
+                <MenuItem key={val} value={val} sx={{ borderRadius: '0.65rem', mx: 1, my: 0.3, minHeight: 36 }}>
                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                     <Box sx={{ width: 8, height: 8, borderRadius: '50%', bgcolor: cfg.dot }} /> 
                     <Typography sx={{ fontWeight: 800, fontSize: '0.85rem' }}>{cfg.label}</Typography>
@@ -746,7 +732,7 @@ export default function TableMapPage() {
               } catch (e: any) { showError('Failed to update table'); }
               finally { setAddLoading(false); }
             }}
-            sx={{ borderRadius: '14px', height: 40, fontWeight: 1000, bgcolor: '#e9762b' }}
+            sx={{ borderRadius: '0.65rem', height: 40, fontWeight: 600, bgcolor: theme.palette.primary.main }}
           >
             {addLoading ? <CircularProgress size={20} color="inherit" /> : 'SAVE'}
           </Button>

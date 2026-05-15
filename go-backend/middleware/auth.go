@@ -101,6 +101,12 @@ func PermissionMiddleware(menuKey string) gin.HandlerFunc {
 				"users_management", "store_settings", "tables_access", "table_layout",
 				"categories", "items", "reports", "stores", "subscription", "support",
 			}
+		} else if contains(roles, "BUSINESS_OWNER") {
+			allowedMenus = []string{
+				"dashboard", "reports", "stores", "users_management",
+				"categories", "items", "business_statistics",
+				"store_sales_reports", "store_top_items_reports", "support",
+			}
 		} else if contains(roles, "ADMIN") {
 			allowedMenus = []string{
 				"dashboard", "parcel_order", "billing", "reservation", "live_order",

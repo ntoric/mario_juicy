@@ -18,7 +18,6 @@ import {
   BottomNavigationAction,
   Menu,
   Stack,
-  InputBase,
   Dialog,
   DialogTitle,
   DialogContent,
@@ -38,31 +37,32 @@ import ListItemButton from "@mui/material/ListItemButton";
 import ListItemIcon from "@mui/material/ListItemIcon";
 import ListItemText from "@mui/material/ListItemText";
 import {
-  Refresh as RefreshIcon,
-  Menu as MenuIcon,
-  ChevronLeft as ChevronLeftIcon,
-  ChevronRight as ChevronRightIcon,
-  Dashboard as DashboardIcon,
-  Inventory as InventoryIcon,
-  Category as CategoryIcon,
-  ShoppingCart as ShoppingCartIcon,
-  People as PeopleIcon,
-  Assessment as BarChartIcon,
-  Settings as SettingsIcon,
-  Logout as LogoutIcon,
-  EventNote as ReservationIcon,
-  ReceiptLong as OrdersIcon,
-  Kitchen as KitchenIcon,
-  TableRestaurant as TableIcon,
-  ShoppingBag as ShoppingBagIcon,
-  Receipt as ReceiptIcon,
-  Store as StoreIcon,
-  LockPerson as LockPersonIcon,
-  Search as SearchIcon,
-  Notifications as NotificationsIcon,
-  Add as AddIcon,
-  ContactSupport as SupportIcon,
-  SettingsApplications as SettingsApplicationsIcon,
+  RefreshOutlined as RefreshIcon,
+  MenuOutlined as MenuIcon,
+  ChevronLeftOutlined as ChevronLeftIcon,
+  ChevronRightOutlined as ChevronRightIcon,
+  DashboardOutlined as DashboardIcon,
+  Inventory2Outlined as InventoryIcon,
+  CategoryOutlined as CategoryIcon,
+  ShoppingCartOutlined as ShoppingCartIcon,
+  PeopleOutlined as PeopleIcon,
+  AssessmentOutlined as BarChartIcon,
+  SettingsOutlined as SettingsIcon,
+  LogoutOutlined as LogoutIcon,
+  EventNoteOutlined as ReservationIcon,
+  ReceiptLongOutlined as OrdersIcon,
+  KitchenOutlined as KitchenIcon,
+  TableRestaurantOutlined as TableIcon,
+  ShoppingBagOutlined as ShoppingBagIcon,
+  ReceiptOutlined as ReceiptIcon,
+  StoreOutlined as StoreIcon,
+  LockPersonOutlined as LockPersonIcon,
+
+  NotificationsOutlined as NotificationsIcon,
+  AddOutlined as AddIcon,
+  ContactSupportOutlined as SupportIcon,
+  SettingsApplicationsOutlined as SettingsApplicationsIcon,
+  TrendingUpOutlined as TrendingUpIcon,
 } from "@mui/icons-material";
 import Fab from "@mui/material/Fab";
 import { restaurantService, Table } from "@/services/restaurantService";
@@ -72,6 +72,8 @@ import Tooltip from "@mui/material/Tooltip";
 import { useAuth } from "@/context/AuthContext";
 import { useToast } from "@/context/ToastContext";
 import StoreSwitcher from './StoreSwitcher';
+import NotificationDropdown from './NotificationDropdown';
+import ForceChangePasswordDialog from '../auth/ForceChangePasswordDialog';
 
 const drawerWidth = 260;
 
@@ -101,12 +103,14 @@ const closedMixin = (theme: Theme): CSSObject => ({
 const HeaderHeight = 64;
 
 const AppBar = styled(MuiAppBar)(({ theme }) => ({
-  zIndex: theme.zIndex.drawer + 1,
-  backgroundColor: alpha("#ffffff", 0.9),
-  backdropFilter: "blur(12px)",
+  zIndex: theme.zIndex.drawer - 1,
+  backgroundColor: alpha("#ffffff", 0.8),
+  backdropFilter: "blur(20px)",
+  WebkitBackdropFilter: "blur(20px)",
   color: theme.palette.text.primary,
-  boxShadow: "0 2px 20px rgba(44, 24, 16, 0.03)",
-  borderBottom: "1px solid rgba(44, 24, 16, 0.05)",
+  boxShadow: "none",
+  borderRadius: 0,
+  borderBottom: `1px solid ${alpha(theme.palette.divider, 0.05)}`,
   height: HeaderHeight,
   display: 'flex',
   justifyContent: 'center',
@@ -123,7 +127,7 @@ const Drawer = styled(MuiDrawer)(({ theme, open }) => ({
   flexShrink: 0,
   whiteSpace: "nowrap",
   boxSizing: "border-box",
-  height: "100vh", // Force root height
+  height: "100vh",
   [theme.breakpoints.up("md")]: {
     width: drawerWidth,
   },
@@ -131,7 +135,7 @@ const Drawer = styled(MuiDrawer)(({ theme, open }) => ({
     backgroundColor: "#ffffff",
     display: "flex",
     flexDirection: "column",
-    borderRight: '1px solid rgba(44, 24, 16, 0.05)',
+    borderRight: `1px solid ${alpha(theme.palette.divider, 0.05)}`,
     boxShadow: 'none',
   },
   [theme.breakpoints.up("md")]: {
@@ -142,41 +146,6 @@ const Drawer = styled(MuiDrawer)(({ theme, open }) => ({
   },
 }));
 
-const SearchArea = styled('div')(({ theme }) => ({
-  position: 'relative',
-  borderRadius: '7px',
-  backgroundColor: theme.palette.background.default,
-  marginLeft: theme.spacing(3),
-  width: '100%',
-  border: '1px solid rgba(44, 24, 16, 0.05)',
-  [theme.breakpoints.up('sm')]: {
-    width: 'auto',
-    minWidth: '400px',
-  },
-}));
-
-const SearchIconWrapper = styled('div')(({ theme }) => ({
-  padding: theme.spacing(0, 2),
-  height: '100%',
-  position: 'absolute',
-  pointerEvents: 'none',
-  display: 'flex',
-  alignItems: 'center',
-  justifyContent: 'center',
-  color: '#94a3b8',
-}));
-
-const StyledInputBase = styled(InputBase)(({ theme }) => ({
-  color: 'inherit',
-  width: '100%',
-  '& .MuiInputBase-input': {
-    padding: theme.spacing(1.2, 1, 1.2, 0),
-    paddingLeft: `calc(1em + ${theme.spacing(4)})`,
-    width: '100%',
-    fontWeight: 600,
-    fontSize: '0.9rem',
-  },
-}));
 
 // ── Sidebar section/item types ────────────────────────────────────────────────
 
@@ -199,16 +168,33 @@ function SidebarItem({
   item,
   pathname,
   expanded,
+  allPaths,
   onClick,
 }: {
   item: NavItem;
   pathname: string;
   expanded: boolean;
+  allPaths: string[];
   onClick: () => void;
 }) {
   const theme = useTheme();
-  const isActive = pathname === item.path ||
-    (item.path !== "/backoffice" && pathname.startsWith(item.path));
+
+  // A more-specific sibling path matches if another nav item's path:
+  //   1. starts with this item's path (i.e. is a child route)
+  //   2. AND the current pathname starts with that sibling path
+  // In that case, the sibling should be active — not this one.
+  const hasMoreSpecificMatch = allPaths.some(
+    (p) =>
+      p !== item.path &&
+      p.startsWith(item.path) &&
+      (pathname === p || pathname.startsWith(p + '/'))
+  );
+
+  const isActive =
+    pathname === item.path ||
+    (!hasMoreSpecificMatch &&
+      item.path !== "/backoffice" &&
+      pathname.startsWith(item.path + '/'));
 
   return (
     <ListItem disablePadding sx={{ display: "block" }}>
@@ -218,17 +204,18 @@ function SidebarItem({
           sx={{
             minHeight: 48,
             justifyContent: expanded ? "initial" : "center",
-            px: expanded ? 2.5 : 0,
-            mx: expanded ? 1.5 : 0,
-            borderRadius: expanded ? '7px' : 0,
+            px: 2.5,
+            mx: 1.5,
+            borderRadius: '0.65rem',
             mb: 0.5,
-            backgroundColor: isActive ? theme.palette.primary.main : "transparent",
+            backgroundColor: isActive ? alpha(theme.palette.primary.main, 1) : "transparent",
             color: isActive ? "#ffffff" : theme.palette.text.secondary,
-            boxShadow: isActive ? `0 8px 16px ${alpha(theme.palette.primary.main, 0.2)}` : "none",
+            boxShadow: isActive ? `0 6px 12px ${alpha(theme.palette.primary.main, 0.25)}` : "none",
             "&:hover": {
               backgroundColor: isActive ? theme.palette.primary.main : alpha(theme.palette.primary.main, 0.08),
+              transform: isActive ? 'none' : 'translateX(4px)',
             },
-            transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
+            transition: 'all 0.25s cubic-bezier(0.4, 0, 0.2, 1)',
           }}
         >
           <ListItemIcon
@@ -392,7 +379,7 @@ export default function BackofficeLayout({ children }: { children: React.ReactNo
   if (error) {
     return (
       <Box sx={{ p: 4, display: 'flex', height: '100vh', alignItems: 'center', justifyContent: 'center', bgcolor: '#fcf9f2' }}>
-        <Paper sx={{ p: 6, maxWidth: 500, borderRadius: '12px', textAlign: 'center', boxShadow: '0 20px 80px rgba(44,24,16,0.08)', border: '1px solid rgba(44,24,16,0.05)' }}>
+        <Paper sx={{ p: 6, maxWidth: 500, borderRadius: '0.65rem', textAlign: 'center', boxShadow: '0 20px 80px rgba(44,24,16,0.08)', border: '1px solid rgba(44,24,16,0.05)' }}>
           <Box sx={{ mb: 3, display: 'flex', justifyContent: 'center' }}>
             <Box sx={{ p: 2, bgcolor: alpha(theme.palette.error.main, 0.1), borderRadius: '50%' }}>
               <LogoutIcon color="error" sx={{ fontSize: 40 }} />
@@ -408,14 +395,14 @@ export default function BackofficeLayout({ children }: { children: React.ReactNo
             <Button
               variant="outlined"
               onClick={() => logout()}
-              sx={{ borderRadius: '7px', px: 4 }}
+              sx={{ borderRadius: '0.65rem', px: 4 }}
             >
               Back to Login
             </Button>
             <Button
               variant="contained"
               onClick={() => window.location.reload()}
-              sx={{ borderRadius: '7px', px: 4, boxShadow: `0 8px 20px ${alpha(theme.palette.primary.main, 0.3)}` }}
+              sx={{ borderRadius: '0.65rem', px: 4, boxShadow: `0 8px 20px ${alpha(theme.palette.primary.main, 0.3)}` }}
             >
               Retry Connection
             </Button>
@@ -457,6 +444,14 @@ export default function BackofficeLayout({ children }: { children: React.ReactNo
       ],
     },
     {
+      label: "Business Overview",
+      items: [
+        { text: "Business Stats", icon: <TrendingUpIcon />, path: "/backoffice/reports/business-statistics", menuKey: "business_statistics" },
+        { text: "Store Sales", icon: <ReceiptIcon />, path: "/backoffice/reports/store-basis-sales", menuKey: "store_sales_reports" },
+        { text: "Top Items by Store", icon: <InventoryIcon />, path: "/backoffice/reports/store-basis-top-items", menuKey: "store_top_items_reports" },
+      ],
+    },
+    {
       label: "System",
       items: [
         { text: "Stores", icon: <StoreIcon />, path: "/backoffice/stores", menuKey: "stores", permission: "SUPER_ADMIN" },
@@ -473,7 +468,7 @@ export default function BackofficeLayout({ children }: { children: React.ReactNo
     items: section.items.filter(item => {
       // 1. Absolute Store-level toggles (Applies to ALL users)
       if (['parcel_order', 'reservation', 'kitchen_display'].includes(item.menuKey || '')) {
-        if (!activeStore) return false; 
+        if (!activeStore) return false;
 
         if (item.menuKey === 'parcel_order' && !activeStore.is_take_away_enabled) return false;
         if (item.menuKey === 'reservation' && !activeStore.is_reservations_enabled) return false;
@@ -484,13 +479,10 @@ export default function BackofficeLayout({ children }: { children: React.ReactNo
       if (isRole("SUPER_ADMIN")) return true;
       if (item.permission === "SUPER_ADMIN") return false;
 
-      // Dashboard: Administrator, Manager
-      if (item.menuKey === 'dashboard') {
-        return isRole('ADMIN') || isRole('MANAGER');
-      }
-
       // Table Map, Parcel, Reservation, Live Orders, Kitchen Display: All roles (toggles already handled above)
       if (['tables_access', 'parcel_order', 'reservation', 'live_order', 'kitchen_display'].includes(item.menuKey || '')) {
+        // Business Owner specifically does not have Floor Map (tables_access)
+        if (item.menuKey === 'tables_access' && isRole('BUSINESS_OWNER')) return false;
         return true;
       }
 
@@ -499,24 +491,39 @@ export default function BackofficeLayout({ children }: { children: React.ReactNo
         return isRole('ADMIN') || isRole('CASHIER');
       }
 
-      // Categories, Items: Administrator, Manager, Cashier
-      if (['categories', 'items'].includes(item.menuKey || '')) {
-        return isRole('ADMIN') || isRole('MANAGER') || isRole('CASHIER');
-      }
-
-      // Reports: Administrator, Manager
-      if (item.menuKey === 'reports') {
-        return isRole('ADMIN') || isRole('MANAGER');
-      }
-
-      // Users: Administrator, Manager
-      if (item.menuKey === 'users_management') {
-        return isRole('ADMIN') || isRole('MANAGER');
-      }
-
       // Business Config: Administrator, Cashier
       if (item.menuKey === 'settings_system') {
         return isRole('ADMIN') || isRole('CASHIER');
+      }
+
+      // Business Owner Specifics
+      if (['business_statistics', 'store_sales_reports', 'store_top_items_reports'].includes(item.menuKey || '')) {
+        return isRole('BUSINESS_OWNER') || isRole('SUPER_ADMIN');
+      }
+
+      // Stores: Super Admin and Business Owner
+      if (item.menuKey === 'stores') {
+        return isRole('SUPER_ADMIN') || isRole('BUSINESS_OWNER');
+      }
+
+      // Users: Administrator, Manager, Business Owner
+      if (item.menuKey === 'users_management') {
+        return isRole('ADMIN') || isRole('MANAGER') || isRole('BUSINESS_OWNER');
+      }
+
+      // Dashboard: Administrator, Manager, Business Owner
+      if (item.menuKey === 'dashboard') {
+        return isRole('ADMIN') || isRole('MANAGER') || isRole('BUSINESS_OWNER');
+      }
+
+      // Reports: Administrator, Manager, Business Owner
+      if (item.menuKey === 'reports') {
+        return isRole('ADMIN') || isRole('MANAGER') || isRole('BUSINESS_OWNER');
+      }
+
+      // Categories, Items: Administrator, Manager, Cashier, Business Owner
+      if (['categories', 'items'].includes(item.menuKey || '')) {
+        return isRole('ADMIN') || isRole('MANAGER') || isRole('CASHIER') || isRole('BUSINESS_OWNER');
       }
 
       // Support: All roles
@@ -538,37 +545,41 @@ export default function BackofficeLayout({ children }: { children: React.ReactNo
           height: HeaderHeight,
           display: 'flex',
           alignItems: 'center',
-          px: expanded ? 2.5 : 0,
+          px: 2.5,
           justifyContent: expanded ? 'flex-start' : 'center',
-          borderBottom: '1px solid rgba(44, 24, 16, 0.05)',
-          bgcolor: 'white'
+          bgcolor: 'white',
+          flexShrink: 0,
+          borderBottom: `1px solid ${alpha(theme.palette.divider, 0.05)}`,
         }}>
           <Box sx={{
-            width: 42,
-            height: 42,
-            minWidth: 42,
+            width: 38,
+            height: 38,
+            minWidth: 38,
             bgcolor: 'white',
-            borderRadius: '7px',
+            borderRadius: '0.65rem',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
-            boxShadow: '0 2px 10px rgba(0,0,0,0.05)',
-            border: '1.5px solid #E9762B'
+            boxShadow: `0 4px 12px ${alpha(theme.palette.primary.main, 0.15)}`,
+            border: `1.5px solid ${theme.palette.primary.main}`,
+            flexShrink: 0,
           }}>
-            <img src="/mario_juicy_logo.png" alt="Mario Logo" style={{ width: '32px', height: '32px', objectFit: 'contain' }} />
+            <img src="/mario_juicy_logo.png" alt="Mario Logo" style={{ width: '26px', height: '26px', objectFit: 'contain' }} />
           </Box>
           {expanded && (
             <Typography
               variant="h6"
               sx={{
-                ml: 2,
+                ml: 1.5,
                 fontWeight: 900,
                 color: theme.palette.primary.main,
                 fontFamily: "'Pacifico', cursive",
-                fontSize: '1.2rem'
+                fontSize: '1.25rem',
+                whiteSpace: 'nowrap',
+                letterSpacing: '0.02em',
               }}
             >
-              Mario
+              Mario Juicy
             </Typography>
           )}
         </Box>
@@ -578,7 +589,6 @@ export default function BackofficeLayout({ children }: { children: React.ReactNo
           <StoreSwitcher fullWidth />
         </Box>
       )}
-      {!isMobile && <Box sx={{ height: HeaderHeight }} />}
       <Box sx={{
         overflowY: "auto",
         overflowX: "hidden",
@@ -589,7 +599,7 @@ export default function BackofficeLayout({ children }: { children: React.ReactNo
         '&::-webkit-scrollbar-track': { background: 'transparent' },
         '&::-webkit-scrollbar-thumb': {
           background: alpha(theme.palette.text.primary, 0.05),
-          borderRadius: '10px',
+          borderRadius: '0.65rem',
         },
         '&:hover::-webkit-scrollbar-thumb': {
           background: alpha(theme.palette.text.primary, 0.1),
@@ -600,26 +610,31 @@ export default function BackofficeLayout({ children }: { children: React.ReactNo
             <CircularProgress size={24} />
           </Box>
         ) : (
-          filteredSections.map((section) => (
-            <Box key={section.label}>
-              <SectionLabel label={section.label} expanded={expanded} />
-              <List disablePadding>
-                {section.items.map((item) => (
-                  <SidebarItem
-                    key={item.path}
-                    item={item}
-                    pathname={pathname}
-                    expanded={expanded}
-                    onClick={() => {
-                      if (!open && !isMobile) setOpen(true);
-                      router.push(item.path);
-                      if (isMobile) setMobileOpen(false);
-                    }}
-                  />
-                ))}
-              </List>
-            </Box>
-          ))
+          filteredSections.map((section) => {
+            // Flat list of all visible nav paths — used to detect more-specific active matches
+            const allPaths = filteredSections.flatMap((s) => s.items.map((i) => i.path));
+            return (
+              <Box key={section.label}>
+                <SectionLabel label={section.label} expanded={expanded} />
+                <List disablePadding>
+                  {section.items.map((item) => (
+                    <SidebarItem
+                      key={item.path}
+                      item={item}
+                      pathname={pathname}
+                      expanded={expanded}
+                      allPaths={allPaths}
+                      onClick={() => {
+                        if (!open && !isMobile) setOpen(true);
+                        router.push(item.path);
+                        if (isMobile) setMobileOpen(false);
+                      }}
+                    />
+                  ))}
+                </List>
+              </Box>
+            );
+          })
         )}
       </Box>
 
@@ -741,7 +756,7 @@ export default function BackofficeLayout({ children }: { children: React.ReactNo
         }}
       >
         <AppBar position="relative" elevation={0} sx={{ flexShrink: 0 }}>
-          <Toolbar sx={{ justifyContent: 'space-between', px: { xs: 1, sm: 2 } }}>
+          <Toolbar sx={{ justifyContent: 'space-between', px: { xs: 1, sm: 2.5 }, minHeight: `${HeaderHeight}px !important` }}>
             <Box sx={{ display: 'flex', alignItems: 'center' }}>
               {isMobile && (
                 <Box sx={{
@@ -755,7 +770,7 @@ export default function BackofficeLayout({ children }: { children: React.ReactNo
                     height: 42,
                     minWidth: 42,
                     bgcolor: 'white',
-                    borderRadius: '7px',
+                    borderRadius: '0.65rem',
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
@@ -766,74 +781,71 @@ export default function BackofficeLayout({ children }: { children: React.ReactNo
                   </Box>
                 </Box>
               )}
-
-              {!isMobile && (
-                <SearchArea>
-                  <SearchIconWrapper><SearchIcon /></SearchIconWrapper>
-                  <StyledInputBase placeholder="Search items, orders, tables..." />
-                </SearchArea>
-              )}
             </Box>
 
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
-              {!isMobile && <StoreSwitcher />}
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.2 }}>
+              {!isMobile && <StoreSwitcher sx={{ height: 44 }} />}
 
               {!isMobile && (
                 <Tooltip title="Refresh Application">
                   <IconButton
                     onClick={handleRefresh}
                     sx={{
-                      bgcolor: theme.palette.background.default,
-                      borderRadius: '7px',
-                      border: '1px solid rgba(0,0,0,0.03)',
+                      bgcolor: alpha(theme.palette.primary.main, 0.04),
+                      borderRadius: '0.65rem',
+                      width: 44,
+                      height: 44,
+                      border: '1px solid',
+                      borderColor: alpha(theme.palette.primary.main, 0.08),
                       '&:hover': { bgcolor: alpha(theme.palette.primary.main, 0.08) }
                     }}
                   >
-                    <RefreshIcon sx={{ color: '#94a3b8', fontSize: 22, animation: isRefreshing ? 'spin 1s linear infinite' : 'none' }} />
+                    <RefreshIcon sx={{ color: theme.palette.primary.main, fontSize: 20, animation: isRefreshing ? 'spin 1s linear infinite' : 'none' }} />
                   </IconButton>
                 </Tooltip>
               )}
 
-              <IconButton sx={{
-                bgcolor: { xs: alpha('#ffffff', 0.15), md: theme.palette.background.default },
-                borderRadius: '7px',
-                border: { xs: '1px solid rgba(255,255,255,0.1)', md: '1px solid rgba(0,0,0,0.03)' },
-                '&:hover': { bgcolor: { xs: alpha('#ffffff', 0.25), md: alpha(theme.palette.primary.main, 0.08) } }
-              }}>
-                <NotificationsIcon sx={{ color: { xs: '#ffffff', md: '#94a3b8' }, fontSize: 22 }} />
-              </IconButton>
+              <NotificationDropdown />
 
               <Box
                 onClick={(e) => setProfileAnchor(e.currentTarget)}
                 sx={{
                   display: 'flex',
                   alignItems: 'center',
-                  gap: 1,
+                  gap: 1.2,
                   cursor: 'pointer',
-                  p: 0.5,
+                  p: '4px',
                   pr: 1.5,
-                  borderRadius: '12px',
-                  '&:hover': { bgcolor: alpha('#000', 0.03) }
+                  height: 44,
+                  borderRadius: '0.65rem',
+                  bgcolor: alpha(theme.palette.primary.main, 0.04),
+                  border: '1px solid',
+                  borderColor: alpha(theme.palette.primary.main, 0.08),
+                  transition: 'all 0.2s ease',
+                  '&:hover': {
+                    bgcolor: alpha(theme.palette.primary.main, 0.08),
+                    borderColor: alpha(theme.palette.primary.main, 0.15)
+                  }
                 }}
               >
                 <Avatar
                   sx={{
-                    width: 38,
-                    height: 38,
-                    fontSize: '0.9rem',
+                    width: 34,
+                    height: 34,
+                    fontSize: '0.85rem',
                     fontWeight: 900,
-                    bgcolor: { xs: '#ffffff', md: alpha(theme.palette.primary.main, 0.1) },
-                    color: { xs: theme.palette.primary.main, md: theme.palette.primary.main },
-                    border: { xs: '2px solid rgba(255,255,255,0.8)', md: `2px solid ${alpha(theme.palette.primary.main, 0.2)}` }
+                    bgcolor: 'white',
+                    color: theme.palette.primary.main,
+                    border: `1.5px solid ${alpha(theme.palette.primary.main, 0.2)}`
                   }}
                 >
                   {user?.username?.[0]?.toUpperCase() || 'A'}
                 </Avatar>
                 <Box sx={{ display: { xs: 'none', lg: 'block' } }}>
-                  <Typography variant="body2" sx={{ fontWeight: 800, color: '#1e293b', lineHeight: 1.2 }}>
+                  <Typography variant="body2" sx={{ fontWeight: 800, color: '#1e293b', lineHeight: 1, fontSize: '0.85rem' }}>
                     {user?.username || 'Admin'}
                   </Typography>
-                  <Typography variant="caption" sx={{ color: '#94a3b8', fontWeight: 600 }}>
+                  <Typography variant="caption" sx={{ color: '#64748b', fontWeight: 700, fontSize: '0.7rem' }}>
                     {user?.primary_role?.replace('_', ' ') || 'Staff'}
                   </Typography>
                 </Box>
@@ -849,7 +861,7 @@ export default function BackofficeLayout({ children }: { children: React.ReactNo
                   sx: {
                     mt: 1.5,
                     minWidth: 200,
-                    borderRadius: '16px',
+                    borderRadius: '0.65rem',
                     border: '1px solid #f1f5f9',
                     boxShadow: '0 10px 30px rgba(0,0,0,0.05)',
                     '& .MuiMenuItem-root': {
@@ -869,6 +881,7 @@ export default function BackofficeLayout({ children }: { children: React.ReactNo
             </Menu>
           </Toolbar>
         </AppBar>
+        <Box id="backoffice-sub-navbar" sx={{ flexShrink: 0, zIndex: 1099, bgcolor: 'background.paper', borderBottom: '1px solid', borderColor: alpha('#2c1810', 0.05) }} />
 
         <Box
           ref={contentRef}
@@ -880,11 +893,12 @@ export default function BackofficeLayout({ children }: { children: React.ReactNo
             flexGrow: 1,
             overflowY: "auto",
             overflowX: "hidden",
-            p: { xs: 1, sm: 2, md: 3 },
+            p: 0,
             transition: 'padding 0.3s ease',
             scrollBehavior: 'smooth',
             display: 'flex',
-            flexDirection: 'column'
+            flexDirection: 'column',
+            bgcolor: 'transparent'
           }}
         >
           {/* Pull to refresh indicator */}
@@ -912,7 +926,8 @@ export default function BackofficeLayout({ children }: { children: React.ReactNo
           {children}
         </Box>
 
-        <style dangerouslySetInnerHTML={{ __html: `
+        <style dangerouslySetInnerHTML={{
+          __html: `
           @keyframes spin {
             from { transform: rotate(0deg); }
             to { transform: rotate(360deg); }
@@ -1004,7 +1019,7 @@ export default function BackofficeLayout({ children }: { children: React.ReactNo
           maxWidth="sm"
           slotProps={{
             paper: {
-              sx: { borderRadius: '16px' }
+              sx: { borderRadius: '0.65rem' }
             }
           }}
         >
@@ -1015,7 +1030,7 @@ export default function BackofficeLayout({ children }: { children: React.ReactNo
                 <CircularProgress />
               </Box>
             ) : (
-              <Box>
+                <Box>
                 <Button
                   variant={isParcel ? "contained" : "outlined"}
                   fullWidth
@@ -1028,7 +1043,7 @@ export default function BackofficeLayout({ children }: { children: React.ReactNo
                   sx={{
                     height: 60,
                     fontWeight: 800,
-                    borderRadius: '12px',
+                    borderRadius: '0.65rem',
                     mb: 2,
                     mt: 1
                   }}
@@ -1051,7 +1066,7 @@ export default function BackofficeLayout({ children }: { children: React.ReactNo
                         sx={{
                           height: 60,
                           fontWeight: 800,
-                          borderRadius: '12px'
+                          borderRadius: '0.65rem'
                         }}
                       >
                         {table.number}
@@ -1071,7 +1086,7 @@ export default function BackofficeLayout({ children }: { children: React.ReactNo
                 setQuickOrderOpen(false);
                 setOrderDialogOpen(true);
               }}
-              sx={{ fontWeight: 800, borderRadius: '8px' }}
+              sx={{ fontWeight: 800, borderRadius: '0.65rem' }}
             >
               Continue
             </Button>
@@ -1087,11 +1102,12 @@ export default function BackofficeLayout({ children }: { children: React.ReactNo
           }}
           table={selectedTableForOrder as any}
           onOrderUpdated={() => {
-             // Dispatch event to refresh table map if we're on that page
-             window.dispatchEvent(new CustomEvent('refresh-tables'));
-             window.dispatchEvent(new CustomEvent('refresh-orders'));
+            // Dispatch event to refresh table map if we're on that page
+            window.dispatchEvent(new CustomEvent('refresh-tables'));
+            window.dispatchEvent(new CustomEvent('refresh-orders'));
           }}
         />
+        <ForceChangePasswordDialog />
       </Box>
     </Box>
   );

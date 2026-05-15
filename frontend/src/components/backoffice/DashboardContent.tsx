@@ -1,5 +1,5 @@
 "use client";
-
+import { useTheme } from "@mui/material/styles";
 import React, { useEffect, useState, useCallback } from "react";
 import {
   Grid,
@@ -21,38 +21,41 @@ import {
   alpha
 } from "@mui/material";
 import {
-  TrendingUp as TrendingUpIcon,
-  Storefront as StorefrontIcon,
-  Receipt as ReceiptIcon,
-  Inventory2 as Inventory2Icon,
-  Group as GroupIcon,
-  Refresh as RefreshIcon,
-  ArrowForward as ArrowForwardIcon,
+  TrendingUpOutlined as TrendingUpIcon,
+  StorefrontOutlined as StorefrontIcon,
+  ReceiptOutlined as ReceiptIcon,
+  Inventory2Outlined as Inventory2Icon,
+  GroupOutlined as GroupIcon,
+  RefreshOutlined as RefreshIcon,
+  ArrowForwardOutlined as ArrowForwardIcon,
 } from "@mui/icons-material";
+import PageHeader from "@/components/backoffice/PageHeader";
 import { storeService } from "@/services/storeService";
 
-const ICON_MAP: Record<string, React.ReactNode> = {
-  "Today's Sales": <ReceiptIcon />,
-  "Transactions": <StorefrontIcon />,
-  "Avg. Ticket": <Inventory2Icon />,
-  "Table Occupancy": <GroupIcon />,
-};
-
-const COLOR_MAP: Record<string, string> = {
-  "Today's Sales": "#E9762B",
-  "Transactions": "#FFB800",
-  "Avg. Ticket": "#D35400",
-  "Table Occupancy": "#CF0F0F",
-};
-
-const GRADIENT_MAP: Record<string, string> = {
-  "Today's Sales": "linear-gradient(135deg, #FF9D5C 0%, #E9762B 100%)",
-  "Transactions": "linear-gradient(135deg, #FFE36D 0%, #FFB800 100%)",
-  "Avg. Ticket": "linear-gradient(135deg, #E67E22 0%, #D35400 100%)",
-  "Table Occupancy": "linear-gradient(135deg, #FF4D4D 0%, #CF0F0F 100%)",
-};
-
 export default function DashboardContent() {
+  const theme = useTheme();
+
+  const ICON_MAP: Record<string, React.ReactNode> = {
+    "Today's Sales": <ReceiptIcon />,
+    "Transactions": <StorefrontIcon />,
+    "Avg. Ticket": <Inventory2Icon />,
+    "Table Occupancy": <GroupIcon />,
+  };
+
+  const COLOR_MAP: Record<string, string> = {
+    "Today's Sales": theme.palette.primary.main,
+    "Transactions": theme.palette.secondary.main,
+    "Avg. Ticket": theme.palette.primary.dark,
+    "Table Occupancy": "#CF0F0F",
+  };
+
+  const GRADIENT_MAP: Record<string, string> = {
+    "Today's Sales": "linear-gradient(135deg, #FF9D5C 0%, #E9762B 100%)",
+    "Transactions": "linear-gradient(135deg, #FFE36D 0%, #FFB800 100%)",
+    "Avg. Ticket": "linear-gradient(135deg, #E67E22 0%, #D35400 100%)",
+    "Table Occupancy": "linear-gradient(135deg, #FF4D4D 0%, #CF0F0F 100%)",
+  };
+
   const [data, setData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -84,7 +87,7 @@ export default function DashboardContent() {
   if (loading && !data) {
     return (
       <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '60vh' }}>
-        <CircularProgress size={48} thickness={4} sx={{ color: '#E9762B' }} />
+        <CircularProgress size={48} thickness={4} sx={{ color: theme.palette.primary.main }} />
       </Box>
     );
   }
@@ -92,7 +95,7 @@ export default function DashboardContent() {
   if (error) {
     return (
       <Box sx={{ mt: 2 }}>
-        <Alert severity="error" sx={{ borderRadius: '16px' }} action={<Button color="inherit" size="small" onClick={fetchData}>RETRY</Button>}>
+        <Alert severity="error" sx={{ borderRadius: '0.65rem' }} action={<Button color="inherit" size="small" onClick={fetchData}>RETRY</Button>}>
           {error}
         </Alert>
       </Box>
@@ -105,18 +108,18 @@ export default function DashboardContent() {
   const maxPopularSales = Math.max(...popularItems.map((pi: any) => pi.sales), 1);
 
   return (
-    <Box sx={{ 
-      height: "100%", 
-      display: "flex", 
-      flexDirection: "column", 
-      p: { xs: 2, md: 3 }, 
+    <Box sx={{
+      height: "100%",
+      display: "flex",
+      flexDirection: "column",
+      p: { xs: 1.5, md: 2 },
       overflow: "hidden",
       position: 'relative'
     }}>
       {/* Decorative background blobs */}
       <Box sx={{
         position: 'absolute', top: -100, right: -100, width: 300, height: 300,
-        background: 'radial-gradient(circle, rgba(233,118,43,0.08) 0%, rgba(255,255,255,0) 70%)',
+        background: `radial-gradient(circle, ${alpha(theme.palette.primary.main, 0.08)} 0%, rgba(255,255,255,0) 70%)`,
         borderRadius: '50%', zIndex: 0, pointerEvents: 'none'
       }} />
       <Box sx={{
@@ -126,19 +129,12 @@ export default function DashboardContent() {
       }} />
 
       {/* Header Row */}
-      <Box sx={{ 
-        mb: 4, 
-        display: { xs: 'flex', md: 'flex' }, 
-        justifyContent: 'space-between', 
-        alignItems: 'center',
-        position: 'relative',
-        zIndex: 1
-      }}>
+      <PageHeader>
         <Box>
-          <Typography variant="h4" sx={{ 
-            fontWeight: 900, 
+          <Typography variant="h4" sx={{
+            fontWeight: 900,
             fontSize: { xs: '1.5rem', md: '2rem' },
-            background: 'linear-gradient(90deg, #E9762B 0%, #FFB800 100%)',
+            background: `linear-gradient(90deg, ${theme.palette.primary.main} 0%, ${theme.palette.secondary.main} 100%)`,
             WebkitBackgroundClip: 'text',
             WebkitTextFillColor: 'transparent',
             letterSpacing: '-0.02em',
@@ -146,27 +142,24 @@ export default function DashboardContent() {
           }}>
             Overview
           </Typography>
-          <Typography variant="body2" sx={{ color: 'text.secondary', fontWeight: 500 }}>
-            Here is what's happening at your store today.
-          </Typography>
         </Box>
         <Tooltip title="Refresh Data" arrow>
-          <Button 
-            variant="contained" 
-            onClick={fetchData} 
+          <Button
+            variant="contained"
+            onClick={fetchData}
             disabled={loading}
-            sx={{ 
-              borderRadius: '12px', 
-              minWidth: { xs: 44, md: 48 }, 
+            sx={{
+              borderRadius: '0.65rem',
+              minWidth: { xs: 44, md: 48 },
               height: { xs: 44, md: 48 },
               p: 0,
-              background: 'linear-gradient(135deg, #E9762B 0%, #D35400 100%)',
+              background: `linear-gradient(135deg, ${theme.palette.primary.main} 0%, ${theme.palette.primary.dark} 100%)`,
               color: 'white',
-              boxShadow: '0 8px 20px rgba(233, 118, 43, 0.25)',
+              boxShadow: `0 8px 20px ${alpha(theme.palette.primary.main, 0.25)}`,
               '&:hover': {
                 background: 'linear-gradient(135deg, #D35400 0%, #B85C1D 100%)',
                 transform: 'translateY(-2px)',
-                boxShadow: '0 12px 24px rgba(233, 118, 43, 0.35)',
+                boxShadow: `0 12px 24px ${alpha(theme.palette.primary.main, 0.35)}`,
               },
               transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)'
             }}
@@ -174,39 +167,39 @@ export default function DashboardContent() {
             <RefreshIcon sx={{ animation: loading ? 'spin 1s linear infinite' : 'none' }} />
           </Button>
         </Tooltip>
-      </Box>
+      </PageHeader>
 
       <Box sx={{ flexGrow: 1, overflowY: "auto", pr: 0.5, position: 'relative', zIndex: 1 }}>
-        <Grid container spacing={3} sx={{ mb: 4 }}>
+        <Grid container spacing={2} sx={{ mb: 2.5 }}>
           {stats.map((stat: any, i: number) => {
             const color = COLOR_MAP[stat.label] || "#10b981";
             const gradient = GRADIENT_MAP[stat.label] || "linear-gradient(135deg, #34D399 0%, #10B981 100%)";
             const icon = ICON_MAP[stat.label] || <ReceiptIcon />;
-            
+
             return (
               <Grid key={i} size={{ xs: 12, sm: 6, md: 3 }}>
-                <Card sx={{ 
-                  height: '100%', 
-                  display: 'flex', 
-                  flexDirection: 'column', 
-                  borderRadius: '24px',
+                <Card sx={{
+                  height: '100%',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  borderRadius: '0.65rem',
                   border: '1px solid rgba(255, 255, 255, 0.8)',
                   background: 'rgba(255, 255, 255, 0.7)',
                   backdropFilter: 'blur(20px)',
                   boxShadow: '0 10px 40px rgba(0,0,0,0.03)',
-                  transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)', 
-                  '&:hover': { 
-                    transform: 'translateY(-6px)', 
+                  transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+                  '&:hover': {
+                    transform: 'translateY(-6px)',
                     boxShadow: `0 20px 40px ${alpha(color, 0.15)}`,
                     border: `1px solid ${alpha(color, 0.3)}`
-                  } 
+                  }
                 }}>
                   <CardContent sx={{ p: 3, '&:last-child': { pb: 3 } }}>
                     <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 2 }}>
-                      <Box sx={{ 
-                        p: 1.5, 
-                        borderRadius: '16px', 
-                        background: gradient, 
+                      <Box sx={{
+                        p: 1.5,
+                        borderRadius: '0.65rem',
+                        background: gradient,
                         color: 'white',
                         display: 'flex',
                         boxShadow: `0 8px 20px ${alpha(color, 0.4)}`,
@@ -214,14 +207,14 @@ export default function DashboardContent() {
                       }}>
                         {icon}
                       </Box>
-                      <Box sx={{ 
-                        display: 'flex', 
-                        alignItems: 'center', 
-                        gap: 0.5, 
-                        bgcolor: alpha('#10b981', 0.1), 
-                        px: 1.5, 
-                        py: 0.5, 
-                        borderRadius: '20px' 
+                      <Box sx={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: 0.5,
+                        bgcolor: alpha('#10b981', 0.1),
+                        px: 1.5,
+                        py: 0.5,
+                        borderRadius: '0.65rem'
                       }}>
                         <TrendingUpIcon sx={{ fontSize: 16, color: '#10b981' }} />
                         <Typography variant="caption" sx={{ fontWeight: 800, color: '#10b981', fontSize: '0.75rem' }}>
@@ -242,12 +235,12 @@ export default function DashboardContent() {
           })}
         </Grid>
 
-        <Grid container spacing={4}>
+        <Grid container spacing={2}>
           {/* Recent Sales Section */}
           <Grid size={{ xs: 12, lg: 8 }}>
-            <Card sx={{ 
-              borderRadius: '24px', 
-              border: '1px solid rgba(255, 255, 255, 0.8)', 
+            <Card sx={{
+              borderRadius: '0.65rem',
+              border: '1px solid rgba(255, 255, 255, 0.8)',
               background: 'rgba(255, 255, 255, 0.7)',
               backdropFilter: 'blur(20px)',
               boxShadow: '0 10px 40px rgba(0,0,0,0.03)',
@@ -257,17 +250,17 @@ export default function DashboardContent() {
                 <Typography variant="h6" sx={{ fontWeight: 800, fontSize: '1.2rem', color: '#2c1810' }}>
                   Recent Sales
                 </Typography>
-                <Button 
+                <Button
                   endIcon={<ArrowForwardIcon />}
-                  sx={{ 
-                    fontWeight: 700, 
+                  sx={{
+                    fontWeight: 700,
                     fontSize: '0.85rem',
-                    color: '#E9762B',
-                    borderRadius: '12px',
+                    color: theme.palette.primary.main,
+                    borderRadius: '0.65rem',
                     px: 2,
-                    '&:hover': { background: alpha('#E9762B', 0.08) }
+                    '&:hover': { background: alpha(theme.palette.primary.main, 0.08) }
                   }}
-                  onClick={() => window.location.href='/backoffice/billing'}
+                  onClick={() => window.location.href = '/backoffice/billing'}
                 >
                   View All
                 </Button>
@@ -286,13 +279,13 @@ export default function DashboardContent() {
                     {recentSales.map((sale: any) => {
                       const isCompleted = sale.status === 'Completed' || sale.status === 'PAID';
                       return (
-                        <TableRow 
-                          key={sale.id} 
-                          sx={{ 
+                        <TableRow
+                          key={sale.id}
+                          sx={{
                             background: '#ffffff',
                             transition: 'all 0.2s',
-                            '& td:first-of-type': { borderTopLeftRadius: '16px', borderBottomLeftRadius: '16px' },
-                            '& td:last-child': { borderTopRightRadius: '16px', borderBottomRightRadius: '16px' },
+                            '& td:first-of-type': { borderTopLeftRadius: '0.65rem', borderBottomLeftRadius: '0.65rem' },
+                            '& td:last-child': { borderTopRightRadius: '0.65rem', borderBottomRightRadius: '0.65rem' },
                             '&:hover': { transform: 'scale(1.01)', boxShadow: '0 4px 12px rgba(0,0,0,0.05)' }
                           }}
                         >
@@ -300,17 +293,17 @@ export default function DashboardContent() {
                           <TableCell sx={{ borderBottom: 'none', fontSize: '0.9rem', fontWeight: 600 }}>{sale.customer}</TableCell>
                           <TableCell sx={{ borderBottom: 'none', fontWeight: 900, color: '#2c1810', fontSize: '0.9rem' }} align="right">₹{sale.total}</TableCell>
                           <TableCell sx={{ borderBottom: 'none', px: 3 }} align="right">
-                            <Chip 
-                              label={sale.status} 
-                              sx={{ 
+                            <Chip
+                              label={sale.status}
+                              sx={{
                                 height: 26,
                                 fontSize: '0.75rem',
-                                fontWeight: 800, 
-                                borderRadius: '8px',
+                                fontWeight: 800,
+                                borderRadius: '0.65rem',
                                 backgroundColor: isCompleted ? alpha('#10b981', 0.1) : alpha('#f59e0b', 0.1),
                                 color: isCompleted ? '#10b981' : '#f59e0b',
                                 border: `1px solid ${isCompleted ? alpha('#10b981', 0.2) : alpha('#f59e0b', 0.2)}`
-                              }} 
+                              }}
                             />
                           </TableCell>
                         </TableRow>
@@ -324,10 +317,10 @@ export default function DashboardContent() {
 
           {/* Popular Items Section */}
           <Grid size={{ xs: 12, lg: 4 }}>
-            <Card sx={{ 
-              height: '100%', 
-              borderRadius: '24px', 
-              border: '1px solid rgba(255, 255, 255, 0.8)', 
+            <Card sx={{
+              height: '100%',
+              borderRadius: '0.65rem',
+              border: '1px solid rgba(255, 255, 255, 0.8)',
               background: 'rgba(255, 255, 255, 0.7)',
               backdropFilter: 'blur(20px)',
               boxShadow: '0 10px 40px rgba(0,0,0,0.03)',
@@ -343,50 +336,50 @@ export default function DashboardContent() {
                 </Typography>
               </Box>
               <CardContent sx={{ p: 3, pt: 0, flexGrow: 1, display: 'flex', flexDirection: 'column' }}>
-                  {popularItems.map((item: any, i: number) => {
-                    const widthPercent = Math.min(100, (item.sales / maxPopularSales) * 100);
-                    return (
-                      <Box key={i} sx={{ mb: 3 }}>
-                          <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
-                              <Box>
-                                  <Typography variant="body1" sx={{ fontWeight: 800, color: '#2c1810' }}>{item.name}</Typography>
-                                  <Typography variant="caption" sx={{ fontWeight: 600, color: 'text.secondary' }}>{item.sales} sold</Typography>
-                              </Box>
-                              <Typography variant="subtitle1" sx={{ fontWeight: 900, color: '#E9762B' }}>
-                                  ₹{item.amount.toLocaleString('en-IN')}
-                              </Typography>
-                          </Box>
-                          <Box sx={{ width: '100%', height: 8, bgcolor: alpha('#E9762B', 0.1), borderRadius: '10px', overflow: 'hidden' }}>
-                              <Box sx={{ 
-                                width: `${widthPercent}%`, 
-                                height: '100%', 
-                                background: 'linear-gradient(90deg, #FFB800 0%, #E9762B 100%)', 
-                                borderRadius: '10px',
-                                animation: 'progressGrow 1s ease-out forwards',
-                                transformOrigin: 'left'
-                              }} />
-                          </Box>
+                {popularItems.map((item: any, i: number) => {
+                  const widthPercent = Math.min(100, (item.sales / maxPopularSales) * 100);
+                  return (
+                    <Box key={i} sx={{ mb: 3 }}>
+                      <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
+                        <Box>
+                          <Typography variant="body1" sx={{ fontWeight: 800, color: '#2c1810' }}>{item.name}</Typography>
+                          <Typography variant="caption" sx={{ fontWeight: 600, color: 'text.secondary' }}>{item.sales} sold</Typography>
+                        </Box>
+                        <Typography variant="subtitle1" sx={{ fontWeight: 900, color: theme.palette.primary.main }}>
+                          ₹{item.amount.toLocaleString('en-IN')}
+                        </Typography>
                       </Box>
-                    );
-                  })}
-                  
-                  <Box sx={{ 
-                    mt: 'auto', 
-                    p: 2.5, 
-                    borderRadius: '16px', 
-                    background: 'linear-gradient(135deg, rgba(233,118,43,0.05) 0%, rgba(233,118,43,0.15) 100%)', 
-                    border: '1px solid rgba(233,118,43,0.2)' 
-                  }}>
-                      <Typography variant="subtitle2" sx={{ fontWeight: 800, mb: 1, color: '#E9762B', fontSize: '0.85rem', letterSpacing: '0.05em', textTransform: 'uppercase' }}>
-                        Quick Insights
-                      </Typography>
-                      <Typography variant="caption" sx={{ display: "block", mb: 0.5, fontWeight: 600, color: '#7b6158' }}>
-                          • Monitor sales trends to adjust stock levels.
-                      </Typography>
-                      <Typography variant="caption" sx={{ display: "block", fontWeight: 600, color: '#7b6158' }}>
-                          • Top items today are driving major revenue.
-                      </Typography>
-                  </Box>
+                      <Box sx={{ width: '100%', height: 8, bgcolor: alpha(theme.palette.primary.main, 0.1), borderRadius: '0.65rem', overflow: 'hidden' }}>
+                        <Box sx={{
+                          width: `${widthPercent}%`,
+                          height: '100%',
+                          background: 'linear-gradient(90deg, #FFB800 0%, #E9762B 100%)',
+                          borderRadius: '0.65rem',
+                          animation: 'progressGrow 1s ease-out forwards',
+                          transformOrigin: 'left'
+                        }} />
+                      </Box>
+                    </Box>
+                  );
+                })}
+
+                <Box sx={{
+                  mt: 'auto',
+                  p: 2.5,
+                  borderRadius: '0.65rem',
+                  background: `linear-gradient(135deg, ${alpha(theme.palette.primary.main, 0.05)} 0%, ${alpha(theme.palette.primary.main, 0.15)} 100%)`,
+                  border: `1px solid ${alpha(theme.palette.primary.main, 0.2)}`
+                }}>
+                  <Typography variant="subtitle2" sx={{ fontWeight: 800, mb: 1, color: theme.palette.primary.main, fontSize: '0.85rem', letterSpacing: '0.05em', textTransform: 'uppercase' }}>
+                    Quick Insights
+                  </Typography>
+                  <Typography variant="caption" sx={{ display: "block", mb: 0.5, fontWeight: 600, color: '#7b6158' }}>
+                    • Monitor sales trends to adjust stock levels.
+                  </Typography>
+                  <Typography variant="caption" sx={{ display: "block", fontWeight: 600, color: '#7b6158' }}>
+                    • Top items today are driving major revenue.
+                  </Typography>
+                </Box>
               </CardContent>
             </Card>
           </Grid>

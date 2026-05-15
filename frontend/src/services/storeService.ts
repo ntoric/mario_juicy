@@ -76,7 +76,7 @@ export const storeService = {
       method: "DELETE",
     });
   },
-  
+
   getDashboardStats: async (): Promise<any> => {
     return fetcher("/reports/dashboard/");
   }

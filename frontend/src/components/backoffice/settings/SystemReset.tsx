@@ -19,7 +19,7 @@ import {
   Alert,
   CircularProgress
 } from '@mui/material';
-import { WarningAmber, DeleteForever, Refresh } from '@mui/icons-material';
+import { WarningAmberOutlined as WarningAmber, DeleteForeverOutlined as DeleteForever, RefreshOutlined as Refresh } from '@mui/icons-material';
 import { fetcher } from '@/lib/api';
 
 const RESET_OPTIONS = [
@@ -94,7 +94,7 @@ export default function SystemReset() {
         sx={{ 
           p: 4, 
           border: '1px solid #e8e4d8', 
-          borderRadius: 4,
+          borderRadius: '0.65rem',
           bgcolor: '#FCF9EA'
         }}
       >
@@ -111,7 +111,7 @@ export default function SystemReset() {
         </Box>
 
         {result && (
-          <Alert severity={result.type} sx={{ mb: 3, borderRadius: 2 }}>
+          <Alert severity={result.type} sx={{ mb: 3, borderRadius: '0.65rem' }}>
             {result.message}
           </Alert>
         )}
@@ -154,7 +154,7 @@ export default function SystemReset() {
             disabled={selectedTargets.length === 0 || loading}
             onClick={() => setOpenConfirm(true)}
             sx={{ 
-              borderRadius: 2, 
+              borderRadius: '0.65rem', 
               px: 4, 
               py: 1.5,
               fontWeight: 700,
@@ -176,7 +176,7 @@ export default function SystemReset() {
         onClose={() => !loading && setOpenConfirm(false)}
         slotProps={{
           paper: {
-            sx: { borderRadius: 4, p: 2, maxWidth: 450 }
+            sx: { borderRadius: '0.65rem', p: 2, maxWidth: 450 }
           }
         }}
       >
@@ -202,7 +202,7 @@ export default function SystemReset() {
             variant="outlined"
             autoFocus
             sx={{ 
-              '& .MuiOutlinedInput-root': { borderRadius: 2 },
+              '& .MuiOutlinedInput-root': { borderRadius: '0.65rem' },
               '& .MuiOutlinedInput-input': { textAlign: 'center', fontWeight: 800, letterSpacing: 2 }
             }}
           />
@@ -221,7 +221,7 @@ export default function SystemReset() {
             color="error"
             disabled={confirmationText !== 'RESET' || loading}
             sx={{ 
-              borderRadius: 2, 
+              borderRadius: '0.65rem', 
               px: 4, 
               fontWeight: 700, 
               textTransform: 'none',

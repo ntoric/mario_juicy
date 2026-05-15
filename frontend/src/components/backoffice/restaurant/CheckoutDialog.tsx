@@ -1,4 +1,5 @@
 "use client";
+import { alpha, useTheme } from "@mui/material/styles";
 
 import React, { useState } from 'react';
 import {
@@ -16,12 +17,12 @@ import {
   IconButton,
 } from '@mui/material';
 import {
-  Payments as CashIcon,
-  CreditCard as CardIcon,
-  QrCode as UpiIcon,
-  Receipt as BillIcon,
-  CheckCircle as SuccessIcon,
-  ChevronLeft as ChevronLeftIcon,
+  PaymentsOutlined as CashIcon,
+  CreditCardOutlined as CardIcon,
+  QrCodeOutlined as UpiIcon,
+  ReceiptOutlined as BillIcon,
+  CheckCircleOutlined as SuccessIcon,
+  ChevronLeftOutlined as ChevronLeftIcon,
 } from '@mui/icons-material';
 import { restaurantService } from '@/services/restaurantService';
 import { Order } from '@/types/restaurant';
@@ -41,9 +42,10 @@ interface TaxDetail {
 }
 
 const CheckoutDialog: React.FC<CheckoutDialogProps> = ({ open, onClose, order, onCheckoutSuccess }) => {
+  const theme = useTheme();
   const { hasPermission } = useAuth();
   const canManagePayment = hasPermission('billing');
-  
+
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [taxConfig, setTaxConfig] = useState<any>(null);
@@ -66,7 +68,7 @@ const CheckoutDialog: React.FC<CheckoutDialogProps> = ({ open, onClose, order, o
 
   const calculateTaxes = () => {
     if (!taxConfig || !taxConfig.is_active) return { totalTax: 0, details: [] };
-    
+
     const subtotal = parseFloat(order.total_amount);
     let totalTax = 0;
     const details: { label: string; amount: number }[] = [];
@@ -96,21 +98,21 @@ const CheckoutDialog: React.FC<CheckoutDialogProps> = ({ open, onClose, order, o
         totalRate += gstType === 'INTER_STATE' ? parseFloat(taxConfig.igst_rate) : (parseFloat(taxConfig.cgst_rate) + parseFloat(taxConfig.sgst_rate));
       }
       if (taxConfig.is_cess_enabled) totalRate += parseFloat(taxConfig.cess_rate);
-      
+
       if (totalRate > 0) {
         const actualBase = subtotal / (1 + (totalRate / 100));
         totalTax = subtotal - actualBase;
-        
+
         if (taxConfig.is_gst_enabled) {
-            if (gstType === 'INTER_STATE') {
-                details.push({ label: 'IGST (Incl.)', amount: (actualBase * parseFloat(taxConfig.igst_rate)) / 100 });
-            } else {
-                details.push({ label: 'CGST (Incl.)', amount: (actualBase * parseFloat(taxConfig.cgst_rate)) / 100 });
-                details.push({ label: 'SGST (Incl.)', amount: (actualBase * parseFloat(taxConfig.sgst_rate)) / 100 });
-            }
+          if (gstType === 'INTER_STATE') {
+            details.push({ label: 'IGST (Incl.)', amount: (actualBase * parseFloat(taxConfig.igst_rate)) / 100 });
+          } else {
+            details.push({ label: 'CGST (Incl.)', amount: (actualBase * parseFloat(taxConfig.cgst_rate)) / 100 });
+            details.push({ label: 'SGST (Incl.)', amount: (actualBase * parseFloat(taxConfig.sgst_rate)) / 100 });
+          }
         }
         if (taxConfig.is_cess_enabled) {
-            details.push({ label: 'CESS (Incl.)', amount: (actualBase * parseFloat(taxConfig.cess_rate)) / 100 });
+          details.push({ label: 'CESS (Incl.)', amount: (actualBase * parseFloat(taxConfig.cess_rate)) / 100 });
         }
       }
     }
@@ -129,7 +131,7 @@ const CheckoutDialog: React.FC<CheckoutDialogProps> = ({ open, onClose, order, o
     setLoading(true);
     setError(null);
     try {
-      const invoice = await restaurantService.checkout(order.id, { 
+      const invoice = await restaurantService.checkout(order.id, {
         payment_method: 'CASH',
         gst_type: gstType
       });
@@ -144,12 +146,12 @@ const CheckoutDialog: React.FC<CheckoutDialogProps> = ({ open, onClose, order, o
   if (!open) return null;
 
   return (
-    <Box sx={{ 
+    <Box sx={{
       position: 'absolute',
       inset: 0,
       bgcolor: '#fdfdfd',
       zIndex: 200,
-      display: 'flex', 
+      display: 'flex',
       flexDirection: 'column',
       animation: 'slideInUp 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
       '@keyframes slideInUp': {
@@ -168,7 +170,7 @@ const CheckoutDialog: React.FC<CheckoutDialogProps> = ({ open, onClose, order, o
       <Box sx={{ flexGrow: 1, overflowY: 'auto', p: { xs: 2, md: 4 } }}>
         <Grid container spacing={4} sx={{ justifyContent: 'center' }}>
           <Grid size={{ xs: 12, md: 8, lg: 6 }}>
-            <Paper sx={{ p: 4, borderRadius: '24px', border: '1px solid #e8e4d8', boxShadow: '0 12px 40px rgba(0,0,0,0.04)' }}>
+            <Paper sx={{ p: 4, borderRadius: '0.65rem', border: '1px solid #e8e4d8', boxShadow: '0 12px 40px rgba(0,0,0,0.04)' }}>
               <Stack spacing={4}>
                 <Box sx={{ textAlign: 'center' }}>
                   <BillIcon sx={{ fontSize: 48, color: 'primary.main', mb: 1 }} />
@@ -187,7 +189,7 @@ const CheckoutDialog: React.FC<CheckoutDialogProps> = ({ open, onClose, order, o
                       onChange={(_, val) => val && setGstType(val)}
                       fullWidth
                       size="large"
-                      sx={{ '& .MuiToggleButton-root': { borderRadius: '12px', fontWeight: 800, py: 1.5 } }}
+                      sx={{ '& .MuiToggleButton-root': { borderRadius: '0.65rem', fontWeight: 800, py: 1.5 } }}
                     >
                       <ToggleButton value="INTRA_STATE">INTRA-STATE</ToggleButton>
                       <ToggleButton value="INTER_STATE">INTER-STATE</ToggleButton>
@@ -195,13 +197,13 @@ const CheckoutDialog: React.FC<CheckoutDialogProps> = ({ open, onClose, order, o
                   </Box>
                 )}
 
-                <Box sx={{ bgcolor: '#FCF9EA', p: 3, borderRadius: '16px', border: '1px solid #e8e4d8' }}>
+                <Box sx={{ bgcolor: '#FCF9EA', p: 3, borderRadius: '0.65rem', border: '1px solid #e8e4d8' }}>
                   <Stack spacing={1.5}>
                     <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
                       <Typography variant="body1" color="text.secondary" sx={{ fontWeight: 600 }}>Subtotal</Typography>
                       <Typography variant="body1" sx={{ fontWeight: 800 }}>₹{order.total_amount}</Typography>
                     </Box>
-                    
+
                     {details.map((tax: TaxDetail) => (
                       <Box key={tax.label} sx={{ display: 'flex', justifyContent: 'space-between' }}>
                         <Typography variant="body1" color="text.secondary" sx={{ fontWeight: 600 }}>{tax.label}</Typography>
@@ -218,7 +220,7 @@ const CheckoutDialog: React.FC<CheckoutDialogProps> = ({ open, onClose, order, o
                 </Box>
 
                 {error && (
-                  <Alert severity="error" sx={{ borderRadius: '12px', fontWeight: 700 }}>
+                  <Alert severity="error" sx={{ borderRadius: '0.65rem', fontWeight: 700 }}>
                     {error}
                   </Alert>
                 )}
@@ -229,7 +231,7 @@ const CheckoutDialog: React.FC<CheckoutDialogProps> = ({ open, onClose, order, o
                   onClick={handleCheckout}
                   disabled={loading || !canManagePayment}
                   startIcon={loading ? <CircularProgress size={24} color="inherit" /> : <SuccessIcon sx={{ fontSize: 28 }} />}
-                  sx={{ py: 2, fontWeight: 900, borderRadius: '16px', fontSize: '1.2rem', boxShadow: '0 8px 24px rgba(233,118,43,0.2)' }}
+                  sx={{ py: 2, fontWeight: 900, borderRadius: '0.65rem', fontSize: '1.2rem', boxShadow: `0 8px 24px ${alpha(theme.palette.primary.main, 0.2)}` }}
                 >
                   {loading ? 'PROCESSING...' : 'COMPLETE & PRINT BILL'}
                 </Button>

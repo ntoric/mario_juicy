@@ -1,4 +1,5 @@
 "use client";
+import { useTheme, alpha } from "@mui/material/styles";
 
 import { Box, Typography, Breadcrumbs, Link } from "@mui/material";
 import RestaurantSettings from "@/components/backoffice/settings/RestaurantSettings";
@@ -8,8 +9,12 @@ import NextLink from "next/link";
 import { useAuth } from "@/hooks/useAuth";
 import { useRouter } from "next/navigation";
 import { useEffect } from "react";
+import PageHeader from "@/components/backoffice/PageHeader";
+
 
 export default function SystemSettingsPage() {
+  const theme = useTheme();
+
   const { isRole, loading } = useAuth();
   const router = useRouter();
 
@@ -24,33 +29,13 @@ export default function SystemSettingsPage() {
 
   return (
     <Box sx={{ p: 3 }}>
-      <Box sx={{ mb: 4, display: { xs: 'none', md: 'block' } }}>
-        <Breadcrumbs aria-label="breadcrumb" sx={{ mb: 1 }}>
-          <Link
-            component={NextLink}
-            underline="hover"
-            color="inherit"
-            href="/backoffice"
-            sx={{ fontSize: '0.875rem' }}
-          >
-            Backoffice
-          </Link>
-          <Link
-            component={NextLink}
-            underline="hover"
-            color="inherit"
-            href="/backoffice/settings"
-            sx={{ fontSize: '0.875rem' }}
-          >
-            Settings
-          </Link>
-          <Typography color="text.primary" sx={{ fontSize: '0.875rem' }}>Business Configs</Typography>
-        </Breadcrumbs>
-        
-        <Typography variant="h4" sx={{ fontWeight: 500, color: '#e9762b', fontSize: '1.5rem' }}>
-          Business Configs
-        </Typography>
-      </Box>
+      <PageHeader>
+        <Box>
+          <Typography variant="h4" sx={{ fontWeight: 600, color: theme.palette.primary.main, fontSize: '2rem' }}>
+            Business Configs
+          </Typography>
+        </Box>
+      </PageHeader>
 
       <Box sx={{ mt: 4 }}>
         <Box sx={{ mb: 6 }}>

@@ -50,7 +50,7 @@ export default function ItemDetailDialog({
       maxWidth="xs"
       slotProps={{
         paper: {
-            sx: { borderRadius: '7px', overflow: "hidden" }
+            sx: { borderRadius: '0.65rem', overflow: "hidden" }
         }
       }}
     >
@@ -82,7 +82,7 @@ export default function ItemDetailDialog({
         </Box>
 
         <DialogContent sx={{ mt: -3, position: "relative", px: 2, pb: 3 }}>
-          <Card elevation={4} sx={{ borderRadius: '7px', border: "none" }}>
+          <Card elevation={4} sx={{ borderRadius: '0.65rem', border: "none" }}>
             <CardContent>
               <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", mb: 2 }}>
                 <Box>
@@ -134,7 +134,7 @@ export default function ItemDetailDialog({
                     fullWidth
                     variant="contained"
                     onClick={() => onEdit(item)}
-                    sx={{ borderRadius: '7px' }}
+                    sx={{ borderRadius: '0.65rem' }}
                   >
                     Edit Item
                   </Button>

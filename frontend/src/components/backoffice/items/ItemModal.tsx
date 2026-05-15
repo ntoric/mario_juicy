@@ -125,7 +125,17 @@ export default function ItemModal({
   };
 
   return (
-    <Dialog open={open} onClose={onClose} fullWidth maxWidth="sm">
+    <Dialog 
+      open={open} 
+      onClose={onClose} 
+      fullWidth 
+      maxWidth="sm"
+      slotProps={{
+        paper: {
+          sx: { borderRadius: '0.65rem' }
+        }
+      }}
+    >
       <DialogTitle sx={{ fontWeight: 700 }}>
         {mode === "create" ? "Add New Item" : "Edit Item"}
       </DialogTitle>
@@ -225,7 +235,7 @@ export default function ItemModal({
             </Box>
           </Box>
 
-          <Box sx={{ display: "flex", alignItems: "center", justifyContent: "space-between", p: 2, bgcolor: "#FCF9EA", borderRadius: 2, border: "1px solid #e8e4d8" }}>
+          <Box sx={{ display: "flex", alignItems: "center", justifyContent: "space-between", p: 2, bgcolor: "#FCF9EA", borderRadius: '0.65rem', border: "1px solid #e8e4d8" }}>
             <Box>
                 <Typography variant="subtitle2" sx={{ fontWeight: 600 }}>Enable Item</Typography>
                 <Typography variant="caption" color="text.secondary">
@@ -241,14 +251,14 @@ export default function ItemModal({
         </Box>
       </DialogContent>
       <DialogActions sx={{ p: 2 }}>
-        <Button onClick={onClose} color="inherit">
+        <Button onClick={onClose} color="inherit" sx={{ borderRadius: '0.65rem' }}>
           Cancel
         </Button>
         <Button 
           onClick={handleFormSubmit} 
           variant="contained" 
           disabled={loading || !formData.name.trim()}
-          sx={{ px: 4 }}
+          sx={{ px: 4, borderRadius: '0.65rem' }}
         >
           {loading ? "Saving..." : (mode === "create" ? "Create Item" : "Save Changes")}
         </Button>

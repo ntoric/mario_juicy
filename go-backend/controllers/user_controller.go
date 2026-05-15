@@ -15,7 +15,17 @@ import (
 	"github.com/gin-gonic/gin"
 	"go.uber.org/zap"
 	"golang.org/x/crypto/pbkdf2"
+	"math/rand"
 )
+
+func generateRandomString(n int) string {
+	const letters = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
+	b := make([]byte, n)
+	for i := range b {
+		b[i] = letters[rand.Intn(len(letters))]
+	}
+	return string(b)
+}
 
 type LoginInput struct {
 	Username string `json:"username" binding:"required"`
@@ -54,6 +64,7 @@ func Login(c *gin.Context) {
 		"access":  token,
 		"refresh": token, // Placeholder for refresh token
 		"user":    user,
+		"must_change_password": user.MustChangePassword,
 	})
 }
 
@@ -68,6 +79,7 @@ type UserProfileResponse struct {
 	FirstName    string   `json:"first_name"`
 	LastName     string   `json:"last_name"`
 	Store        interface{} `json:"store"`
+	MustChangePassword bool `json:"must_change_password"`
 }
 
 func GetProfile(c *gin.Context) {
@@ -126,6 +138,12 @@ func GetProfile(c *gin.Context) {
 			"users_management", "store_settings", "tables_access", "table_layout",
 			"categories", "items", "reports", "stores", "support",
 		}
+	} else if contains(roles, "BUSINESS_OWNER") {
+		allowedMenus = []string{
+			"dashboard", "reports", "stores", "users_management",
+			"categories", "items", "business_statistics",
+			"store_sales_reports", "store_top_items_reports", "support",
+		}
 	} else if contains(roles, "ADMIN") {
 		// Admin gets everything except global store management and super-admin specific stuff
 		allowedMenus = []string{
@@ -178,6 +196,7 @@ func GetProfile(c *gin.Context) {
 		FirstName:    user.FirstName,
 		LastName:     user.LastName,
 		Store:        storeData,
+		MustChangePassword: user.MustChangePassword,
 	}
 
 	utils.SuccessResponse(c, http.StatusOK, resp)
@@ -228,12 +247,50 @@ func HashDjangoPassword(password string) string {
 
 func GetUsers(c *gin.Context) {
 	var users []models.User
-	storeID, _ := c.Get("active_store_id")
+	activeStoreID, _ := c.Get("active_store_id")
+	queryStoreID := c.Query("store_id")
+	
+	var storeID interface{}
+	if queryStoreID != "" && queryStoreID != "all" {
+		id, _ := strconv.ParseUint(queryStoreID, 10, 32)
+		storeID = uint(id)
+	} else {
+		storeID = activeStoreID
+	}
 	
 	query := config.DB.Preload("Store").Preload("Groups")
-	if storeID != nil {
-		query = query.Where("store_id = ?", storeID)
+	
+	// Get current user role
+	currentUser, _ := c.Get("user")
+	userRoles := []string{}
+	isSuperUser := false
+	if currentUser != nil {
+		userObj := currentUser.(models.User)
+		isSuperUser = userObj.IsSuperuser
+		for _, g := range userObj.Groups {
+			userRoles = append(userRoles, g.Name)
+		}
 	}
+
+	if storeID != nil && storeID.(uint) != 0 {
+		isBusinessOwner := contains(userRoles, "BUSINESS_OWNER")
+		if isSuperUser || isBusinessOwner {
+			// Global users see store users + global users (Super Admin, Business Owner)
+			query = query.Where("store_id = ? OR is_superuser = ? OR id IN (SELECT user_id FROM users_user_groups JOIN auth_group ON auth_group.id = users_user_groups.group_id WHERE auth_group.name IN (?))", 
+				storeID, true, []string{"SUPER_ADMIN", "BUSINESS_OWNER"})
+		} else {
+			query = query.Where("store_id = ?", storeID)
+		}
+	}
+
+	// Filter super admins for BUSINESS_OWNER
+
+	if contains(userRoles, "BUSINESS_OWNER") {
+		// Exclude superusers and users in SUPER_ADMIN group
+		query = query.Where("is_superuser = ?", false).
+			Where("id NOT IN (SELECT user_id FROM users_user_groups JOIN auth_group ON auth_group.id = users_user_groups.group_id WHERE auth_group.name = ?)", "SUPER_ADMIN")
+	}
+
 	query.Find(&users)
 
 	response := make([]gin.H, 0)
@@ -285,19 +342,30 @@ func CreateUser(c *gin.Context) {
 	// Enforce store ID for non-superusers
 	storeID, _ := c.Get("active_store_id")
 	isSuperuser, _ := c.Get("is_superuser")
+	currentUser, _ := c.Get("user")
+	userRoles := []string{}
+	if currentUser != nil {
+		for _, g := range currentUser.(models.User).Groups {
+			userRoles = append(userRoles, g.Name)
+		}
+	}
 
 	if isSuperuser == false && storeID != nil {
 		sid := storeID.(uint)
 		input.StoreID = &sid
 	}
 
+	// Generate temporary password
+	tempPassword := generateRandomString(10)
+
 	user := models.User{
-		Username:   input.Username,
-		Email:      input.Email,
-		Password:   HashDjangoPassword(input.Password),
-		StoreID:    input.StoreID,
-		IsActive:   true,
-		DateJoined: time.Now(),
+		Username:           input.Username,
+		Email:              input.Email,
+		Password:           HashDjangoPassword(tempPassword),
+		StoreID:            input.StoreID,
+		IsActive:           true,
+		DateJoined:         time.Now(),
+		MustChangePassword: true,
 	}
 
 	if err := config.DB.Create(&user).Error; err != nil {
@@ -307,13 +375,22 @@ func CreateUser(c *gin.Context) {
 
 	// Assign group based on role
 	if input.Role != "" {
+		// BUSINESS_OWNER cannot assign SUPER_ADMIN role
+		if contains(userRoles, "BUSINESS_OWNER") && input.Role == "SUPER_ADMIN" {
+			utils.ErrorResponse(c, http.StatusForbidden, "Business Owners cannot create Super Admins")
+			return
+		}
+
 		var group models.Group
 		if err := config.DB.Where("name = ?", input.Role).First(&group).Error; err == nil {
 			config.DB.Exec("INSERT INTO users_user_groups (user_id, group_id) VALUES (?, ?)", user.ID, group.ID)
 		}
 	}
 
-	utils.SuccessResponse(c, http.StatusCreated, user)
+	utils.SuccessResponse(c, http.StatusCreated, gin.H{
+		"user":               user,
+		"temporary_password": tempPassword,
+	})
 }
 
 func UpdateUser(c *gin.Context) {
@@ -329,6 +406,20 @@ func UpdateUser(c *gin.Context) {
 
 	if err := query.First(&user, id).Error; err != nil {
 		utils.ErrorResponse(c, http.StatusNotFound, "User not found or access denied")
+		return
+	}
+
+	// BUSINESS_OWNER cannot modify SUPER_ADMIN
+	currentUser, _ := c.Get("user")
+	userRoles := []string{}
+	if currentUser != nil {
+		for _, g := range currentUser.(models.User).Groups {
+			userRoles = append(userRoles, g.Name)
+		}
+	}
+
+	if contains(userRoles, "BUSINESS_OWNER") && (user.IsSuperuser || contains(userRoles, "SUPER_ADMIN")) {
+		utils.ErrorResponse(c, http.StatusForbidden, "Business Owners cannot modify Super Admins")
 		return
 	}
 
@@ -358,6 +449,13 @@ func UpdateUser(c *gin.Context) {
 	// Update role if provided
 	if val, ok := input["role"]; ok {
 		role := val.(string)
+
+		// BUSINESS_OWNER cannot assign SUPER_ADMIN role
+		if contains(userRoles, "BUSINESS_OWNER") && role == "SUPER_ADMIN" {
+			utils.ErrorResponse(c, http.StatusForbidden, "Business Owners cannot assign Super Admin role")
+			return
+		}
+
 		var group models.Group
 		if err := config.DB.Where("name = ?", role).First(&group).Error; err == nil {
 			config.DB.Exec("DELETE FROM users_user_groups WHERE user_id = ?", user.ID)
@@ -389,5 +487,47 @@ func GetGroups(c *gin.Context) {
 	var groups []models.Group
 	config.DB.Find(&groups)
 	utils.SuccessResponse(c, http.StatusOK, groups)
+}
+
+func ResetPassword(c *gin.Context) {
+	id := c.Param("id")
+	var user models.User
+	if err := config.DB.First(&user, id).Error; err != nil {
+		utils.ErrorResponse(c, http.StatusNotFound, "User not found")
+		return
+	}
+
+	tempPassword := generateRandomString(10)
+	user.Password = HashDjangoPassword(tempPassword)
+	user.MustChangePassword = true
+	config.DB.Save(&user)
+
+	utils.SuccessResponse(c, http.StatusOK, gin.H{
+		"message":            "Password reset successfully",
+		"temporary_password": tempPassword,
+	})
+}
+
+func ChangePassword(c *gin.Context) {
+	userID, _ := c.Get("user_id")
+	var input struct {
+		NewPassword string `json:"new_password" binding:"required"`
+	}
+	if err := c.ShouldBindJSON(&input); err != nil {
+		utils.ErrorResponse(c, http.StatusBadRequest, err.Error())
+		return
+	}
+
+	var user models.User
+	if err := config.DB.First(&user, userID).Error; err != nil {
+		utils.ErrorResponse(c, http.StatusNotFound, "User not found")
+		return
+	}
+
+	user.Password = HashDjangoPassword(input.NewPassword)
+	user.MustChangePassword = false
+	config.DB.Save(&user)
+
+	utils.SuccessResponse(c, http.StatusOK, gin.H{"message": "Password updated successfully"})
 }
 

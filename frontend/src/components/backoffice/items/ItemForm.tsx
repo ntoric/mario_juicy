@@ -25,9 +25,9 @@ import {
   Card,
 } from "@mui/material";
 import { 
-  Image as ImageIcon,
-  ArrowBack as ArrowBackIcon,
-  Save as SaveIcon,
+  ImageOutlined as ImageIcon,
+  ArrowBackOutlined as ArrowBackIcon,
+  SaveOutlined as SaveIcon,
 } from "@mui/icons-material";
 import { Item } from "@/services/itemService";
 import { categoryService, Category } from "@/services/categoryService";
@@ -145,7 +145,7 @@ export default function ItemForm({
   return (
     <Box sx={{ 
       flexGrow: 1, 
-      bgcolor: '#fcfcfc', 
+      bgcolor: 'transparent', 
       display: 'flex', 
       flexDirection: 'column',
       minHeight: '100%',
@@ -154,7 +154,7 @@ export default function ItemForm({
       p: { xs: 2, md: 4 }
     }}>
       {/* Background Blobs */}
-      <Box sx={{ position: 'absolute', top: -100, right: -100, width: 400, height: 400, background: 'radial-gradient(circle, rgba(233,118,43,0.05) 0%, transparent 70%)', borderRadius: '50%', zIndex: 0 }} />
+      <Box sx={{ position: 'absolute', top: -100, right: -100, width: 400, height: 400, background: `radial-gradient(circle, ${alpha(theme.palette.primary.main, 0.05)} 0%, transparent 70%)`, borderRadius: '50%', zIndex: 0 }} />
       
       <Box sx={{ position: 'relative', zIndex: 1, maxWidth: 900, mx: 'auto', width: '100%' }}>
         <Box sx={{ mb: 4, display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexDirection: { xs: 'column', sm: 'row' }, gap: 3 }}>
@@ -165,9 +165,9 @@ export default function ItemForm({
                 bgcolor: 'white', 
                 border: '1px solid', 
                 borderColor: alpha(theme.palette.divider, 0.1), 
-                borderRadius: '12px',
+                borderRadius: '0.65rem',
                 boxShadow: '0 4px 12px rgba(0,0,0,0.03)',
-                '&:hover': { bgcolor: alpha('#e9762b', 0.05), color: '#e9762b' }
+                '&:hover': { bgcolor: alpha(theme.palette.primary.main, 0.05), color: theme.palette.primary.main }
               }}
             >
               <ArrowBackIcon />
@@ -186,14 +186,14 @@ export default function ItemForm({
             onClick={handleFormSubmit}
             disabled={loading || !formData.name.trim()}
             sx={{ 
-              borderRadius: '16px', 
+              borderRadius: '0.65rem', 
               fontWeight: 1000, 
               px: 4, 
               height: 48,
-              background: 'linear-gradient(135deg, #e9762b 0%, #d35400 100%)',
-              boxShadow: '0 8px 20px rgba(233,118,43,0.3)',
-              '&:hover': { transform: 'translateY(-2px)', boxShadow: '0 12px 25px rgba(233,118,43,0.4)' },
-              '&.Mui-disabled': { bgcolor: alpha('#e9762b', 0.3) }
+              background: `linear-gradient(135deg, ${theme.palette.primary.main} 0%, ${theme.palette.primary.dark} 100%)`,
+              boxShadow: `0 8px 20px ${alpha(theme.palette.primary.main, 0.3)}`,
+              '&:hover': { transform: 'translateY(-2px)', boxShadow: `0 12px 25px ${alpha(theme.palette.primary.main, 0.4)}` },
+              '&.Mui-disabled': { bgcolor: alpha(theme.palette.primary.main, 0.3) }
             }}
           >
             {loading ? "SAVING..." : "SAVE CHANGES"}
@@ -204,27 +204,26 @@ export default function ItemForm({
           <Grid size={{ xs: 12 }}>
             <Card sx={{ 
               p: 4, 
-              borderRadius: '32px', 
+              borderRadius: '0.65rem', 
               border: '1px solid', 
               borderColor: alpha(theme.palette.divider, 0.08), 
               boxShadow: '0 20px 50px rgba(0,0,0,0.04)',
-              bgcolor: 'rgba(255, 255, 255, 0.8)',
-              backdropFilter: 'blur(10px)'
+              bgcolor: 'white',
             }}>
               <Stack spacing={4}>
                 {/* Visuals Section */}
                 <Box>
-                  <Typography variant="overline" sx={{ fontWeight: 1000, color: '#e9762b', mb: 2, display: 'block', letterSpacing: '0.1em' }}>ITEM VISUALS</Typography>
+                  <Typography variant="overline" sx={{ fontWeight: 1000, color: theme.palette.primary.main, mb: 2, display: 'block', letterSpacing: '0.1em' }}>ITEM VISUALS</Typography>
                   <Box sx={{ 
                     display: "flex", 
                     alignItems: "center", 
                     flexDirection: { xs: 'column', sm: 'row' },
                     gap: 4, 
                     p: 3, 
-                    bgcolor: alpha('#e9762b', 0.02), 
-                    borderRadius: '24px', 
+                    bgcolor: alpha(theme.palette.primary.main, 0.02), 
+                    borderRadius: '0.65rem', 
                     border: '2px dashed',
-                    borderColor: alpha('#e9762b', 0.1)
+                    borderColor: alpha(theme.palette.primary.main, 0.1)
                   }}>
                     <Avatar
                       src={getImageUrl(imagePreview)}
@@ -235,7 +234,7 @@ export default function ItemForm({
                         bgcolor: "white", 
                         border: "1px solid",
                         borderColor: alpha(theme.palette.divider, 0.1),
-                        borderRadius: '24px',
+                        borderRadius: '0.65rem',
                         boxShadow: '0 8px 20px rgba(0,0,0,0.05)'
                       }}
                     >
@@ -259,7 +258,7 @@ export default function ItemForm({
                           component="span"
                           startIcon={<ImageIcon />}
                           sx={{ 
-                            borderRadius: '12px', 
+                            borderRadius: '0.65rem', 
                             fontWeight: 900, 
                             textTransform: 'none', 
                             px: 3,
@@ -279,7 +278,7 @@ export default function ItemForm({
 
                 {/* General Info Section */}
                 <Box>
-                  <Typography variant="overline" sx={{ fontWeight: 1000, color: '#e9762b', mb: 2, display: 'block', letterSpacing: '0.1em' }}>GENERAL INFORMATION</Typography>
+                  <Typography variant="overline" sx={{ fontWeight: 1000, color: theme.palette.primary.main, mb: 2, display: 'block', letterSpacing: '0.1em' }}>GENERAL INFORMATION</Typography>
                   <Grid container spacing={3}>
                     <Grid size={{ xs: 12, sm: 8 }}>
                       <TextField
@@ -291,7 +290,7 @@ export default function ItemForm({
                         required
                         variant="outlined"
                         slotProps={{
-                          input: { sx: { borderRadius: '16px', bgcolor: 'white', fontWeight: 700 } },
+                          input: { sx: { borderRadius: '0.65rem', bgcolor: 'white', fontWeight: 700 } },
                           inputLabel: { sx: { fontWeight: 700 } }
                         }}
                       />
@@ -306,8 +305,8 @@ export default function ItemForm({
                         variant="outlined"
                         slotProps={{
                           input: { 
-                            startAdornment: <Typography sx={{ mr: 1, fontWeight: 1000, color: '#e9762b' }}>₹</Typography>,
-                            sx: { borderRadius: '16px', bgcolor: 'white', fontWeight: 1000 } 
+                            startAdornment: <Typography sx={{ mr: 1, fontWeight: 1000, color: theme.palette.primary.main }}>₹</Typography>,
+                            sx: { borderRadius: '0.65rem', bgcolor: 'white', fontWeight: 1000 } 
                           },
                           inputLabel: { sx: { fontWeight: 700 } }
                         }}
@@ -320,7 +319,7 @@ export default function ItemForm({
                           label="Category"
                           value={formData.category}
                           onChange={(e) => setFormData({ ...formData, category: e.target.value })}
-                          sx={{ borderRadius: '16px', bgcolor: 'white', fontWeight: 700 }}
+                          sx={{ borderRadius: '0.65rem', bgcolor: 'white', fontWeight: 700 }}
                         >
                           <MenuItem value=""><em>Uncategorized</em></MenuItem>
                           {categories.map((cat) => (
@@ -338,7 +337,7 @@ export default function ItemForm({
                         onChange={(e) => setFormData({ ...formData, code: e.target.value })}
                         variant="outlined"
                         slotProps={{
-                          input: { sx: { borderRadius: '16px', bgcolor: 'white', fontWeight: 700 } },
+                          input: { sx: { borderRadius: '0.65rem', bgcolor: 'white', fontWeight: 700 } },
                           inputLabel: { sx: { fontWeight: 700 } }
                         }}
                       />
@@ -354,7 +353,7 @@ export default function ItemForm({
                         onChange={(e) => setFormData({ ...formData, description: e.target.value })}
                         variant="outlined"
                         slotProps={{
-                          input: { sx: { borderRadius: '16px', bgcolor: 'white', fontWeight: 600 } },
+                          input: { sx: { borderRadius: '0.65rem', bgcolor: 'white', fontWeight: 600 } },
                           inputLabel: { sx: { fontWeight: 700 } }
                         }}
                       />
@@ -371,7 +370,7 @@ export default function ItemForm({
                   justifyContent: "space-between", 
                   p: 3, 
                   bgcolor: alpha('#10b981', 0.05), 
-                  borderRadius: '24px', 
+                  borderRadius: '0.65rem', 
                   border: "1px solid",
                   borderColor: alpha('#10b981', 0.1)
                 }}>

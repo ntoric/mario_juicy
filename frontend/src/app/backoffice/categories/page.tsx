@@ -37,19 +37,20 @@ import {
   useMediaQuery,
   keyframes,
 } from "@mui/material";
+import PageHeader from "@/components/backoffice/PageHeader";
 import { alpha } from "@mui/material/styles";
 import { useToast } from "@/context/ToastContext";
 import {
-  Add as AddIcon,
-  Edit as EditIcon,
-  Delete as DeleteIcon,
-  Image as ImageIcon,
-  Refresh as RefreshIcon,
-  Search as SearchIcon,
-  MoreVert as MoreVertIcon,
-  ToggleOn as ToggleOnIcon,
-  ToggleOff as ToggleOffIcon,
-  ArrowBack as ArrowBackIcon,
+  AddOutlined as AddIcon,
+  EditOutlined as EditIcon,
+  DeleteOutlined as DeleteIcon,
+  ImageOutlined as ImageIcon,
+  RefreshOutlined as RefreshIcon,
+  SearchOutlined as SearchIcon,
+  MoreVertOutlined as MoreVertIcon,
+  ToggleOnOutlined as ToggleOnIcon,
+  ToggleOffOutlined as ToggleOffIcon,
+  ArrowBackOutlined as ArrowBackIcon,
 } from "@mui/icons-material";
 import { categoryService, Category } from "@/services/categoryService";
 import { useAuth } from "@/hooks/useAuth";
@@ -229,7 +230,7 @@ export default function CategoryPage() {
     return (
       <Box sx={{ 
         flexGrow: 1, 
-        bgcolor: '#fcfcfc', 
+        bgcolor: 'transparent', 
         display: 'flex', 
         flexDirection: 'column',
         minHeight: '100%',
@@ -238,7 +239,7 @@ export default function CategoryPage() {
         p: { xs: 2, md: 4 }
       }}>
         {/* Background Blobs */}
-        <Box sx={{ position: 'absolute', top: -100, right: -100, width: 400, height: 400, background: 'radial-gradient(circle, rgba(233,118,43,0.05) 0%, transparent 70%)', borderRadius: '50%', zIndex: 0 }} />
+        <Box sx={{ position: 'absolute', top: -100, right: -100, width: 400, height: 400, background: `radial-gradient(circle, ${alpha(theme.palette.primary.main, 0.05)} 0%, transparent 70%)`, borderRadius: '50%', zIndex: 0 }} />
         
         <Box sx={{ position: 'relative', zIndex: 1, maxWidth: 800, mx: 'auto', width: '100%' }}>
           <Box sx={{ mb: 4, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
@@ -249,15 +250,15 @@ export default function CategoryPage() {
                   bgcolor: 'white', 
                   border: '1px solid', 
                   borderColor: alpha(theme.palette.divider, 0.1), 
-                  borderRadius: '12px',
+                  borderRadius: '0.65rem',
                   boxShadow: '0 4px 12px rgba(0,0,0,0.03)',
-                  '&:hover': { bgcolor: alpha('#e9762b', 0.05), color: '#e9762b' }
+                  '&:hover': { bgcolor: alpha(theme.palette.primary.main, 0.05), color: theme.palette.primary.main }
                 }}
               >
                 <ArrowBackIcon />
               </IconButton>
               <Box>
-                <Typography variant="h4" sx={{ fontWeight: 1000, letterSpacing: '-0.02em', color: '#1a1a1a' }}>
+                <Typography variant="h4" sx={{ fontWeight: 600, letterSpacing: '-0.02em', color: '#1a1a1a' }}>
                   {view === 'create' ? "Add Category" : "Edit Category"}
                 </Typography>
                 <Typography variant="body2" sx={{ color: 'text.secondary', fontWeight: 600 }}>
@@ -269,13 +270,13 @@ export default function CategoryPage() {
               variant="contained" 
               onClick={handleSubmit}
               sx={{ 
-                borderRadius: '16px', 
-                fontWeight: 1000, 
+                borderRadius: '0.65rem', 
+                fontWeight: 600, 
                 px: 4, 
                 height: 48,
-                background: 'linear-gradient(135deg, #e9762b 0%, #d35400 100%)',
-                boxShadow: '0 8px 20px rgba(233,118,43,0.3)',
-                '&:hover': { transform: 'translateY(-2px)', boxShadow: '0 12px 25px rgba(233,118,43,0.4)' }
+                background: `linear-gradient(135deg, ${theme.palette.primary.main} 0%, ${theme.palette.primary.dark} 100%)`,
+                boxShadow: `0 8px 20px ${alpha(theme.palette.primary.main, 0.3)}`,
+                '&:hover': { transform: 'translateY(-2px)', boxShadow: `0 12px 25px ${alpha(theme.palette.primary.main, 0.4)}` }
               }}
             >
               SAVE CHANGES
@@ -286,16 +287,15 @@ export default function CategoryPage() {
             <Grid size={{ xs: 12 }}>
               <Card sx={{ 
                 p: 4, 
-                borderRadius: '32px', 
+                borderRadius: '0.65rem', 
                 border: '1px solid', 
                 borderColor: alpha(theme.palette.divider, 0.08), 
                 boxShadow: '0 20px 50px rgba(0,0,0,0.04)',
-                bgcolor: 'rgba(255, 255, 255, 0.8)',
-                backdropFilter: 'blur(10px)'
+                bgcolor: 'white',
               }}>
                 <Stack spacing={4}>
                   <Box>
-                    <Typography variant="overline" sx={{ fontWeight: 1000, color: '#e9762b', mb: 2, display: 'block', letterSpacing: '0.1em' }}>GENERAL INFORMATION</Typography>
+                    <Typography variant="overline" sx={{ fontWeight: 600, color: theme.palette.primary.main, mb: 2, display: 'block', letterSpacing: '0.1em' }}>GENERAL INFORMATION</Typography>
                     <TextField
                       fullWidth
                       label="Category Name"
@@ -305,24 +305,24 @@ export default function CategoryPage() {
                       required
                       variant="outlined"
                       slotProps={{
-                        input: { sx: { borderRadius: '16px', bgcolor: 'white', fontWeight: 700 } },
+                        input: { sx: { borderRadius: '0.65rem', bgcolor: 'white', fontWeight: 700 } },
                         inputLabel: { sx: { fontWeight: 700 } }
                       }}
                     />
                   </Box>
 
                   <Box>
-                    <Typography variant="overline" sx={{ fontWeight: 1000, color: '#e9762b', mb: 2, display: 'block', letterSpacing: '0.1em' }}>CATEGORY VISUALS</Typography>
+                    <Typography variant="overline" sx={{ fontWeight: 600, color: theme.palette.primary.main, mb: 2, display: 'block', letterSpacing: '0.1em' }}>CATEGORY VISUALS</Typography>
                     <Box sx={{ 
                       display: "flex", 
                       alignItems: "center", 
                       flexDirection: { xs: 'column', sm: 'row' },
                       gap: 4, 
                       p: 3, 
-                      bgcolor: alpha('#e9762b', 0.02), 
-                      borderRadius: '24px', 
+                      bgcolor: alpha(theme.palette.primary.main, 0.02), 
+                      borderRadius: '0.65rem', 
                       border: '2px dashed',
-                      borderColor: alpha('#e9762b', 0.1)
+                      borderColor: alpha(theme.palette.primary.main, 0.1)
                     }}>
                       <Avatar
                         src={getImageUrl(imagePreview)}
@@ -333,14 +333,14 @@ export default function CategoryPage() {
                           bgcolor: "white", 
                           border: "1px solid",
                           borderColor: alpha(theme.palette.divider, 0.1),
-                          borderRadius: '24px',
+                          borderRadius: '0.65rem',
                           boxShadow: '0 8px 20px rgba(0,0,0,0.05)'
                         }}
                       >
                         <ImageIcon sx={{ color: alpha('#1a1a1a', 0.1), fontSize: 60 }} />
                       </Avatar>
                       <Box sx={{ textAlign: { xs: 'center', sm: 'left' } }}>
-                        <Typography variant="subtitle1" sx={{ fontWeight: 1000, mb: 1 }}>Cover Image</Typography>
+                        <Typography variant="subtitle1" sx={{ fontWeight: 600, mb: 1 }}>Cover Image</Typography>
                         <Typography variant="body2" sx={{ color: 'text.secondary', fontWeight: 600, mb: 3 }}>
                           Recommended size: 512x512px. PNG, JPG or WEBP formats supported.
                         </Typography>
@@ -357,8 +357,8 @@ export default function CategoryPage() {
                             component="span"
                             startIcon={<ImageIcon />}
                             sx={{ 
-                              borderRadius: '12px', 
-                              fontWeight: 900, 
+                              borderRadius: '0.65rem', 
+                              fontWeight: 600, 
                               textTransform: 'none', 
                               px: 3,
                               borderColor: alpha('#1a1a1a', 0.2),
@@ -379,12 +379,12 @@ export default function CategoryPage() {
                     justifyContent: "space-between", 
                     p: 3, 
                     bgcolor: alpha('#10b981', 0.05), 
-                    borderRadius: '24px', 
+                    borderRadius: '0.65rem', 
                     border: "1px solid",
                     borderColor: alpha('#10b981', 0.1)
                   }}>
                     <Box>
-                      <Typography variant="subtitle1" sx={{ fontWeight: 1000 }}>Available in POS</Typography>
+                      <Typography variant="subtitle1" sx={{ fontWeight: 600 }}>Available in POS</Typography>
                       <Typography variant="body2" sx={{ color: 'text.secondary', fontWeight: 600 }}>
                         Enable this to make this category and its items visible to staff during billing.
                       </Typography>
@@ -417,31 +417,21 @@ export default function CategoryPage() {
       overflow: 'hidden'
     }}>
        {/* Decorative Background Elements */}
-      <Box sx={{ position: 'absolute', top: -100, right: -100, width: 400, height: 400, background: 'radial-gradient(circle, rgba(233,118,43,0.06) 0%, transparent 70%)', borderRadius: '50%', zIndex: 0, pointerEvents: 'none' }} />
+      <Box sx={{ position: 'absolute', top: -100, right: -100, width: 400, height: 400, background: `radial-gradient(circle, ${alpha(theme.palette.primary.main, 0.06)} 0%, transparent 70%)`, borderRadius: '50%', zIndex: 0, pointerEvents: 'none' }} />
       
       <Box sx={{ position: 'relative', zIndex: 1, display: 'flex', flexDirection: 'column', height: '100%' }}>
-        <Box sx={{ 
-          mb: 5, 
-          display: 'flex', 
-          justifyContent: "space-between", 
-          alignItems: { xs: 'flex-start', sm: 'center' }, 
-          flexDirection: { xs: 'column', sm: 'row' },
-          gap: 3 
-        }}>
+        <PageHeader>
           <Box>
             <Typography variant="h3" sx={{ 
-              fontWeight: 1000, 
-              background: 'linear-gradient(90deg, #e9762b 0%, #ffb800 100%)', 
+              fontWeight: 600, 
+              background: `linear-gradient(90deg, ${theme.palette.primary.main} 0%, ${theme.palette.secondary.main} 100%)`, 
               WebkitBackgroundClip: 'text', 
               WebkitTextFillColor: 'transparent', 
-              fontSize: { xs: '2.5rem', md: '3rem' }, 
+              fontSize: '2rem', 
               letterSpacing: '-0.04em',
               lineHeight: 1
             }}>
               Categories
-            </Typography>
-            <Typography variant="body2" sx={{ color: 'text.secondary', fontWeight: 600, mt: 1, opacity: 0.8 }}>
-              Manage your menu categories and their visibility.
             </Typography>
           </Box>
 
@@ -458,11 +448,11 @@ export default function CategoryPage() {
                   input: {
                     startAdornment: (
                       <InputAdornment position="start">
-                        <SearchIcon sx={{ color: "#e9762b", fontSize: 22 }} />
+                        <SearchIcon sx={{ color: theme.palette.primary.main, fontSize: 22 }} />
                       </InputAdornment>
                     ),
                     sx: { 
-                      borderRadius: '16px', 
+                      borderRadius: '0.65rem', 
                       height: 48, 
                       bgcolor: 'white', 
                       border: '1px solid',
@@ -482,11 +472,11 @@ export default function CategoryPage() {
                   bgcolor: 'white', 
                   border: '1px solid',
                   borderColor: alpha(theme.palette.divider, 0.1), 
-                  borderRadius: '16px', 
+                  borderRadius: '0.65rem', 
                   width: 48, 
                   height: 48,
                   boxShadow: '0 4px 12px rgba(0,0,0,0.02)',
-                  '&:hover': { color: '#e9762b', transform: 'rotate(180deg)' },
+                  '&:hover': { color: theme.palette.primary.main, transform: 'rotate(180deg)' },
                   transition: 'all 0.3s ease'
                 }}
               >
@@ -500,10 +490,10 @@ export default function CategoryPage() {
                 startIcon={<AddIcon />}
                 onClick={handleOpenCreate}
                 sx={{ 
-                  borderRadius: '16px', 
+                  borderRadius: '0.65rem', 
                   height: 48, 
                   px: 3, 
-                  fontWeight: 1000,
+                  fontWeight: 600,
                   background: 'linear-gradient(135deg, #1a1a1a 0%, #333 100%)',
                   boxShadow: '0 8px 20px rgba(0,0,0,0.15)',
                   '&:hover': { transform: 'translateY(-2px)', boxShadow: '0 12px 30px rgba(0,0,0,0.2)' }
@@ -513,10 +503,10 @@ export default function CategoryPage() {
               </Button>
             )}
           </Stack>
-        </Box>
+        </PageHeader>
 
         {error && (
-          <Alert severity="error" sx={{ mb: 4, borderRadius: '16px', border: '1px solid rgba(239, 68, 68, 0.15)' }} onClose={() => setError(null)}>
+          <Alert severity="error" sx={{ mb: 4, borderRadius: '0.65rem', border: '1px solid rgba(239, 68, 68, 0.15)' }} onClose={() => setError(null)}>
             {error}
           </Alert>
         )}
@@ -524,30 +514,29 @@ export default function CategoryPage() {
         <TableContainer sx={{ 
           flexGrow: 1, 
           overflow: 'auto', 
-          borderRadius: "32px", 
+          borderRadius: '0.65rem', 
           border: '1px solid',
           borderColor: alpha(theme.palette.divider, 0.08), 
           boxShadow: '0 20px 60px rgba(0,0,0,0.04)',
-          bgcolor: 'rgba(255, 255, 255, 0.6)',
-          backdropFilter: 'blur(20px)',
+          bgcolor: 'white',
           display: 'flex',
           flexDirection: 'column'
         }}>
           {loading ? (
             <Box sx={{ display: "flex", justifyContent: "center", alignItems: 'center', height: 400 }}>
-              <CircularProgress size={40} thickness={4} sx={{ color: '#e9762b' }} />
+              <CircularProgress size={40} thickness={4} sx={{ color: theme.palette.primary.main }} />
             </Box>
           ) : (
             <Table stickyHeader sx={{ '& .MuiTableCell-stickyHeader': { bgcolor: 'white', borderBottom: '2px solid', borderColor: alpha(theme.palette.divider, 0.05) } }}>
               <TableHead>
                 <TableRow>
-                  <TableCell sx={{ fontWeight: 1000, py: 2.5, fontSize: '0.7rem', color: 'text.disabled', textTransform: 'uppercase', letterSpacing: '0.1em', pl: 4 }}>IMAGE</TableCell>
-                  <TableCell sx={{ fontWeight: 1000, fontSize: '0.7rem', color: 'text.disabled', textTransform: 'uppercase', letterSpacing: '0.1em' }}>CATEGORY NAME</TableCell>
-                  <TableCell sx={{ fontWeight: 1000, fontSize: '0.7rem', color: 'text.disabled', textTransform: 'uppercase', letterSpacing: '0.1em' }}>STATUS</TableCell>
+                  <TableCell sx={{ fontWeight: 600, py: 2.5, fontSize: '0.7rem', color: 'text.disabled', textTransform: 'uppercase', letterSpacing: '0.1em', pl: 4 }}>IMAGE</TableCell>
+                  <TableCell sx={{ fontWeight: 600, fontSize: '0.7rem', color: 'text.disabled', textTransform: 'uppercase', letterSpacing: '0.1em' }}>CATEGORY NAME</TableCell>
+                  <TableCell sx={{ fontWeight: 600, fontSize: '0.7rem', color: 'text.disabled', textTransform: 'uppercase', letterSpacing: '0.1em' }}>STATUS</TableCell>
                   {!isTablet && (
-                    <TableCell sx={{ fontWeight: 1000, fontSize: '0.7rem', color: 'text.disabled', textTransform: 'uppercase', letterSpacing: '0.1em' }}>LAST UPDATED</TableCell>
+                    <TableCell sx={{ fontWeight: 600, fontSize: '0.7rem', color: 'text.disabled', textTransform: 'uppercase', letterSpacing: '0.1em' }}>LAST UPDATED</TableCell>
                   )}
-                  <TableCell sx={{ fontWeight: 1000, fontSize: '0.7rem', color: 'text.disabled', textTransform: 'uppercase', letterSpacing: '0.1em', textAlign: "right", pr: 4 }}>ACTIONS</TableCell>
+                  <TableCell sx={{ fontWeight: 600, fontSize: '0.7rem', color: 'text.disabled', textTransform: 'uppercase', letterSpacing: '0.1em', textAlign: "right", pr: 4 }}>ACTIONS</TableCell>
                 </TableRow>
               </TableHead>
               <TableBody sx={{ bgcolor: 'transparent' }}>
@@ -556,7 +545,7 @@ export default function CategoryPage() {
                     <TableCell colSpan={5} align="center" sx={{ py: 12 }}>
                       <Box sx={{ opacity: 0.5 }}>
                         <ImageIcon sx={{ fontSize: 60, mb: 2, color: alpha('#1a1a1a', 0.1) }} />
-                        <Typography variant="h6" sx={{ fontWeight: 1000, color: 'text.secondary' }}>No categories found</Typography>
+                        <Typography variant="h6" sx={{ fontWeight: 600, color: 'text.secondary' }}>No categories found</Typography>
                         <Typography variant="body2" sx={{ color: 'text.disabled', fontWeight: 600 }}>Try adjusting your search query.</Typography>
                       </Box>
                     </TableCell>
@@ -568,7 +557,7 @@ export default function CategoryPage() {
                       hover 
                       sx={{ 
                         transition: 'all 0.2s ease',
-                        '&:hover': { bgcolor: alpha('#e9762b', 0.02) },
+                        '&:hover': { bgcolor: alpha(theme.palette.primary.main, 0.02) },
                         '& .MuiTableCell-root': { py: 2, borderBottom: '1px solid', borderColor: alpha(theme.palette.divider, 0.04) }
                       }}
                     >
@@ -582,14 +571,14 @@ export default function CategoryPage() {
                             bgcolor: "white", 
                             border: "1px solid",
                             borderColor: alpha(theme.palette.divider, 0.08), 
-                            borderRadius: '16px',
+                            borderRadius: '0.65rem',
                             boxShadow: '0 4px 12px rgba(0,0,0,0.03)'
                           }}
                         >
                           <ImageIcon sx={{ color: alpha('#1a1a1a', 0.1), fontSize: 24 }} />
                         </Avatar>
                       </TableCell>
-                      <TableCell sx={{ fontWeight: 900, fontSize: '1rem', color: '#1a1a1a' }}>
+                      <TableCell sx={{ fontWeight: 600, fontSize: '1rem', color: '#1a1a1a' }}>
                         {category.name}
                       </TableCell>
                       <TableCell>
@@ -597,11 +586,11 @@ export default function CategoryPage() {
                           label={category.is_enabled ? "ACTIVE" : "DISABLED"}
                           size="small"
                           sx={{ 
-                              fontWeight: 1000, 
+                              fontWeight: 600, 
                               height: 26,
                               px: 1,
                               fontSize: '0.65rem',
-                              borderRadius: '10px',
+                              borderRadius: '0.65rem',
                               bgcolor: category.is_enabled ? alpha('#10b981', 0.1) : alpha('#64748b', 0.1),
                               color: category.is_enabled ? '#10b981' : '#64748b',
                               border: '1px solid',
@@ -622,10 +611,10 @@ export default function CategoryPage() {
                                   size="small"
                                   onClick={() => handleOpenEdit(category)}
                                   sx={{ 
-                                    bgcolor: alpha('#e9762b', 0.05), 
-                                    color: '#e9762b', 
-                                    borderRadius: '12px',
-                                    '&:hover': { bgcolor: '#e9762b', color: 'white' }
+                                    bgcolor: alpha(theme.palette.primary.main, 0.05), 
+                                    color: theme.palette.primary.main, 
+                                    borderRadius: '0.65rem',
+                                    '&:hover': { bgcolor: theme.palette.primary.main, color: 'white' }
                                   }}
                                 >
                                   <EditIcon sx={{ fontSize: 18 }} />
@@ -643,7 +632,7 @@ export default function CategoryPage() {
                                   sx={{ 
                                     bgcolor: alpha('#ef4444', 0.05), 
                                     color: '#ef4444', 
-                                    borderRadius: '12px',
+                                    borderRadius: '0.65rem',
                                     '&:hover': { bgcolor: '#ef4444', color: 'white' }
                                   }}
                                 >
@@ -665,13 +654,13 @@ export default function CategoryPage() {
         <Dialog 
           open={openDeleteDialog} 
           onClose={() => setOpenDeleteDialog(false)}
-          slotProps={{ paper: { sx: { borderRadius: '32px', p: 2, maxWidth: 450 } } }}
+          slotProps={{ paper: { sx: { borderRadius: '0.65rem', p: 2, maxWidth: 450 } } }}
         >
           <DialogTitle sx={{ textAlign: 'center', pb: 0 }}>
-            <Box sx={{ p: 2, borderRadius: '24px', bgcolor: alpha('#ef4444', 0.05), display: 'inline-flex', mb: 2 }}>
+            <Box sx={{ p: 2, borderRadius: '0.65rem', bgcolor: alpha('#ef4444', 0.05), display: 'inline-flex', mb: 2 }}>
               <DeleteIcon sx={{ fontSize: 40, color: '#ef4444' }} />
             </Box>
-            <Typography variant="h5" sx={{ fontWeight: 1000, color: '#1a1a1a', mb: 1 }}>Confirm Deletion</Typography>
+            <Typography variant="h5" sx={{ fontWeight: 600, color: '#1a1a1a', mb: 1 }}>Confirm Deletion</Typography>
           </DialogTitle>
           <DialogContent>
             <Typography align="center" sx={{ fontWeight: 600, color: 'text.secondary' }}>
@@ -682,10 +671,10 @@ export default function CategoryPage() {
             <Button 
               onClick={() => setOpenDeleteDialog(false)} 
               sx={{ 
-                fontWeight: 1000, 
+                fontWeight: 600, 
                 color: 'text.disabled',
                 px: 3,
-                borderRadius: '16px',
+                borderRadius: '0.65rem',
                 '&:hover': { color: 'text.primary' }
               }}
             >
@@ -695,8 +684,8 @@ export default function CategoryPage() {
               onClick={handleDeleteConfirm} 
               variant="contained"
               sx={{ 
-                borderRadius: '16px', 
-                fontWeight: 1000, 
+                borderRadius: '0.65rem', 
+                fontWeight: 600, 
                 px: 4,
                 bgcolor: '#ef4444',
                 boxShadow: '0 8px 20px rgba(239,68,68,0.25)',

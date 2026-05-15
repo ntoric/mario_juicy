@@ -17,8 +17,16 @@ func GetDashboardStats(c *gin.Context) {
 	// If it's a superuser, they might want to filter by a specific store via query
 	// but for regular admins, StoreMiddleware already locked active_store_id.
 	storeID := activeStoreID
-	if storeID == nil {
+	if storeID == nil || storeID == uint(0) {
 		storeID = c.Query("store_id")
+	}
+
+	// Helper to check if storeID is set
+	isStoreSet := func(id interface{}) bool {
+		if id == nil { return false }
+		if s, ok := id.(string); ok { return s != "" && s != "0" }
+		if u, ok := id.(uint); ok { return u != 0 }
+		return false
 	}
 	
 	now := time.Now()
@@ -31,7 +39,7 @@ func GetDashboardStats(c *gin.Context) {
 	var occupiedTables int64
 
 	orderQuery := config.DB.Model(&models.Order{}).Where("created_at >= ?", startOfDay)
-	if storeID != "" {
+	if isStoreSet(storeID) {
 		orderQuery = orderQuery.Where("store_id = ?", storeID)
 	}
 	orderQuery.Count(&totalOrders)
@@ -45,7 +53,7 @@ func GetDashboardStats(c *gin.Context) {
 	}
 
 	tableQuery := config.DB.Model(&models.Table{})
-	if storeID != "" {
+	if isStoreSet(storeID) {
 		tableQuery = tableQuery.Where("store_id = ?", storeID)
 	}
 	tableQuery.Count(&totalTables)
@@ -66,7 +74,7 @@ func GetDashboardStats(c *gin.Context) {
 	// 2. Fetch Recent Transactions
 	var recentOrders []models.Order
 	recentQuery := config.DB.Preload("Table").Order("created_at desc").Limit(5)
-	if storeID != "" {
+	if isStoreSet(storeID) {
 		recentQuery = recentQuery.Where("store_id = ?", storeID)
 	}
 	recentQuery.Find(&recentOrders)
@@ -106,7 +114,7 @@ func GetDashboardStats(c *gin.Context) {
 		Order("sales desc").
 		Limit(5)
 
-	if storeID != "" {
+	if isStoreSet(storeID) {
 		popularQuery = popularQuery.Where("restaurants_order.store_id = ?", storeID)
 	}
 	popularQuery.Scan(&popularItems)
@@ -121,19 +129,25 @@ func GetDashboardStats(c *gin.Context) {
 func getFilteredInvoices(c *gin.Context) *gorm.DB {
 	activeStoreID, _ := c.Get("active_store_id")
 	storeID := activeStoreID
-	if storeID == nil {
+	if storeID == nil || storeID == uint(0) {
 		storeID = c.Query("store_id")
 	}
-	
+
+	// Helper to check if storeID is set
+	isStoreSet := func(id interface{}) bool {
+		if id == nil { return false }
+		if s, ok := id.(string); ok { return s != "" && s != "0" }
+		if u, ok := id.(uint); ok { return u != 0 }
+		return false
+	}
+
 	startDateStr := c.Query("start_date")
 	endDateStr := c.Query("end_date")
 
 	query := config.DB.Model(&models.Invoice{})
 
-	if storeID != "" {
+	if isStoreSet(storeID) {
 		query = query.Where("restaurants_invoice.store_id = ?", storeID)
-	} else {
-		query = query.Where("restaurants_invoice.store_id = ?", 1)
 	}
 
 	if startDateStr != "" {
@@ -306,3 +320,124 @@ func GetTaxReport(c *gin.Context) {
 	utils.SuccessResponse(c, http.StatusOK, result)
 }
 
+func GetBusinessStatistics(c *gin.Context) {
+	startDateStr := c.Query("start_date")
+	endDateStr := c.Query("end_date")
+
+	query := config.DB.Model(&models.Invoice{})
+
+	if startDateStr != "" {
+		startDate, _ := time.Parse("2006-01-02", startDateStr)
+		query = query.Where("created_at >= ?", startDate)
+	}
+	if endDateStr != "" {
+		endDate, _ := time.Parse("2006-01-02", endDateStr)
+		endDate = time.Date(endDate.Year(), endDate.Month(), endDate.Day(), 23, 59, 59, 0, endDate.Location())
+		query = query.Where("created_at <= ?", endDate)
+	}
+
+	activeStoreID, _ := c.Get("active_store_id")
+
+	if activeStoreID != nil && activeStoreID.(uint) != 0 {
+		query = query.Where("store_id = ?", activeStoreID)
+	}
+
+	var result struct {
+		TotalRevenue float64 `json:"total_revenue"`
+		TotalOrders  int64   `json:"total_orders"`
+		TotalStores  int64   `json:"total_stores"`
+	}
+
+	query.Select("COALESCE(SUM(total_amount), 0) as total_revenue, COUNT(id) as total_orders").Scan(&result)
+	
+	if activeStoreID != nil && activeStoreID.(uint) != 0 {
+		result.TotalStores = 1
+	} else {
+		config.DB.Model(&models.Store{}).Count(&result.TotalStores)
+	}
+
+	utils.SuccessResponse(c, http.StatusOK, result)
+}
+
+func GetStoreBasisSales(c *gin.Context) {
+	startDateStr := c.Query("start_date")
+	endDateStr := c.Query("end_date")
+
+	type StoreSales struct {
+		StoreID   uint    `json:"store_id"`
+		StoreName string  `json:"store_name"`
+		Sales     float64 `json:"sales"`
+		Count     int64   `json:"count"`
+	}
+	var results []StoreSales
+
+	activeStoreID, _ := c.Get("active_store_id")
+	
+	query := config.DB.Table("restaurants_invoice").
+		Select("stores_store.id as store_id, stores_store.name as store_name, COUNT(restaurants_invoice.id) as count, SUM(restaurants_invoice.total_amount) as sales").
+		Joins("JOIN stores_store ON stores_store.id = restaurants_invoice.store_id")
+
+	if startDateStr != "" {
+		startDate, _ := time.Parse("2006-01-02", startDateStr)
+		query = query.Where("restaurants_invoice.created_at >= ?", startDate)
+	}
+	if endDateStr != "" {
+		endDate, _ := time.Parse("2006-01-02", endDateStr)
+		endDate = time.Date(endDate.Year(), endDate.Month(), endDate.Day(), 23, 59, 59, 0, endDate.Location())
+		query = query.Where("restaurants_invoice.created_at <= ?", endDate)
+	}
+
+	if activeStoreID != nil && activeStoreID.(uint) != 0 {
+		query = query.Where("restaurants_invoice.store_id = ?", activeStoreID)
+	}
+
+	query.Group("stores_store.id, stores_store.name").Order("sales desc").Scan(&results)
+
+	utils.SuccessResponse(c, http.StatusOK, results)
+}
+
+func GetStoreBasisTopItems(c *gin.Context) {
+	startDateStr := c.Query("start_date")
+	endDateStr := c.Query("end_date")
+	storeIDStr := c.Query("store_id")
+
+	type StoreTopItem struct {
+		StoreID   uint    `json:"store_id"`
+		StoreName string  `json:"store_name"`
+		ItemName  string  `json:"item_name"`
+		Quantity  float64 `json:"quantity"`
+		Revenue   float64 `json:"revenue"`
+	}
+	var results []StoreTopItem
+
+	// This is a more complex query. We'll get top 3 items for each store.
+	// For simplicity in this implementation, we'll return top items grouped by store.
+	
+	query := config.DB.Table("restaurants_orderitem").
+		Select("stores_store.id as store_id, stores_store.name as store_name, catalogs_item.name as item_name, SUM(restaurants_orderitem.quantity) as quantity, SUM(restaurants_orderitem.quantity * restaurants_orderitem.price) as revenue").
+		Joins("JOIN restaurants_order ON restaurants_order.id = restaurants_orderitem.order_id").
+		Joins("JOIN stores_store ON stores_store.id = restaurants_order.store_id").
+		Joins("JOIN catalogs_item ON catalogs_item.id = restaurants_orderitem.item_id").
+		Where("restaurants_orderitem.status != ?", "CANCELLED")
+
+	if startDateStr != "" {
+		startDate, _ := time.Parse("2006-01-02", startDateStr)
+		query = query.Where("restaurants_order.created_at >= ?", startDate)
+	}
+	if endDateStr != "" {
+		endDate, _ := time.Parse("2006-01-02", endDateStr)
+		endDate = time.Date(endDate.Year(), endDate.Month(), endDate.Day(), 23, 59, 59, 0, endDate.Location())
+		query = query.Where("restaurants_order.created_at <= ?", endDate)
+	}
+	activeStoreID, _ := c.Get("active_store_id")
+	if storeIDStr != "" && storeIDStr != "all" {
+		query = query.Where("restaurants_order.store_id = ?", storeIDStr)
+	} else if activeStoreID != nil && activeStoreID.(uint) != 0 {
+		query = query.Where("restaurants_order.store_id = ?", activeStoreID)
+	}
+
+	query.Group("stores_store.id, stores_store.name, catalogs_item.name").
+		Order("stores_store.id, quantity desc").Scan(&results)
+
+	utils.SuccessResponse(c, http.StatusOK, results)
+}

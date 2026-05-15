@@ -15,6 +15,7 @@ import {
   Stack,
   useTheme,
   keyframes,
+  alpha
 } from "@mui/material";
 import {
   Add as AddIcon,
@@ -28,6 +29,7 @@ import ItemTable from "@/components/backoffice/items/ItemTable";
 import ItemForm from "@/components/backoffice/items/ItemForm";
 import DeleteConfirmDialog from "@/components/backoffice/items/DeleteConfirmDialog";
 import ItemDetails from "@/components/backoffice/items/ItemDetails";
+import PageHeader from "@/components/backoffice/PageHeader";
 
 const spin = keyframes`
   from { transform: rotate(0deg); }
@@ -128,7 +130,7 @@ export default function ItemsPage() {
 
   if (view === 'create' || view === 'edit') {
     return (
-      <ItemForm 
+      <ItemForm
         open={true}
         mode={view === 'create' ? 'create' : 'edit'}
         item={selectedItem}
@@ -140,7 +142,7 @@ export default function ItemsPage() {
 
   if (view === 'details' && selectedItem) {
     return (
-      <ItemDetails 
+      <ItemDetails
         item={selectedItem}
         onClose={() => setView('list')}
         onEdit={(item) => {
@@ -154,34 +156,24 @@ export default function ItemsPage() {
 
   return (
     <Box sx={{ position: 'relative', height: '100%', display: "flex", flexDirection: "column", p: { xs: 2, md: 3 }, overflow: 'hidden' }}>
-       {/* Decorative Background Elements */}
-      <Box sx={{ position: 'absolute', top: -120, right: -120, width: 450, height: 450, background: 'radial-gradient(circle, rgba(233,118,43,0.06) 0%, transparent 70%)', borderRadius: '50%', zIndex: 0, pointerEvents: 'none' }} />
+      {/* Decorative Background Elements */}
+      <Box sx={{ position: 'absolute', top: -120, right: -120, width: 450, height: 450, background: `radial-gradient(circle, ${alpha(theme.palette.primary.main, 0.06)} 0%, transparent 70%)`, borderRadius: '50%', zIndex: 0, pointerEvents: 'none' }} />
       <Box sx={{ position: 'absolute', bottom: -150, left: -150, width: 500, height: 500, background: 'radial-gradient(circle, rgba(255,184,0,0.05) 0%, transparent 70%)', borderRadius: '50%', zIndex: 0, pointerEvents: 'none' }} />
-      
+
       <Box sx={{ position: 'relative', zIndex: 1, display: 'flex', flexDirection: 'column', height: '100%' }}>
-        {/* Modern Header Row */}
-        <Box sx={{ 
-          mb: 4, 
-          display: 'flex', 
-          justifyContent: 'space-between', 
-          alignItems: { xs: 'flex-start', sm: 'center' }, 
-          flexDirection: { xs: 'column', sm: 'row' },
-          gap: 3 
-        }}>
+        {/* Modern Header Row via Portal */}
+        <PageHeader>
           <Box>
-            <Typography variant="h3" sx={{ 
-              fontWeight: 1000, 
-              background: 'linear-gradient(90deg, #e9762b 0%, #ffb800 100%)', 
-              WebkitBackgroundClip: 'text', 
-              WebkitTextFillColor: 'transparent', 
-              fontSize: { xs: '2.5rem', md: '3rem' }, 
+            <Typography variant="h3" sx={{
+              fontWeight: 600,
+              background: `linear-gradient(90deg, ${theme.palette.primary.main} 0%, ${theme.palette.secondary.main} 100%)`,
+              WebkitBackgroundClip: 'text',
+              WebkitTextFillColor: 'transparent',
+              fontSize: '2rem',
               letterSpacing: '-0.04em',
               lineHeight: 1
             }}>
               Menu Catalog
-            </Typography>
-            <Typography variant="body2" sx={{ color: 'text.secondary', fontWeight: 600, mt: 1, opacity: 0.8 }}>
-              Manage your food and beverage offerings.
             </Typography>
           </Box>
 
@@ -198,13 +190,13 @@ export default function ItemsPage() {
                   input: {
                     startAdornment: (
                       <InputAdornment position="start">
-                        <SearchIcon sx={{ color: "#e9762b", fontSize: 22 }} />
+                        <SearchIcon sx={{ color: theme.palette.primary.main, fontSize: 22 }} />
                       </InputAdornment>
                     ),
-                    sx: { 
-                      borderRadius: '16px', 
-                      height: 48, 
-                      bgcolor: 'white', 
+                    sx: {
+                      borderRadius: '0.65rem',
+                      height: 48,
+                      bgcolor: 'white',
                       border: '1px solid',
                       borderColor: theme.palette.divider,
                       boxShadow: '0 4px 12px rgba(0,0,0,0.02)',
@@ -216,18 +208,18 @@ export default function ItemsPage() {
             </Box>
 
             <Tooltip title="Refresh Catalog">
-              <IconButton 
-                onClick={fetchItems} 
-                sx={{ 
-                  bgcolor: 'white', 
+              <IconButton
+                onClick={fetchItems}
+                sx={{
+                  bgcolor: 'white',
                   border: '1px solid',
-                  borderColor: theme.palette.divider, 
-                  borderRadius: '16px', 
-                  width: 48, 
+                  borderColor: theme.palette.divider,
+                  borderRadius: '0.65rem',
+                  width: 48,
                   height: 48,
                   boxShadow: '0 4px 12px rgba(0,0,0,0.02)',
                   transition: 'all 0.3s ease',
-                  '&:hover': { transform: 'rotate(180deg)', color: '#e9762b' }
+                  '&:hover': { transform: 'rotate(180deg)', color: theme.palette.primary.main }
                 }}
               >
                 <RefreshIcon sx={{ animation: loading ? `${spin} 1s linear infinite` : 'none' }} />
@@ -239,11 +231,11 @@ export default function ItemsPage() {
                 variant="contained"
                 startIcon={<AddIcon />}
                 onClick={handleOpenCreate}
-                sx={{ 
-                  borderRadius: '16px', 
-                  height: 48, 
-                  px: 3, 
-                  fontWeight: 1000,
+                sx={{
+                  borderRadius: '0.65rem',
+                  height: 48,
+                  px: 3,
+                  fontWeight: 600,
                   background: 'linear-gradient(135deg, #1a1a1a 0%, #333 100%)',
                   boxShadow: '0 8px 20px rgba(0,0,0,0.15)',
                   '&:hover': { transform: 'translateY(-2px)', boxShadow: '0 12px 30px rgba(0,0,0,0.2)' }
@@ -253,18 +245,18 @@ export default function ItemsPage() {
               </Button>
             )}
           </Stack>
-        </Box>
+        </PageHeader>
 
         {error && (
-          <Alert severity="error" sx={{ mb: 4, borderRadius: '16px', border: '1px solid rgba(239, 68, 68, 0.15)' }} onClose={() => setError(null)}>
+          <Alert severity="error" sx={{ mb: 4, borderRadius: '0.65rem', border: '1px solid rgba(239, 68, 68, 0.15)' }} onClose={() => setError(null)}>
             {error}
           </Alert>
         )}
 
-        <Box sx={{ flexGrow: 1, overflowY: 'auto', px: 0.5, pb: 4, '&::-webkit-scrollbar': { width: 6 }, '&::-webkit-scrollbar-thumb': { bgcolor: 'rgba(233,118,43,0.2)', borderRadius: 3 } }}>
+        <Box sx={{ flexGrow: 1, overflowY: 'auto', px: 0.5, pb: 4, '&::-webkit-scrollbar': { width: 6 }, '&::-webkit-scrollbar-thumb': { bgcolor: alpha(theme.palette.primary.main, 0.2), borderRadius: 3 } }}>
           {loading ? (
             <Box sx={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", height: 400, gap: 2 }}>
-              <CircularProgress size={40} thickness={4} sx={{ color: '#e9762b' }} />
+              <CircularProgress size={40} thickness={4} sx={{ color: theme.palette.primary.main }} />
               <Typography color="text.secondary" variant="body2" sx={{ fontWeight: 800 }}>Fetching catalog...</Typography>
             </Box>
           ) : (

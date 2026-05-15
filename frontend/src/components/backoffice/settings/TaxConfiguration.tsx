@@ -1,4 +1,5 @@
 "use client";
+import { useTheme, alpha } from "@mui/material/styles";
 
 import { useState, useEffect } from "react";
 import {
@@ -17,7 +18,7 @@ import {
   Snackbar,
 } from "@mui/material";
 import { fetcher } from "@/lib/api";
-import { Save as SaveIcon } from "@mui/icons-material";
+import { SaveOutlined as SaveIcon } from "@mui/icons-material";
 import { useAuth } from "@/hooks/useAuth";
 
 const TAX_TYPES = [
@@ -27,6 +28,8 @@ const TAX_TYPES = [
 ];
 
 export default function TaxConfiguration() {
+  const theme = useTheme();
+
   const { activeStoreId, loading: authLoading } = useAuth();
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -117,7 +120,7 @@ export default function TaxConfiguration() {
 
   if (!activeStoreId && !authLoading) {
     return (
-      <Alert severity="warning" sx={{ borderRadius: '7px' }}>
+      <Alert severity="warning" sx={{ borderRadius: '0.65rem' }}>
         No active store selected. Please select a store to view tax configuration.
       </Alert>
     );
@@ -125,11 +128,11 @@ export default function TaxConfiguration() {
 
   return (
     <Box sx={{ maxWidth: 800 }}>
-      {error && <Alert severity="error" sx={{ mb: 3, borderRadius: '7px' }}>{error}</Alert>}
+      {error && <Alert severity="error" sx={{ mb: 3, borderRadius: '0.65rem' }}>{error}</Alert>}
       
       <form onSubmit={handleSubmit}>
-        <Paper elevation={0} sx={{ border: '1px solid #e8e4d8', p: 4, borderRadius: '7px', bgcolor: 'white' }}>
-          <Typography variant="h6" sx={{ mb: 3, fontWeight: 800, fontSize: '1rem', color: '#e9762b', textTransform: 'uppercase' }}>
+        <Paper elevation={0} sx={{ border: '1px solid #e8e4d8', p: 4, borderRadius: '0.65rem', bgcolor: 'white' }}>
+          <Typography variant="h6" sx={{ mb: 3, fontWeight: 800, fontSize: '1rem', color: theme.palette.primary.main, textTransform: 'uppercase' }}>
             Tax Policy
           </Typography>
           
@@ -142,7 +145,7 @@ export default function TaxConfiguration() {
                 name="tax_type"
                 value={formData.tax_type}
                 onChange={handleInputChange}
-                slotProps={{ select: { sx: { borderRadius: '7px' } }, input: { sx: { borderRadius: '7px' } } }}
+                slotProps={{ select: { sx: { borderRadius: '0.65rem' } }, input: { sx: { borderRadius: '0.65rem' } } }}
               >
                 {TAX_TYPES.map((option) => (
                   <MenuItem key={option.value} value={option.value}>
@@ -181,7 +184,7 @@ export default function TaxConfiguration() {
                     value={formData.cgst_rate}
                     onChange={handleInputChange}
                     type="number"
-                    slotProps={{ input: { sx: { borderRadius: '7px' } } }}
+                    slotProps={{ input: { sx: { borderRadius: '0.65rem' } } }}
                   />
                 </Grid>
                 {formData.tax_type !== "EXEMPTED" && (
@@ -194,7 +197,7 @@ export default function TaxConfiguration() {
                         value={formData.sgst_rate}
                         onChange={handleInputChange}
                         type="number"
-                        slotProps={{ input: { sx: { borderRadius: '7px' } } }}
+                        slotProps={{ input: { sx: { borderRadius: '0.65rem' } } }}
                       />
                     </Grid>
                     <Grid size={{ xs: 12, md: 4 }}>
@@ -205,7 +208,7 @@ export default function TaxConfiguration() {
                         value={formData.igst_rate}
                         onChange={handleInputChange}
                         type="number"
-                        slotProps={{ input: { sx: { borderRadius: '7px' } } }}
+                        slotProps={{ input: { sx: { borderRadius: '0.65rem' } } }}
                       />
                     </Grid>
                   </>
@@ -241,7 +244,7 @@ export default function TaxConfiguration() {
                   value={formData.cess_rate}
                   onChange={handleInputChange}
                   type="number"
-                  slotProps={{ input: { sx: { borderRadius: '7px' } } }}
+                  slotProps={{ input: { sx: { borderRadius: '0.65rem' } } }}
                 />
               </Grid>
             )}
@@ -256,8 +259,9 @@ export default function TaxConfiguration() {
               sx={{
                 px: 4,
                 py: 1,
-                borderRadius: '7px',
+                borderRadius: '0.65rem',
                 fontWeight: 800,
+                height: 48,
               }}
             >
               {saving ? "Saving..." : "Save Changes"}
@@ -272,7 +276,7 @@ export default function TaxConfiguration() {
         onClose={() => setSuccess(false)}
         anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
       >
-        <Alert onClose={() => setSuccess(false)} severity="success" sx={{ width: '100%', borderRadius: '5px', bgcolor: 'primary.main', color: 'white' }}>
+        <Alert onClose={() => setSuccess(false)} severity="success" sx={{ width: '100%', borderRadius: '0.65rem', bgcolor: 'primary.main', color: 'white' }}>
           Tax configuration updated successfully
         </Alert>
       </Snackbar>

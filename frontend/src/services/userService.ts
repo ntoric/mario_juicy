@@ -12,6 +12,8 @@ export interface User {
     name: string;
     invoice_prefix: string;
   };
+  is_superuser?: boolean;
+  must_change_password?: boolean;
 }
 
 export interface UserFormData {
@@ -24,8 +26,9 @@ export interface UserFormData {
 }
 
 export const userService = {
-  getUsers: async (): Promise<User[]> => {
-    return fetcher("/users/management/");
+  getUsers: async (storeId?: string | number): Promise<User[]> => {
+    const query = storeId ? `?store_id=${storeId}` : '';
+    return fetcher(`/users/management/${query}`);
   },
 
   createUser: async (userData: UserFormData): Promise<User> => {
@@ -52,6 +55,19 @@ export const userService = {
     return fetcher(`/users/management/${id}/`, {
       method: "PATCH",
       body: JSON.stringify({ is_active: !currentStatus }),
+    });
+  },
+
+  resetPassword: async (id: number): Promise<{ temporary_password: string }> => {
+    return fetcher(`/users/management/${id}/reset-password/`, {
+      method: "POST",
+    });
+  },
+
+  changePassword: async (newPassword: string): Promise<void> => {
+    return fetcher("/users/change-password/", {
+      method: "POST",
+      body: JSON.stringify({ new_password: newPassword }),
     });
   }
 };

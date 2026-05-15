@@ -1,7 +1,7 @@
 import React from "react";
 import { Card, CardContent, Typography, Box, alpha } from "@mui/material";
-import TrendingUpIcon from "@mui/icons-material/TrendingUp";
-import TrendingDownIcon from "@mui/icons-material/TrendingDown";
+import TrendingUpIcon from "@mui/icons-material/TrendingUpOutlined";
+import TrendingDownIcon from "@mui/icons-material/TrendingDownOutlined";
 
 interface SummaryCardProps {
   label: string;
@@ -12,32 +12,54 @@ interface SummaryCardProps {
   color: string;
 }
 
+function getScrollableParent(el: HTMLElement | null): HTMLElement | null {
+  let node = el?.parentElement ?? null;
+  while (node) {
+    const { overflowY } = window.getComputedStyle(node);
+    if ((overflowY === 'auto' || overflowY === 'scroll') && node.scrollHeight > node.clientHeight) {
+      return node;
+    }
+    node = node.parentElement;
+  }
+  return null;
+}
+
 export default function SummaryCard({ label, value, trend, trendType, icon, color }: SummaryCardProps) {
+  const handleWheel = (e: React.WheelEvent<HTMLDivElement>) => {
+    const scrollable = getScrollableParent(e.currentTarget);
+    if (scrollable) {
+      scrollable.scrollTop += e.deltaY;
+    }
+  };
+
   return (
-    <Card sx={{ 
-      height: '100%', 
-      borderRadius: '20px', 
-      border: '1px solid rgba(255, 255, 255, 0.8)', 
-      background: 'rgba(255, 255, 255, 0.75)',
-      backdropFilter: 'blur(20px)',
-      boxShadow: '0 8px 32px rgba(0,0,0,0.04)',
-      transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)', 
-      position: 'relative',
-      overflow: 'hidden',
-      '&:hover': { 
-        transform: 'translateY(-4px)', 
-        boxShadow: '0 12px 40px rgba(0,0,0,0.08)',
-        '& .icon-box': {
-          transform: 'scale(1.1) rotate(-5deg)',
-          boxShadow: `0 8px 20px ${alpha(color, 0.2)}`
-        }
-      } 
-    }}>
+    <Card
+      onWheel={handleWheel}
+      sx={{ 
+        height: '100%', 
+        borderRadius: '0.65rem', 
+        border: '1px solid rgba(255, 255, 255, 0.8)', 
+        background: 'rgba(255, 255, 255, 0.75)',
+        backdropFilter: 'blur(20px)',
+        boxShadow: '0 8px 32px rgba(0,0,0,0.04)',
+        transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)', 
+        position: 'relative',
+        overflow: 'hidden',
+        '&:hover': { 
+          transform: 'translateY(-4px)', 
+          boxShadow: '0 12px 40px rgba(0,0,0,0.08)',
+          '& .icon-box': {
+            transform: 'scale(1.1) rotate(-5deg)',
+            boxShadow: `0 8px 20px ${alpha(color, 0.2)}`
+          }
+        } 
+      }}
+    >
       <CardContent sx={{ p: 3 }}>
         <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 2.5 }}>
           <Box className="icon-box" sx={{ 
             p: 1.5, 
-            borderRadius: '16px', 
+            borderRadius: '0.65rem', 
             backgroundColor: alpha(color, 0.1), 
             color: color,
             display: 'flex',
@@ -53,7 +75,7 @@ export default function SummaryCard({ label, value, trend, trendType, icon, colo
               gap: 0.5, 
               px: 1.2, 
               py: 0.5, 
-              borderRadius: '10px', 
+              borderRadius: '0.65rem', 
               bgcolor: trendType === "up" ? alpha("#10b981", 0.1) : alpha("#ef4444", 0.1),
               border: `1px solid ${trendType === "up" ? alpha("#10b981", 0.2) : alpha("#ef4444", 0.2)}`
             }}>

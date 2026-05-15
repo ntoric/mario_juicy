@@ -10,41 +10,53 @@ import (
 )
 
 type StoreResponse struct {
-	ID                     uint      `json:"id"`
-	Name                   string    `json:"name"`
-	Address                string    `json:"address"`
-	Phone                  string    `json:"phone"`
-	Email                  string    `json:"email"`
-	GSTNumber              string    `json:"gst_number"`
-	Location               string    `json:"location"`
-	Branch                 string    `json:"branch"`
-	FSSAILicNo             string    `json:"fssai_lic_no"`
-	Mobile                 string    `json:"mobile"`
-	InvoicePrefix          string    `json:"invoice_prefix"`
-	Logo                   string    `json:"logo"`
-	IsActive               bool      `json:"is_active"`
-	IsKitchenStepEnabled   bool      `json:"is_kitchen_step_enabled"`
-	IsTakeAwayEnabled      bool      `json:"is_take_away_enabled"`
-	IsReservationsEnabled  bool      `json:"is_reservations_enabled"`
-	ThermalPrinterSize     string    `json:"thermal_printer_size"`
-	ThermalPrinterName     string    `json:"thermal_printer_name"`
-	ThermalPrinterVendorID string    `json:"thermal_printer_vendor_id"`
-	ThermalPrinterProductID string   `json:"thermal_printer_product_id"`
-	CreatedAt              string    `json:"created_at"`
-	UpdatedAt              string    `json:"updated_at"`
+	ID                      uint   `json:"id"`
+	Name                    string `json:"name"`
+	Address                 string `json:"address"`
+	Phone                   string `json:"phone"`
+	Email                   string `json:"email"`
+	GSTNumber               string `json:"gst_number"`
+	Location                string `json:"location"`
+	Branch                  string `json:"branch"`
+	FSSAILicNo              string `json:"fssai_lic_no"`
+	Mobile                  string `json:"mobile"`
+	InvoicePrefix           string `json:"invoice_prefix"`
+	Logo                    string `json:"logo"`
+	IsActive                bool   `json:"is_active"`
+	IsKitchenStepEnabled    bool   `json:"is_kitchen_step_enabled"`
+	IsTakeAwayEnabled       bool   `json:"is_take_away_enabled"`
+	IsReservationsEnabled   bool   `json:"is_reservations_enabled"`
+	ThermalPrinterSize      string `json:"thermal_printer_size"`
+	ThermalPrinterName      string `json:"thermal_printer_name"`
+	ThermalPrinterVendorID  string `json:"thermal_printer_vendor_id"`
+	ThermalPrinterProductID string `json:"thermal_printer_product_id"`
+	CreatedAt               string `json:"created_at"`
+	UpdatedAt               string `json:"updated_at"`
 }
 
 func GetStores(c *gin.Context) {
 	var stores []models.Store
 	isSuperuser, _ := c.Get("is_superuser")
 	userStoreID, _ := c.Get("user_store_id")
+	userObj, _ := c.Get("user")
+
+	isBusinessOwner := false
+	if userObj != nil {
+		user := userObj.(models.User)
+		for _, g := range user.Groups {
+			if g.Name == "BUSINESS_OWNER" {
+				isBusinessOwner = true
+				break
+			}
+		}
+	}
 
 	query := config.DB
-	if isSuperuser == false {
+	if isSuperuser == false && isBusinessOwner == false {
 		if userStoreID != nil {
 			query = query.Where("id = ?", userStoreID)
 		} else {
-			// If not superuser and no store assigned, return empty list or error
+			// If not superuser, not business owner and no store assigned, return empty list or error
 			utils.SuccessResponse(c, http.StatusOK, []StoreResponse{})
 			return
 		}
@@ -86,28 +98,28 @@ func GetStores(c *gin.Context) {
 		}
 
 		response = append(response, StoreResponse{
-			ID:                     s.ID,
-			Name:                   name,
-			Address:                s.Address,
-			Phone:                  s.Phone,
-			Email:                  s.Email,
-			GSTNumber:              gstNumber,
-			Location:               location,
-			Branch:                 branch,
-			FSSAILicNo:             fssaiLicNo,
-			Mobile:                 mobile,
-			InvoicePrefix:          s.InvoicePrefix,
-			Logo:                   s.Logo,
-			IsActive:               s.IsActive,
-			IsKitchenStepEnabled:   s.IsKitchenStepEnabled,
-			IsTakeAwayEnabled:      s.IsTakeAwayEnabled,
-			IsReservationsEnabled:  s.IsReservationsEnabled,
-			ThermalPrinterSize:     s.ThermalPrinterSize,
-			ThermalPrinterName:     s.ThermalPrinterName,
-			ThermalPrinterVendorID: s.ThermalPrinterVendorID,
+			ID:                      s.ID,
+			Name:                    name,
+			Address:                 s.Address,
+			Phone:                   s.Phone,
+			Email:                   s.Email,
+			GSTNumber:               gstNumber,
+			Location:                location,
+			Branch:                  branch,
+			FSSAILicNo:              fssaiLicNo,
+			Mobile:                  mobile,
+			InvoicePrefix:           s.InvoicePrefix,
+			Logo:                    s.Logo,
+			IsActive:                s.IsActive,
+			IsKitchenStepEnabled:    s.IsKitchenStepEnabled,
+			IsTakeAwayEnabled:       s.IsTakeAwayEnabled,
+			IsReservationsEnabled:   s.IsReservationsEnabled,
+			ThermalPrinterSize:      s.ThermalPrinterSize,
+			ThermalPrinterName:      s.ThermalPrinterName,
+			ThermalPrinterVendorID:  s.ThermalPrinterVendorID,
 			ThermalPrinterProductID: s.ThermalPrinterProductID,
-			CreatedAt:              s.CreatedAt.Format("2006-01-02T15:04:05.999Z07:00"),
-			UpdatedAt:              s.UpdatedAt.Format("2006-01-02T15:04:05.999Z07:00"),
+			CreatedAt:               s.CreatedAt.Format("2006-01-02T15:04:05.999Z07:00"),
+			UpdatedAt:               s.UpdatedAt.Format("2006-01-02T15:04:05.999Z07:00"),
 		})
 	}
 
@@ -155,28 +167,28 @@ func GetStore(c *gin.Context) {
 	}
 
 	response := StoreResponse{
-		ID:                     s.ID,
-		Name:                   name,
-		Address:                s.Address,
-		Phone:                  s.Phone,
-		Email:                  s.Email,
-		GSTNumber:              gstNumber,
-		Location:               location,
-		Branch:                 branch,
-		FSSAILicNo:             fssaiLicNo,
-		Mobile:                 mobile,
-		InvoicePrefix:          s.InvoicePrefix,
-		Logo:                   s.Logo,
-		IsActive:               s.IsActive,
-		IsKitchenStepEnabled:   s.IsKitchenStepEnabled,
-		IsTakeAwayEnabled:      s.IsTakeAwayEnabled,
-		IsReservationsEnabled:  s.IsReservationsEnabled,
-		ThermalPrinterSize:     s.ThermalPrinterSize,
-		ThermalPrinterName:     s.ThermalPrinterName,
-		ThermalPrinterVendorID: s.ThermalPrinterVendorID,
+		ID:                      s.ID,
+		Name:                    name,
+		Address:                 s.Address,
+		Phone:                   s.Phone,
+		Email:                   s.Email,
+		GSTNumber:               gstNumber,
+		Location:                location,
+		Branch:                  branch,
+		FSSAILicNo:              fssaiLicNo,
+		Mobile:                  mobile,
+		InvoicePrefix:           s.InvoicePrefix,
+		Logo:                    s.Logo,
+		IsActive:                s.IsActive,
+		IsKitchenStepEnabled:    s.IsKitchenStepEnabled,
+		IsTakeAwayEnabled:       s.IsTakeAwayEnabled,
+		IsReservationsEnabled:   s.IsReservationsEnabled,
+		ThermalPrinterSize:      s.ThermalPrinterSize,
+		ThermalPrinterName:      s.ThermalPrinterName,
+		ThermalPrinterVendorID:  s.ThermalPrinterVendorID,
 		ThermalPrinterProductID: s.ThermalPrinterProductID,
-		CreatedAt:              s.CreatedAt.Format("2006-01-02T15:04:05.999Z07:00"),
-		UpdatedAt:              s.UpdatedAt.Format("2006-01-02T15:04:05.999Z07:00"),
+		CreatedAt:               s.CreatedAt.Format("2006-01-02T15:04:05.999Z07:00"),
+		UpdatedAt:               s.UpdatedAt.Format("2006-01-02T15:04:05.999Z07:00"),
 	}
 
 	utils.SuccessResponse(c, http.StatusOK, response)

@@ -5,12 +5,17 @@ export interface Category {
   name: string;
   image: string | null;
   is_enabled: boolean;
+  store_id?: number;
+  store_name?: string;
   created_at: string;
   updated_at: string;
 }
 
 export const categoryService = {
-  getCategories: () => fetcher("/catalogs/categories/"),
+  getCategories: (storeId?: string | number) => {
+    const url = storeId ? `/catalogs/categories/?store_id=${storeId}` : "/catalogs/categories/";
+    return fetcher(url);
+  },
   
   createCategory: (formData: FormData) => fetcher("/catalogs/categories/", {
     method: "POST",

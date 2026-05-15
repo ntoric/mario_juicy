@@ -1,5 +1,5 @@
-'use client';
-
+"use client";
+import { useTheme } from "@mui/material/styles";
 import React, { createContext, useContext, useState, useRef } from 'react';
 import {
   Dialog,
@@ -57,7 +57,7 @@ export const ConfirmProvider: React.FC<{ children: React.ReactNode }> = ({ child
         slotProps={{
           paper: {
             sx: {
-              borderRadius: '24px',
+              borderRadius: '0.65rem',
               p: 1,
               maxWidth: 400,
               width: '100%',
@@ -85,9 +85,9 @@ export const ConfirmProvider: React.FC<{ children: React.ReactNode }> = ({ child
             variant="contained"
             onClick={() => handleClose(true)}
             sx={{
-              borderRadius: '12px',
+              borderRadius: '0.65rem',
               fontWeight: 1000,
-              bgcolor: options.severity === 'error' ? '#d32f2f' : '#e9762b',
+              bgcolor: options.severity === 'error' ? '#d32f2f' : '#E9762B',
               '&:hover': {
                 bgcolor: options.severity === 'error' ? '#c62828' : '#d66a27'
               }
@@ -102,6 +102,8 @@ export const ConfirmProvider: React.FC<{ children: React.ReactNode }> = ({ child
 };
 
 export const useConfirm = () => {
+  const theme = useTheme();
+
   const context = useContext(ConfirmContext);
   if (!context) {
     throw new Error('useConfirm must be used within a ConfirmProvider');

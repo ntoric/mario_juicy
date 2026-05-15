@@ -33,11 +33,11 @@ export default function BackofficeRouteLayout({
   if (loading) {
     return (
       <div style={{ height: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#E9762B' }}>
-        <h1 
-          className="font-pacifico" 
-          style={{ 
-            color: 'white', 
-            fontSize: '3.5rem', 
+        <h1
+          className="font-pacifico"
+          style={{
+            color: 'white',
+            fontSize: '3.5rem',
             margin: 0,
             animation: 'pulse 1.8s ease-in-out infinite',
             letterSpacing: '0.02em'
@@ -45,7 +45,8 @@ export default function BackofficeRouteLayout({
         >
           Mario
         </h1>
-        <style dangerouslySetInnerHTML={{ __html: `
+        <style dangerouslySetInnerHTML={{
+          __html: `
           @keyframes pulse {
             0% { transform: scale(1); opacity: 0.7; }
             50% { transform: scale(1.1); opacity: 1; }

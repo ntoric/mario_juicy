@@ -19,13 +19,13 @@ import {
   keyframes,
 } from "@mui/material";
 import {
-  ArrowBack as ArrowBackIcon,
-  Image as ImageIcon,
-  Tag as TagIcon,
-  Category as CategoryIcon,
-  Description as DescriptionIcon,
-  Edit as EditIcon,
-  CalendarMonth as CalendarIcon,
+  ArrowBackOutlined as ArrowBackIcon,
+  ImageOutlined as ImageIcon,
+  TagOutlined as TagIcon,
+  CategoryOutlined as CategoryIcon,
+  DescriptionOutlined as DescriptionIcon,
+  EditOutlined as EditIcon,
+  CalendarMonthOutlined as CalendarIcon,
 } from "@mui/icons-material";
 import { Item } from "@/services/itemService";
 import { getImageUrl } from "@/lib/getImageUrl";
@@ -62,7 +62,7 @@ export default function ItemDetails({
       p: { xs: 2, md: 4 }
     }}>
       {/* Background Blobs */}
-      <Box sx={{ position: 'absolute', top: -100, right: -100, width: 400, height: 400, background: 'radial-gradient(circle, rgba(233,118,43,0.05) 0%, transparent 70%)', borderRadius: '50%', zIndex: 0 }} />
+      <Box sx={{ position: 'absolute', top: -100, right: -100, width: 400, height: 400, background: `radial-gradient(circle, ${alpha(theme.palette.primary.main, 0.05)} 0%, transparent 70%)`, borderRadius: '50%', zIndex: 0 }} />
       
       <Box sx={{ position: 'relative', zIndex: 1, maxWidth: 1000, mx: 'auto', width: '100%' }}>
         <Box sx={{ mb: 4, display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexDirection: { xs: 'column', sm: 'row' }, gap: 3 }}>
@@ -73,9 +73,9 @@ export default function ItemDetails({
                 bgcolor: 'white', 
                 border: '1px solid', 
                 borderColor: alpha(theme.palette.divider, 0.1), 
-                borderRadius: '12px',
+                borderRadius: '0.65rem',
                 boxShadow: '0 4px 12px rgba(0,0,0,0.03)',
-                '&:hover': { bgcolor: alpha('#e9762b', 0.05), color: '#e9762b' }
+                '&:hover': { bgcolor: alpha(theme.palette.primary.main, 0.05), color: theme.palette.primary.main }
               }}
             >
               <ArrowBackIcon />
@@ -95,7 +95,7 @@ export default function ItemDetails({
               onClick={() => onEdit(item)}
               startIcon={<EditIcon />}
               sx={{ 
-                borderRadius: '16px', 
+                borderRadius: '0.65rem', 
                 fontWeight: 1000, 
                 px: 4, 
                 height: 48,
@@ -112,7 +112,7 @@ export default function ItemDetails({
         <Grid container spacing={3}>
           <Grid size={{ xs: 12, md: 4 }}>
             <Card sx={{ 
-              borderRadius: '32px', 
+              borderRadius: '0.65rem', 
               border: '1px solid', 
               borderColor: alpha(theme.palette.divider, 0.08), 
               boxShadow: '0 20px 50px rgba(0,0,0,0.04)',
@@ -121,7 +121,7 @@ export default function ItemDetails({
               overflow: 'hidden',
               height: '100%'
             }}>
-              <Box sx={{ height: 300, bgcolor: alpha('#e9762b', 0.02), position: 'relative', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <Box sx={{ height: 300, bgcolor: alpha(theme.palette.primary.main, 0.02), position: 'relative', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                 {item.image ? (
                   <img
                     src={getImageUrl(item.image)}
@@ -142,7 +142,7 @@ export default function ItemDetails({
                         fontWeight: 1000, 
                         height: 24,
                         fontSize: '0.65rem',
-                        borderRadius: '8px',
+                        borderRadius: '0.65rem',
                         bgcolor: item.is_enabled ? alpha('#10b981', 0.1) : alpha('#64748b', 0.1),
                         color: item.is_enabled ? '#10b981' : '#64748b',
                     }}
@@ -154,13 +154,13 @@ export default function ItemDetails({
                         fontWeight: 1000, 
                         height: 24,
                         fontSize: '0.65rem',
-                        borderRadius: '8px',
-                        bgcolor: alpha('#e9762b', 0.1),
-                        color: '#e9762b',
+                        borderRadius: '0.65rem',
+                        bgcolor: alpha(theme.palette.primary.main, 0.1),
+                        color: theme.palette.primary.main,
                     }}
                   />
                 </Stack>
-                <Typography variant="h3" sx={{ fontWeight: 1000, color: '#e9762b' }}>
+                <Typography variant="h3" sx={{ fontWeight: 1000, color: theme.palette.primary.main }}>
                   ₹{parseFloat(item.price).toFixed(0)}
                 </Typography>
               </Box>
@@ -171,7 +171,7 @@ export default function ItemDetails({
             <Stack spacing={3} sx={{ height: '100%' }}>
               <Card sx={{ 
                 p: 4, 
-                borderRadius: '32px', 
+                borderRadius: '0.65rem', 
                 border: '1px solid', 
                 borderColor: alpha(theme.palette.divider, 0.08), 
                 boxShadow: '0 20px 50px rgba(0,0,0,0.04)',
@@ -179,7 +179,7 @@ export default function ItemDetails({
                 backdropFilter: 'blur(10px)',
                 flexGrow: 1
               }}>
-                <Typography variant="overline" sx={{ fontWeight: 1000, color: '#e9762b', mb: 2, display: 'block', letterSpacing: '0.1em' }}>ITEM SPECIFICATIONS</Typography>
+                <Typography variant="overline" sx={{ fontWeight: 1000, color: theme.palette.primary.main, mb: 2, display: 'block', letterSpacing: '0.1em' }}>ITEM SPECIFICATIONS</Typography>
                 
                 <Stack spacing={4}>
                   <Box>
@@ -194,7 +194,7 @@ export default function ItemDetails({
 
                   <Grid container spacing={3}>
                     <Grid size={{ xs: 12, sm: 6 }}>
-                      <Box sx={{ p: 2, bgcolor: alpha('#1a1a1a', 0.02), borderRadius: '16px', border: '1px solid', borderColor: alpha(theme.palette.divider, 0.05) }}>
+                      <Box sx={{ p: 2, bgcolor: alpha('#1a1a1a', 0.02), borderRadius: '0.65rem', border: '1px solid', borderColor: alpha(theme.palette.divider, 0.05) }}>
                         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 0.5 }}>
                           <TagIcon sx={{ color: alpha('#1a1a1a', 0.4) }} fontSize="small" />
                           <Typography variant="caption" sx={{ fontWeight: 1000, color: 'text.disabled' }}>ITEM CODE</Typography>
@@ -203,7 +203,7 @@ export default function ItemDetails({
                       </Box>
                     </Grid>
                     <Grid size={{ xs: 12, sm: 6 }}>
-                      <Box sx={{ p: 2, bgcolor: alpha('#1a1a1a', 0.02), borderRadius: '16px', border: '1px solid', borderColor: alpha(theme.palette.divider, 0.05) }}>
+                      <Box sx={{ p: 2, bgcolor: alpha('#1a1a1a', 0.02), borderRadius: '0.65rem', border: '1px solid', borderColor: alpha(theme.palette.divider, 0.05) }}>
                         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 0.5 }}>
                           <CategoryIcon sx={{ color: alpha('#1a1a1a', 0.4) }} fontSize="small" />
                           <Typography variant="caption" sx={{ fontWeight: 1000, color: 'text.disabled' }}>CATEGORY ID</Typography>
@@ -214,12 +214,12 @@ export default function ItemDetails({
                   </Grid>
 
                   <Box>
-                    <Typography variant="overline" sx={{ fontWeight: 1000, color: '#e9762b', mb: 2, display: 'block', letterSpacing: '0.1em' }}>TIMESTAMPS & AUDIT</Typography>
+                    <Typography variant="overline" sx={{ fontWeight: 1000, color: theme.palette.primary.main, mb: 2, display: 'block', letterSpacing: '0.1em' }}>TIMESTAMPS & AUDIT</Typography>
                     <Grid container spacing={2}>
                       <Grid size={{ xs: 12, sm: 6 }}>
                         <Stack direction="row" spacing={2} sx={{ alignItems: 'center' }}>
-                          <Box sx={{ width: 40, height: 40, borderRadius: '12px', bgcolor: alpha('#e9762b', 0.05), display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                            <CalendarIcon sx={{ color: '#e9762b', fontSize: 20 }} />
+                          <Box sx={{ width: 40, height: 40, borderRadius: '0.65rem', bgcolor: alpha(theme.palette.primary.main, 0.05), display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                            <CalendarIcon sx={{ color: theme.palette.primary.main, fontSize: 20 }} />
                           </Box>
                           <Box>
                             <Typography variant="caption" sx={{ fontWeight: 1000, color: 'text.disabled', display: 'block' }}>CREATED AT</Typography>
@@ -229,8 +229,8 @@ export default function ItemDetails({
                       </Grid>
                       <Grid size={{ xs: 12, sm: 6 }}>
                         <Stack direction="row" spacing={2} sx={{ alignItems: 'center' }}>
-                          <Box sx={{ width: 40, height: 40, borderRadius: '12px', bgcolor: alpha('#ffb800', 0.05), display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                            <CalendarIcon sx={{ color: '#ffb800', fontSize: 20 }} />
+                          <Box sx={{ width: 40, height: 40, borderRadius: '0.65rem', bgcolor: alpha(theme.palette.secondary.main, 0.05), display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                            <CalendarIcon sx={{ color: theme.palette.secondary.main, fontSize: 20 }} />
                           </Box>
                           <Box>
                             <Typography variant="caption" sx={{ fontWeight: 1000, color: 'text.disabled', display: 'block' }}>LAST UPDATED</Typography>

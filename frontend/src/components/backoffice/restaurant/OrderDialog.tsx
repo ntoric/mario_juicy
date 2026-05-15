@@ -7,27 +7,27 @@ import {
 import { useToast } from '@/context/ToastContext';
 import { useRouter } from 'next/navigation';
 import {
-  Add as AddIcon,
-  Remove as RemoveIcon,
-  Delete as DeleteIcon,
-  ShoppingBasket as BasketIcon,
-  Kitchen as KitchenIcon,
-  Send as SendIcon,
-  ArrowForward as NextIcon,
-  Search as SearchIcon,
-  Category as CategoryIcon,
-  Receipt as BillIcon,
-  TableBar as TableIcon,
-  ChevronRight as ChevronRightIcon,
-  ChevronLeft as ChevronLeftIcon,
-  Person as PersonIcon,
-  AccessTime as TimeIcon,
-  ExpandMore as ExpandMoreIcon,
-  ExpandLess as ExpandLessIcon,
-  Print as PrintIcon,
-  Description as DescriptionIcon,
-  CheckCircle as CheckIcon,
-  Restaurant as FoodIcon
+  AddOutlined as AddIcon,
+  RemoveOutlined as RemoveIcon,
+  DeleteOutlined as DeleteIcon,
+  ShoppingBasketOutlined as BasketIcon,
+  KitchenOutlined as KitchenIcon,
+  SendOutlined as SendIcon,
+  ArrowForwardOutlined as NextIcon,
+  SearchOutlined as SearchIcon,
+  CategoryOutlined as CategoryIcon,
+  ReceiptOutlined as BillIcon,
+  TableBarOutlined as TableIcon,
+  ChevronRightOutlined as ChevronRightIcon,
+  ChevronLeftOutlined as ChevronLeftIcon,
+  PersonOutlined as PersonIcon,
+  AccessTimeOutlined as TimeIcon,
+  ExpandMoreOutlined as ExpandMoreIcon,
+  ExpandLessOutlined as ExpandLessIcon,
+  PrintOutlined as PrintIcon,
+  DescriptionOutlined as DescriptionIcon,
+  CheckCircleOutlined as CheckIcon,
+  RestaurantOutlined as FoodIcon
 } from '@mui/icons-material';
 import { restaurantService } from '@/services/restaurantService';
 import { itemService } from '@/services/itemService';
@@ -651,7 +651,7 @@ const OrderDialog: React.FC<OrderDialogProps> = ({ open, onClose, table, initial
             variant="contained" 
             fullWidth 
             onClick={() => handleCreateOrder('DINE_IN')} 
-            sx={{ py: 1.5, borderRadius: '16px', fontWeight: 900, bgcolor: '#e9762b', color: 'white', fontSize: '0.9rem', boxShadow: '0 8px 20px rgba(233, 118, 43, 0.2)' }}
+            sx={{ py: 1.5, borderRadius: '0.65rem', fontWeight: 900, bgcolor: theme.palette.primary.main, color: 'white', fontSize: '0.9rem', boxShadow: `0 8px 20px ${alpha(theme.palette.primary.main, 0.2)}` }}
             disabled={loading}
           >
             {loading ? <CircularProgress size={20} color="inherit" /> : 'START ORDER'}
@@ -661,41 +661,41 @@ const OrderDialog: React.FC<OrderDialogProps> = ({ open, onClose, table, initial
     } else {
     if (hasNewItems) {
       actions.push(
-        <Button key="kot" variant="contained" color="warning" size="small" onClick={handleSendToKitchen} sx={{ fontWeight: 950, borderRadius: '16px', flexGrow: 1, py: 1.5, bgcolor: '#e9762b', '&:hover': { bgcolor: '#d66a27' } }}>KOT</Button>
+        <Button key="kot" variant="contained" color="warning" size="small" onClick={handleSendToKitchen} sx={{ fontWeight: 950, borderRadius: '0.65rem', flexGrow: 1, py: 1.5, bgcolor: theme.palette.primary.main, '&:hover': { bgcolor: '#d66a27' } }}>KOT</Button>
       );
     }
     if (hasReadyItems && order?.order_type !== 'TAKE_AWAY') {
       actions.push(
-        <Button key="serve" variant="contained" color="success" size="small" onClick={handleServeAllReady} sx={{ fontWeight: 950, borderRadius: '16px', flexGrow: 1, py: 1.5, bgcolor: '#2e7d32' }}>SERVE</Button>
+        <Button key="serve" variant="contained" color="success" size="small" onClick={handleServeAllReady} sx={{ fontWeight: 950, borderRadius: '0.65rem', flexGrow: 1, py: 1.5, bgcolor: '#2e7d32' }}>SERVE</Button>
       );
     }
     if (nextStatus && order?.status !== 'COMPLETED' && (order?.items || []).length > 0 && 
         !(order?.order_type === 'DINE_IN' && nextStatus === 'SERVED') &&
         !(order?.order_type === 'TAKE_AWAY' && hasNewItems)) {
       actions.push(
-        <Button key="status" variant="contained" size="small" onClick={() => handleUpdateOrderStatus(nextStatus)} sx={{ fontWeight: 950, borderRadius: '16px', flexGrow: 1, py: 1.5, bgcolor: '#e9762b', '&:hover': { bgcolor: '#d66a27' } }}>
+        <Button key="status" variant="contained" size="small" onClick={() => handleUpdateOrderStatus(nextStatus)} sx={{ fontWeight: 950, borderRadius: '0.65rem', flexGrow: 1, py: 1.5, bgcolor: theme.palette.primary.main, '&:hover': { bgcolor: '#d66a27' } }}>
           {nextStatus === 'READY' ? 'READY' : (nextStatus === 'SERVED' ? 'SERVE' : nextStatus.split('_')[0])}
         </Button>
       );
     }
     if (order?.status === 'COMPLETED' && !order.invoice) {
       actions.push(
-        <Button key="checkout" variant="contained" color="success" size="small" onClick={handleGenerateBill} sx={{ fontWeight: 950, borderRadius: '16px', flexGrow: 1, py: 1.5, bgcolor: '#2e7d32' }}>BILL</Button>
+        <Button key="checkout" variant="contained" color="success" size="small" onClick={handleGenerateBill} sx={{ fontWeight: 950, borderRadius: '0.65rem', flexGrow: 1, py: 1.5, bgcolor: '#2e7d32' }}>BILL</Button>
       );
     }
     if (order?.order_type !== 'TAKE_AWAY' && order?.invoice && order?.status !== 'COMPLETED') {
       actions.push(
-        <Button key="payment" variant="contained" color="secondary" size="small" onClick={() => setCheckoutOpen(true)} sx={{ fontWeight: 950, borderRadius: '16px', flexGrow: 1, py: 1.5, bgcolor: '#6a1b9a' }}>PAY</Button>
+        <Button key="payment" variant="contained" color="secondary" size="small" onClick={() => setCheckoutOpen(true)} sx={{ fontWeight: 950, borderRadius: '0.65rem', flexGrow: 1, py: 1.5, bgcolor: '#6a1b9a' }}>PAY</Button>
       );
     }
 
     if ((order?.items || []).length > 0) {
       actions.push(
-        <Button key="print-kot" variant="outlined" size="small" onClick={handlePrintKOT} sx={{ fontWeight: 950, borderRadius: '16px', flexGrow: 1, py: 1.5, borderColor: '#e9762b', color: '#e9762b' }}>PRINT KOT</Button>
+        <Button key="print-kot" variant="outlined" size="small" onClick={handlePrintKOT} sx={{ fontWeight: 950, borderRadius: '0.65rem', flexGrow: 1, py: 1.5, borderColor: theme.palette.primary.main, color: theme.palette.primary.main }}>PRINT KOT</Button>
       );
       if (order?.invoice) {
         actions.push(
-          <Button key="print-bill" variant="outlined" size="small" onClick={handlePrint} sx={{ fontWeight: 950, borderRadius: '16px', flexGrow: 1, py: 1.5, borderColor: '#2e7d32', color: '#2e7d32' }}>PRINT BILL</Button>
+          <Button key="print-bill" variant="outlined" size="small" onClick={handlePrint} sx={{ fontWeight: 950, borderRadius: '0.65rem', flexGrow: 1, py: 1.5, borderColor: '#2e7d32', color: '#2e7d32' }}>PRINT BILL</Button>
         );
       }
     }
@@ -728,7 +728,7 @@ const OrderDialog: React.FC<OrderDialogProps> = ({ open, onClose, table, initial
             overlap="circular"
             sx={{
               '& .MuiBadge-badge': {
-                bgcolor: '#e9762b',
+                bgcolor: theme.palette.primary.main,
                 color: 'white',
                 fontWeight: 900,
                 fontSize: '0.65rem',
@@ -742,12 +742,12 @@ const OrderDialog: React.FC<OrderDialogProps> = ({ open, onClose, table, initial
               size="large"
               onClick={() => setMobileSummaryOpen(!mobileSummaryOpen)}
               sx={{ 
-                bgcolor: alpha('#e9762b', 0.1), 
-                color: '#e9762b', 
+                bgcolor: alpha(theme.palette.primary.main, 0.1), 
+                color: theme.palette.primary.main, 
                 width: 52, 
                 height: 52,
-                borderRadius: '16px',
-                '&:hover': { bgcolor: alpha('#e9762b', 0.15) } 
+                borderRadius: '0.65rem',
+                '&:hover': { bgcolor: alpha(theme.palette.primary.main, 0.15) } 
               }}
             >
               <BasketIcon />
@@ -760,11 +760,11 @@ const OrderDialog: React.FC<OrderDialogProps> = ({ open, onClose, table, initial
 
   const renderSummaryContent = () => (
     <>
-      <Box sx={{ p: 2.5, borderBottom: '1px solid', borderColor: alpha(theme.palette.divider, 0.1), display: 'flex', justifyContent: 'space-between', alignItems: 'center', bgcolor: alpha('#e9762b', 0.02) }}>
+      <Box sx={{ p: 2.5, borderBottom: '1px solid', borderColor: alpha(theme.palette.divider, 0.1), display: 'flex', justifyContent: 'space-between', alignItems: 'center', bgcolor: alpha(theme.palette.primary.main, 0.02) }}>
         <Typography variant="caption" sx={{ fontWeight: 950, letterSpacing: '0.1em', color: 'text.disabled' }}>CART SUMMARY</Typography>
         
           {orderType === 'DINE_IN' && (
-          <Stack direction="row" spacing={0.5} sx={{ alignItems: 'center', bgcolor: 'white', borderRadius: '12px', px: 1, py: 0.5, border: '1px solid', borderColor: alpha(theme.palette.divider, 0.1) }}>
+          <Stack direction="row" spacing={0.5} sx={{ alignItems: 'center', bgcolor: 'white', borderRadius: '0.65rem', px: 1, py: 0.5, border: '1px solid', borderColor: alpha(theme.palette.divider, 0.1) }}>
             <PersonIcon sx={{ fontSize: 16, color: 'text.secondary' }} />
             <IconButton size="small" onClick={() => order ? handleUpdateOrderDetails({ number_of_persons: Math.max(1, order.number_of_persons - 1) }) : setNumberOfPersons(p => Math.max(1, p-1))} disabled={Boolean(order?.invoice)} sx={{ p: 0.5 }}>
               <RemoveIcon sx={{ fontSize: 14 }} />
@@ -783,7 +783,7 @@ const OrderDialog: React.FC<OrderDialogProps> = ({ open, onClose, table, initial
       </Box>
       
       {orderType === 'TAKE_AWAY' && (
-        <Box sx={{ p: 2.5, borderBottom: '1px solid', borderColor: alpha(theme.palette.divider, 0.1), bgcolor: alpha('#e9762b', 0.01) }}>
+        <Box sx={{ p: 2.5, borderBottom: '1px solid', borderColor: alpha(theme.palette.divider, 0.1), bgcolor: alpha(theme.palette.primary.main, 0.01) }}>
             <Stack spacing={2}>
               <TextField 
                 size="small" label="Customer Name" value={customerName} 
@@ -791,14 +791,14 @@ const OrderDialog: React.FC<OrderDialogProps> = ({ open, onClose, table, initial
                 disabled={Boolean(order?.invoice)}
                 slotProps={{
                   input: {
-                    sx: { borderRadius: '12px', fontWeight: 700 },
+                    sx: { borderRadius: '0.65rem', fontWeight: 700 },
                     endAdornment: order && (
                       <InputAdornment position="end">
                         <IconButton 
                           size="small" 
                           onClick={() => handleUpdateOrderDetails({ customer_name: customerName })}
                           disabled={loading || customerName === order.customer_name}
-                          sx={{ color: '#e9762b' }}
+                          sx={{ color: theme.palette.primary.main }}
                         >
                           <CheckIcon fontSize="small" />
                         </IconButton>
@@ -818,14 +818,14 @@ const OrderDialog: React.FC<OrderDialogProps> = ({ open, onClose, table, initial
                 helperText={(orderType === 'TAKE_AWAY' && !customerMobile && !order) ? 'Required for Parcel' : ''}
                 slotProps={{
                   input: {
-                    sx: { borderRadius: '12px', fontWeight: 700 },
+                    sx: { borderRadius: '0.65rem', fontWeight: 700 },
                     endAdornment: order && (
                       <InputAdornment position="end">
                         <IconButton 
                           size="small" 
                           onClick={() => handleUpdateOrderDetails({ customer_mobile: customerMobile })}
                           disabled={loading || customerMobile === order.customer_mobile}
-                          sx={{ color: '#e9762b' }}
+                          sx={{ color: theme.palette.primary.main }}
                         >
                           <CheckIcon fontSize="small" />
                         </IconButton>
@@ -850,11 +850,11 @@ const OrderDialog: React.FC<OrderDialogProps> = ({ open, onClose, table, initial
                 <TableRow key={item.id} sx={{ '&:last-child td': { borderBottom: 0 } }}>
                   <TableCell sx={{ py: 2, px: 1.5 }}>
                     <Typography variant="body2" sx={{ fontWeight: 850, color: '#1a1a1a', mb: 0.5 }}>{item.item_details.name}</Typography>
-                    <ItemStatusChip status={item.status} orderType={order?.order_type || 'DINE_IN'} sx={{ height: 18, fontSize: '0.65rem', fontWeight: 900, borderRadius: '6px' }} />
+                    <ItemStatusChip status={item.status} orderType={order?.order_type || 'DINE_IN'} sx={{ height: 18, fontSize: '0.65rem', fontWeight: 900, borderRadius: '0.65rem' }} />
                   </TableCell>
                   <TableCell align="right" sx={{ px: 1 }}>
                     {item.status === 'ORDERED' && !order?.invoice ? (
-                      <Stack direction="row" spacing={0.5} sx={{ alignItems: 'center', justifyContent: 'flex-end', bgcolor: alpha('#000', 0.03), borderRadius: '10px', p: 0.5 }}>
+                      <Stack direction="row" spacing={0.5} sx={{ alignItems: 'center', justifyContent: 'flex-end', bgcolor: alpha('#000', 0.03), borderRadius: '0.65rem', p: 0.5 }}>
                         <IconButton size="small" onClick={() => handleUpdateItemQuantity(item, -1)} sx={{ p: 0.5, bgcolor: 'white', '&:hover': { bgcolor: alpha('#000', 0.05) } }}><RemoveIcon sx={{ fontSize: 12 }} /></IconButton>
                         <Typography sx={{ fontWeight: 950, fontSize: '0.9rem', minWidth: 24, textAlign: 'center' }}>{item.quantity}</Typography>
                         <IconButton size="small" onClick={() => handleUpdateItemQuantity(item, 1)} sx={{ p: 0.5, bgcolor: 'white', '&:hover': { bgcolor: alpha('#000', 0.05) } }}><AddIcon sx={{ fontSize: 12 }} /></IconButton>
@@ -873,28 +873,28 @@ const OrderDialog: React.FC<OrderDialogProps> = ({ open, onClose, table, initial
       <Box sx={{ p: 2.5, borderTop: '2px dashed', borderColor: alpha(theme.palette.divider, 0.2), bgcolor: 'white' }}>
         <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2.5 }}>
           <Typography sx={{ fontWeight: 900, color: 'text.secondary', fontSize: '0.9rem' }}>TOTAL AMOUNT</Typography>
-          <Typography variant="h4" sx={{ fontWeight: 1000, color: '#e9762b', letterSpacing: '-0.02em' }}>₹{parseFloat(order?.total_amount || '0').toFixed(0)}</Typography>
+          <Typography variant="h4" sx={{ fontWeight: 1000, color: theme.palette.primary.main, letterSpacing: '-0.02em' }}>₹{parseFloat(order?.total_amount || '0').toFixed(0)}</Typography>
         </Box>
         {!isMobile && (
           <Stack spacing={1.5}>
             {hasNewItems && (
-              <Button variant="contained" fullWidth onClick={handleSendToKitchen} sx={{ fontWeight: 950, py: 1.5, borderRadius: '16px', bgcolor: '#e9762b', boxShadow: '0 8px 20px rgba(233, 118, 43, 0.2)', '&:hover': { bgcolor: '#d66a27' } }}>SEND TO KITCHEN (KOT)</Button>
+              <Button variant="contained" fullWidth onClick={handleSendToKitchen} sx={{ fontWeight: 950, py: 1.5, borderRadius: '0.65rem', bgcolor: theme.palette.primary.main, boxShadow: `0 8px 20px ${alpha(theme.palette.primary.main, 0.2)}`, '&:hover': { bgcolor: '#d66a27' } }}>SEND TO KITCHEN (KOT)</Button>
             )}
             {hasReadyItems && order?.order_type !== 'TAKE_AWAY' && (
-              <Button variant="contained" fullWidth onClick={handleServeAllReady} sx={{ fontWeight: 950, py: 1.5, borderRadius: '16px', bgcolor: '#2e7d32', boxShadow: '0 8px 20px rgba(46, 125, 50, 0.2)' }}>SERVE ALL READY</Button>
+              <Button variant="contained" fullWidth onClick={handleServeAllReady} sx={{ fontWeight: 950, py: 1.5, borderRadius: '0.65rem', bgcolor: '#2e7d32', boxShadow: '0 8px 20px rgba(46, 125, 50, 0.2)' }}>SERVE ALL READY</Button>
             )}
             {nextStatus && order?.status !== 'COMPLETED' && (order?.items || []).length > 0 && 
               !(order?.order_type === 'DINE_IN' && nextStatus === 'SERVED') &&
               !(order?.order_type === 'TAKE_AWAY' && hasNewItems) && (
-              <Button variant="contained" fullWidth onClick={() => handleUpdateOrderStatus(nextStatus)} sx={{ fontWeight: 950, py: 1.5, borderRadius: '16px', bgcolor: '#e9762b', boxShadow: '0 8px 20px rgba(233, 118, 43, 0.2)', '&:hover': { bgcolor: '#d66a27' } }}>
+              <Button variant="contained" fullWidth onClick={() => handleUpdateOrderStatus(nextStatus)} sx={{ fontWeight: 950, py: 1.5, borderRadius: '0.65rem', bgcolor: theme.palette.primary.main, boxShadow: `0 8px 20px ${alpha(theme.palette.primary.main, 0.2)}`, '&:hover': { bgcolor: '#d66a27' } }}>
                 {nextStatus === 'READY' ? 'MARK AS READY' : (nextStatus === 'SERVED' ? 'MARK AS SERVED' : nextStatus.replace('_', ' '))}
               </Button>
             )}
             {order?.status === 'COMPLETED' && !order.invoice && (
-              <Button variant="contained" fullWidth onClick={handleGenerateBill} sx={{ fontWeight: 950, py: 1.5, borderRadius: '16px', bgcolor: '#2e7d32', boxShadow: '0 8px 20px rgba(46, 125, 50, 0.2)' }}>GENERATE BILL</Button>
+              <Button variant="contained" fullWidth onClick={handleGenerateBill} sx={{ fontWeight: 950, py: 1.5, borderRadius: '0.65rem', bgcolor: '#2e7d32', boxShadow: '0 8px 20px rgba(46, 125, 50, 0.2)' }}>GENERATE BILL</Button>
             )}
             {order?.order_type !== 'TAKE_AWAY' && order?.invoice && order?.status !== 'COMPLETED' && (
-              <Button variant="contained" fullWidth onClick={() => setCheckoutOpen(true)} sx={{ fontWeight: 950, py: 1.5, borderRadius: '16px', bgcolor: '#6a1b9a', boxShadow: '0 8px 20px rgba(106, 27, 154, 0.2)' }}>PROCEED TO PAYMENT</Button>
+              <Button variant="contained" fullWidth onClick={() => setCheckoutOpen(true)} sx={{ fontWeight: 950, py: 1.5, borderRadius: '0.65rem', bgcolor: '#6a1b9a', boxShadow: '0 8px 20px rgba(106, 27, 154, 0.2)' }}>PROCEED TO PAYMENT</Button>
             )}
             {(order?.items || []).length > 0 && (
               <Stack direction="row" spacing={1.5}>
@@ -904,7 +904,7 @@ const OrderDialog: React.FC<OrderDialogProps> = ({ open, onClose, table, initial
                   size="small"
                   startIcon={<PrintIcon />}
                   onClick={handlePrintKOT}
-                  sx={{ fontWeight: 950, py: 1, borderRadius: '12px', borderColor: '#e9762b', color: '#e9762b' }}
+                  sx={{ fontWeight: 950, py: 1, borderRadius: '0.65rem', borderColor: theme.palette.primary.main, color: theme.palette.primary.main }}
                 >
                   KITCHEN BILL
                 </Button>
@@ -915,7 +915,7 @@ const OrderDialog: React.FC<OrderDialogProps> = ({ open, onClose, table, initial
                     size="small"
                     startIcon={<BillIcon />}
                     onClick={handlePrint}
-                    sx={{ fontWeight: 950, py: 1, borderRadius: '12px', borderColor: '#2e7d32', color: '#2e7d32' }}
+                    sx={{ fontWeight: 950, py: 1, borderRadius: '0.65rem', borderColor: '#2e7d32', color: '#2e7d32' }}
                   >
                     INVOICE BILL
                   </Button>
@@ -932,14 +932,14 @@ const OrderDialog: React.FC<OrderDialogProps> = ({ open, onClose, table, initial
     if (loading && !order && menuItems.length === 0) {
       return (
         <Box sx={{ flexGrow: 1, display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: 400 }}>
-          <CircularProgress sx={{ color: '#e9762b' }} />
+          <CircularProgress sx={{ color: theme.palette.primary.main }} />
         </Box>
       );
     }
 
     if (dialogStage === 'CHOICE') {
       return (
-        <Box sx={{ flexGrow: 1, display: 'flex', flexDirection: 'column', bgcolor: alpha('#e9762b', 0.02) }}>
+        <Box sx={{ flexGrow: 1, display: 'flex', flexDirection: 'column', bgcolor: alpha(theme.palette.primary.main, 0.02) }}>
           <Container maxWidth="md" sx={{ py: { xs: 4, md: 8 }, flexGrow: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
             <Grid container spacing={4} sx={{ justifyContent: 'center' }}>
               {(!table || (table.current_occupancy || 0) < (table.capacity || 0)) && (
@@ -955,15 +955,15 @@ const OrderDialog: React.FC<OrderDialogProps> = ({ open, onClose, table, initial
                       }
                     }}
                     sx={{ 
-                      p: 5, height: '100%', minHeight: 220, borderRadius: '32px', border: '2px solid', borderColor: alpha('#e9762b', 0.1),
+                      p: 5, height: '100%', minHeight: 220, borderRadius: '0.65rem', border: '2px solid', borderColor: alpha(theme.palette.primary.main, 0.1),
                       display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 3,
                       cursor: 'pointer', transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)', bgcolor: 'white',
                       boxShadow: '0 10px 40px rgba(0,0,0,0.03)',
-                      '&:hover': { borderColor: '#e9762b', transform: 'translateY(-8px)', boxShadow: '0 20px 50px rgba(233, 118, 43, 0.12)' }
+                      '&:hover': { borderColor: theme.palette.primary.main, transform: 'translateY(-8px)', boxShadow: `0 20px 50px ${alpha(theme.palette.primary.main, 0.12)}` }
                     }}
                   >
-                    <Box sx={{ p: 2, bgcolor: alpha('#e9762b', 0.1), borderRadius: '20px' }}>
-                      <AddIcon sx={{ fontSize: 40, color: '#e9762b' }} />
+                    <Box sx={{ p: 2, bgcolor: alpha(theme.palette.primary.main, 0.1), borderRadius: '0.65rem' }}>
+                      <AddIcon sx={{ fontSize: 40, color: theme.palette.primary.main }} />
                     </Box>
                     <Typography variant="h5" sx={{ fontWeight: 1000, letterSpacing: '-0.02em' }}>NEW ORDER</Typography>
                   </Paper>
@@ -983,9 +983,9 @@ const OrderDialog: React.FC<OrderDialogProps> = ({ open, onClose, table, initial
                           setDialogStage('ORDER_DETAILS');
                         }}
                         sx={{ 
-                          p: 3, border: '2px solid', borderColor: alpha(theme.palette.divider, 0.1), borderRadius: '24px', cursor: 'pointer', transition: 'all 0.2s',
+                          p: 3, border: '2px solid', borderColor: alpha(theme.palette.divider, 0.1), borderRadius: '0.65rem', cursor: 'pointer', transition: 'all 0.2s',
                           bgcolor: 'white',
-                          '&:hover': { borderColor: '#e9762b', bgcolor: alpha('#e9762b', 0.02), transform: 'translateX(8px)' } 
+                          '&:hover': { borderColor: theme.palette.primary.main, bgcolor: alpha(theme.palette.primary.main, 0.02), transform: 'translateX(8px)' } 
                         }}
                       >
                         <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
@@ -993,7 +993,7 @@ const OrderDialog: React.FC<OrderDialogProps> = ({ open, onClose, table, initial
                             <Typography sx={{ fontWeight: 950, fontSize: '1.1rem', mb: 0.5 }}>{activeOrd.customer_name || `Order #${activeOrd.id}`}</Typography>
                             <Typography variant="caption" sx={{ fontWeight: 800, color: 'text.disabled', letterSpacing: '0.05em' }}>{activeOrd.number_of_persons} PERSONS • {new Date(activeOrd.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</Typography>
                           </Box>
-                          <Typography variant="h6" sx={{ fontWeight: 1000, color: '#e9762b' }}>₹{parseFloat(activeOrd.total_amount).toFixed(0)}</Typography>
+                          <Typography variant="h6" sx={{ fontWeight: 1000, color: theme.palette.primary.main }}>₹{parseFloat(activeOrd.total_amount).toFixed(0)}</Typography>
                         </Box>
                       </Paper>
                     ))}
@@ -1008,23 +1008,23 @@ const OrderDialog: React.FC<OrderDialogProps> = ({ open, onClose, table, initial
 
     if (dialogStage === 'NEW_ORDER_SETUP') {
       return (
-        <Box sx={{ flexGrow: 1, display: 'flex', flexDirection: 'column', bgcolor: alpha('#e9762b', 0.02) }}>
+        <Box sx={{ flexGrow: 1, display: 'flex', flexDirection: 'column', bgcolor: alpha(theme.palette.primary.main, 0.02) }}>
           <Container maxWidth="xs" sx={{ py: 6 }}>
             <Box sx={{ mb: 4, display: 'flex', alignItems: 'center', gap: 2 }}>
-              <IconButton onClick={() => setDialogStage('CHOICE')} sx={{ bgcolor: 'white', border: '1px solid', borderColor: alpha(theme.palette.divider, 0.1), borderRadius: '12px' }}><ChevronLeftIcon /></IconButton>
+              <IconButton onClick={() => setDialogStage('CHOICE')} sx={{ bgcolor: 'white', border: '1px solid', borderColor: alpha(theme.palette.divider, 0.1), borderRadius: '0.65rem' }}><ChevronLeftIcon /></IconButton>
               <Typography variant="h5" sx={{ fontWeight: 950, letterSpacing: '-0.02em' }}>Order Setup</Typography>
             </Box>
-            <Paper sx={{ p: 4, borderRadius: '32px', border: '1px solid', borderColor: alpha(theme.palette.divider, 0.1), boxShadow: '0 10px 40px rgba(0,0,0,0.03)' }}>
+            <Paper sx={{ p: 4, borderRadius: '0.65rem', border: '1px solid', borderColor: alpha(theme.palette.divider, 0.1), boxShadow: '0 10px 40px rgba(0,0,0,0.03)' }}>
               <Stack spacing={4}>
                 <Box sx={{ textAlign: 'center' }}>
                   <Typography variant="overline" sx={{ fontWeight: 950, color: 'text.disabled', letterSpacing: '0.1em' }}>GUEST COUNT</Typography>
                   <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4, mt: 3 }}>
-                    <IconButton size="large" onClick={() => setNumberOfPersons(Math.max(1, numberOfPersons - 1))} sx={{ bgcolor: alpha('#000', 0.03), borderRadius: '16px' }}><RemoveIcon /></IconButton>
+                    <IconButton size="large" onClick={() => setNumberOfPersons(Math.max(1, numberOfPersons - 1))} sx={{ bgcolor: alpha('#000', 0.03), borderRadius: '0.65rem' }}><RemoveIcon /></IconButton>
                     <Typography variant="h2" sx={{ fontWeight: 1000, minWidth: 80 }}>{numberOfPersons}</Typography>
-                    <IconButton size="large" onClick={() => setNumberOfPersons(numberOfPersons + 1)} disabled={table ? ((table.current_occupancy || 0) + numberOfPersons) >= table.capacity : false} sx={{ bgcolor: alpha('#000', 0.03), borderRadius: '16px' }}><AddIcon /></IconButton>
+                    <IconButton size="large" onClick={() => setNumberOfPersons(numberOfPersons + 1)} disabled={table ? ((table.current_occupancy || 0) + numberOfPersons) >= table.capacity : false} sx={{ bgcolor: alpha('#000', 0.03), borderRadius: '0.65rem' }}><AddIcon /></IconButton>
                   </Box>
                 </Box>
-                <Button variant="contained" fullWidth onClick={() => { setOrder(null); setOrderType('DINE_IN'); setDialogStage('ORDER_DETAILS'); }} sx={{ py: 2, borderRadius: '18px', fontWeight: 950, fontSize: '1rem', bgcolor: '#e9762b', boxShadow: '0 10px 30px rgba(233, 118, 43, 0.2)' }}>START ORDER</Button>
+                <Button variant="contained" fullWidth onClick={() => { setOrder(null); setOrderType('DINE_IN'); setDialogStage('ORDER_DETAILS'); }} sx={{ py: 2, borderRadius: '0.65rem', fontWeight: 950, fontSize: '1rem', bgcolor: theme.palette.primary.main, boxShadow: `0 10px 30px ${alpha(theme.palette.primary.main, 0.2)}` }}>START ORDER</Button>
               </Stack>
             </Paper>
           </Container>
@@ -1050,7 +1050,7 @@ const OrderDialog: React.FC<OrderDialogProps> = ({ open, onClose, table, initial
                     slotProps={{
                       input: {
                         startAdornment: <SearchIcon sx={{ mr: 1, color: 'text.disabled' }} />,
-                        sx: { borderRadius: '12px', fontWeight: 700, bgcolor: alpha('#000', 0.02) }
+                        sx: { borderRadius: '0.65rem', fontWeight: 700, bgcolor: alpha('#000', 0.02) }
                       }
                     }}
                     />
@@ -1062,10 +1062,10 @@ const OrderDialog: React.FC<OrderDialogProps> = ({ open, onClose, table, initial
                       sx={{ 
                         fontWeight: 900, 
                         px: 1, 
-                        borderRadius: '10px',
-                        bgcolor: activeCategory === 'all' ? '#e9762b' : alpha('#000', 0.05),
+                        borderRadius: '0.65rem',
+                        bgcolor: activeCategory === 'all' ? theme.palette.primary.main : alpha('#000', 0.05),
                         color: activeCategory === 'all' ? 'white' : 'text.secondary',
-                        '&:hover': { bgcolor: activeCategory === 'all' ? '#e9762b' : alpha('#000', 0.08) }
+                        '&:hover': { bgcolor: activeCategory === 'all' ? theme.palette.primary.main : alpha('#000', 0.08) }
                       }} 
                     />
                     {categories.map(cat => (
@@ -1076,10 +1076,10 @@ const OrderDialog: React.FC<OrderDialogProps> = ({ open, onClose, table, initial
                         sx={{ 
                           fontWeight: 900, 
                           px: 1, 
-                          borderRadius: '10px',
-                          bgcolor: activeCategory === cat.id ? '#e9762b' : alpha('#000', 0.05),
+                          borderRadius: '0.65rem',
+                          bgcolor: activeCategory === cat.id ? theme.palette.primary.main : alpha('#000', 0.05),
                           color: activeCategory === cat.id ? 'white' : 'text.secondary',
-                          '&:hover': { bgcolor: activeCategory === cat.id ? '#e9762b' : alpha('#000', 0.08) }
+                          '&:hover': { bgcolor: activeCategory === cat.id ? theme.palette.primary.main : alpha('#000', 0.08) }
                         }} 
                       />
                     ))}
@@ -1094,14 +1094,14 @@ const OrderDialog: React.FC<OrderDialogProps> = ({ open, onClose, table, initial
                         elevation={0}
                         onClick={() => setSelectedItemForDetail(item)}
                         sx={{ 
-                          borderRadius: '20px', 
+                          borderRadius: '0.65rem', 
                           border: '1px solid', 
                           borderColor: alpha(theme.palette.divider, 0.1), 
                           cursor: 'pointer',
                           transition: 'all 0.2s',
                           position: 'relative',
                           overflow: 'hidden',
-                          '&:hover': { borderColor: '#e9762b', boxShadow: '0 8px 24px rgba(0,0,0,0.05)', transform: 'translateY(-4px)' }
+                          '&:hover': { borderColor: theme.palette.primary.main, boxShadow: '0 8px 24px rgba(0,0,0,0.05)', transform: 'translateY(-4px)' }
                         }}
                       >
                         <CardContent sx={{ p: 2 }}>
@@ -1110,7 +1110,7 @@ const OrderDialog: React.FC<OrderDialogProps> = ({ open, onClose, table, initial
                               <Typography variant="subtitle1" sx={{ fontWeight: 900, color: '#1a1a1a', lineHeight: 1.2, mb: 0.5 }}>{item.name}</Typography>
                               <Typography variant="caption" sx={{ color: 'text.disabled', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.05em' }}>{item.category_name}</Typography>
                             </Box>
-                            <Typography variant="h6" sx={{ fontWeight: 1000, color: '#e9762b' }}>₹{parseFloat(item.price).toFixed(0)}</Typography>
+                            <Typography variant="h6" sx={{ fontWeight: 1000, color: theme.palette.primary.main }}>₹{parseFloat(item.price).toFixed(0)}</Typography>
                           </Box>
                           
                           <Box sx={{ display: 'flex', justifyContent: 'flex-end' }}>
@@ -1119,11 +1119,11 @@ const OrderDialog: React.FC<OrderDialogProps> = ({ open, onClose, table, initial
                               onClick={(e) => { e.stopPropagation(); handleAddItem(item); }}
                               disabled={loading || Boolean(order?.invoice)}
                               sx={{ 
-                                bgcolor: alpha('#e9762b', 0.1), 
-                                color: '#e9762b',
-                                borderRadius: '10px',
+                                bgcolor: alpha(theme.palette.primary.main, 0.1), 
+                                color: theme.palette.primary.main,
+                                borderRadius: '0.65rem',
                                 p: 1,
-                                '&:hover': { bgcolor: alpha('#e9762b', 0.2) },
+                                '&:hover': { bgcolor: alpha(theme.palette.primary.main, 0.2) },
                                 '&.Mui-disabled': { bgcolor: alpha(theme.palette.divider, 0.1) }
                               }}
                             >
@@ -1144,8 +1144,8 @@ const OrderDialog: React.FC<OrderDialogProps> = ({ open, onClose, table, initial
               </Box>
             </Box>
           ) : (
-            <Box sx={{ flexGrow: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', p: 4, bgcolor: alpha('#e9762b', 0.02) }}>
-                <Box sx={{ p: 3, bgcolor: 'white', borderRadius: '32px', textAlign: 'center', boxShadow: '0 10px 40px rgba(0,0,0,0.03)', border: '1px solid', borderColor: alpha(theme.palette.divider, 0.1) }}>
+            <Box sx={{ flexGrow: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', p: 4, bgcolor: alpha(theme.palette.primary.main, 0.02) }}>
+                <Box sx={{ p: 3, bgcolor: 'white', borderRadius: '0.65rem', textAlign: 'center', boxShadow: '0 10px 40px rgba(0,0,0,0.03)', border: '1px solid', borderColor: alpha(theme.palette.divider, 0.1) }}>
                   <CheckIcon sx={{ fontSize: 64, color: '#2e7d32', mb: 2 }} />
                   <Typography variant="h5" sx={{ fontWeight: 1000, mb: 1 }}>{order?.invoice ? 'Order Finalized' : 'Order Completed'}</Typography>
                   <Typography color="text.secondary" sx={{ fontWeight: 700 }}>This order has been processed and is ready for billing.</Typography>
@@ -1196,7 +1196,7 @@ const OrderDialog: React.FC<OrderDialogProps> = ({ open, onClose, table, initial
             onClick={onClose} 
             sx={{ 
               bgcolor: alpha('#000', 0.03), 
-              borderRadius: '12px',
+              borderRadius: '0.65rem',
               '&:hover': { bgcolor: alpha('#000', 0.05) }
             }}
           >
@@ -1218,10 +1218,10 @@ const OrderDialog: React.FC<OrderDialogProps> = ({ open, onClose, table, initial
                   setMoveTableOpen(true);
                 }}
                 sx={{ 
-                  bgcolor: alpha('#e9762b', 0.1),
-                  color: '#e9762b',
-                  borderRadius: '12px',
-                  '&:hover': { bgcolor: alpha('#e9762b', 0.15) }
+                  bgcolor: alpha(theme.palette.primary.main, 0.1),
+                  color: theme.palette.primary.main,
+                  borderRadius: '0.65rem',
+                  '&:hover': { bgcolor: alpha(theme.palette.primary.main, 0.15) }
                 }}
               >
                 <TableIcon fontSize="small" />
@@ -1233,7 +1233,7 @@ const OrderDialog: React.FC<OrderDialogProps> = ({ open, onClose, table, initial
 
       {/* Tabs for multiple orders */}
       {table && (
-        <Box sx={{ borderBottom: '1px solid', borderColor: alpha(theme.palette.divider, 0.1), bgcolor: alpha('#e9762b', 0.01), display: 'flex', alignItems: 'center' }}>
+        <Box sx={{ borderBottom: '1px solid', borderColor: alpha(theme.palette.divider, 0.1), bgcolor: alpha(theme.palette.primary.main, 0.01), display: 'flex', alignItems: 'center' }}>
           {activeOrders.length > 0 && (
             <Tabs
               value={selectedOrderId || false}
@@ -1243,7 +1243,7 @@ const OrderDialog: React.FC<OrderDialogProps> = ({ open, onClose, table, initial
               sx={{
                 flexGrow: 1,
                 minHeight: 52,
-                '& .MuiTabs-indicator': { height: 3, borderRadius: '3px 3px 0 0', bgcolor: '#e9762b' },
+                '& .MuiTabs-indicator': { height: 3, borderRadius: '0.65rem 0.65rem 0 0', bgcolor: theme.palette.primary.main },
                 '& .MuiTab-root': {
                   fontWeight: 900,
                   fontSize: '0.85rem',
@@ -1251,7 +1251,7 @@ const OrderDialog: React.FC<OrderDialogProps> = ({ open, onClose, table, initial
                   textTransform: 'none',
                   px: 3,
                   color: 'text.disabled',
-                  '&.Mui-selected': { color: '#e9762b' }
+                  '&.Mui-selected': { color: theme.palette.primary.main }
                 },
               }}
             >
@@ -1279,13 +1279,13 @@ const OrderDialog: React.FC<OrderDialogProps> = ({ open, onClose, table, initial
                   borderRadius: 0,
                   fontWeight: 1000,
                   fontSize: '0.85rem',
-                  color: selectedOrderId === null ? '#e9762b' : 'text.disabled',
+                  color: selectedOrderId === null ? theme.palette.primary.main : 'text.disabled',
                   borderBottom: selectedOrderId === null ? '3px solid' : 'none',
-                  borderColor: '#e9762b',
-                  bgcolor: selectedOrderId === null ? alpha('#e9762b', 0.05) : 'transparent',
+                  borderColor: theme.palette.primary.main,
+                  bgcolor: selectedOrderId === null ? alpha(theme.palette.primary.main, 0.05) : 'transparent',
                   textTransform: 'none',
                   whiteSpace: 'nowrap',
-                  '&:hover': { bgcolor: alpha('#e9762b', 0.08) }
+                  '&:hover': { bgcolor: alpha(theme.palette.primary.main, 0.08) }
                 }}
               >
                 NEW ORDER
@@ -1313,7 +1313,7 @@ const OrderDialog: React.FC<OrderDialogProps> = ({ open, onClose, table, initial
         >
           <Box sx={{ display: 'flex', flexDirection: 'column', height: '100%', overflow: 'hidden', pb: 'env(safe-area-inset-bottom, 24px)' }}>
             <Box sx={{ p: 2, display: 'flex', justifyContent: 'center', flexShrink: 0 }}>
-              <Box sx={{ width: 48, height: 6, bgcolor: alpha('#000', 0.1), borderRadius: 3 }} />
+              <Box sx={{ width: 48, height: 6, bgcolor: alpha('#000', 0.1), borderRadius: '0.65rem' }} />
             </Box>
             {renderSummaryContent()}
             {renderQuickActions()}
@@ -1344,7 +1344,7 @@ const OrderDialog: React.FC<OrderDialogProps> = ({ open, onClose, table, initial
         onClose={() => setMoveTableOpen(false)}
         maxWidth="xs"
         fullWidth
-        slotProps={{ paper: { sx: { borderRadius: '32px', p: 1 } } }}
+        slotProps={{ paper: { sx: { borderRadius: '0.65rem', p: 1 } } }}
       >
         <DialogTitle sx={{ fontWeight: 1000, pb: 1, fontSize: '1.5rem', letterSpacing: '-0.02em' }}>Move Order</DialogTitle>
         <DialogContent>
@@ -1355,9 +1355,9 @@ const OrderDialog: React.FC<OrderDialogProps> = ({ open, onClose, table, initial
           <Box sx={{ mb: 5 }}>
              <Typography variant="overline" sx={{ fontWeight: 950, color: 'text.disabled', display: 'block', mb: 2, letterSpacing: '0.1em' }}>GUEST COUNT</Typography>
              <Stack direction="row" spacing={3} sx={{ alignItems: 'center', justifyContent: 'center' }}>
-                <IconButton size="large" onClick={() => setMovePersons((p: number) => Math.max(1, p - 1))} sx={{ bgcolor: alpha('#000', 0.03), borderRadius: '16px' }}><RemoveIcon /></IconButton>
+                <IconButton size="large" onClick={() => setMovePersons((p: number) => Math.max(1, p - 1))} sx={{ bgcolor: alpha('#000', 0.03), borderRadius: '0.65rem' }}><RemoveIcon /></IconButton>
                 <Typography variant="h3" sx={{ fontWeight: 1000, minWidth: 60, textAlign: 'center' }}>{movePersons}</Typography>
-                <IconButton size="large" onClick={() => setMovePersons((p: number) => p + 1)} sx={{ bgcolor: alpha('#000', 0.03), borderRadius: '16px' }}><AddIcon /></IconButton>
+                <IconButton size="large" onClick={() => setMovePersons((p: number) => p + 1)} sx={{ bgcolor: alpha('#000', 0.03), borderRadius: '0.65rem' }}><AddIcon /></IconButton>
              </Stack>
           </Box>
 
@@ -1370,7 +1370,7 @@ const OrderDialog: React.FC<OrderDialogProps> = ({ open, onClose, table, initial
               pb: 2, 
               pt: 0.5,
               '&::-webkit-scrollbar': { height: 6 },
-              '&::-webkit-scrollbar-thumb': { bgcolor: alpha('#e9762b', 0.2), borderRadius: 3 }
+              '&::-webkit-scrollbar-thumb': { bgcolor: alpha(theme.palette.primary.main, 0.2), borderRadius: '0.65rem' }
             }}
           >
             {allTables
@@ -1390,19 +1390,19 @@ const OrderDialog: React.FC<OrderDialogProps> = ({ open, onClose, table, initial
                       flexShrink: 0,
                       minWidth: 100,
                       p: 2,
-                      borderRadius: '24px',
+                      borderRadius: '0.65rem',
                       border: '2px solid',
-                      borderColor: isSelected ? '#e9762b' : (hasCapacity ? alpha(theme.palette.divider, 0.1) : alpha(theme.palette.error.main, 0.1)),
+                      borderColor: isSelected ? theme.palette.primary.main : (hasCapacity ? alpha(theme.palette.divider, 0.1) : alpha(theme.palette.error.main, 0.1)),
                       cursor: hasCapacity ? 'pointer' : 'not-allowed',
                       opacity: hasCapacity ? 1 : 0.6,
-                      bgcolor: isSelected ? alpha('#e9762b', 0.05) : 'white',
+                      bgcolor: isSelected ? alpha(theme.palette.primary.main, 0.05) : 'white',
                       transition: 'all 0.2s',
                       textAlign: 'center',
-                      '&:hover': hasCapacity ? { borderColor: '#e9762b', transform: 'translateY(-4px)' } : {}
+                      '&:hover': hasCapacity ? { borderColor: theme.palette.primary.main, transform: 'translateY(-4px)' } : {}
                     }}
                   >
                     <Typography variant="h6" sx={{ fontWeight: 1000, color: hasCapacity ? '#1a1a1a' : 'text.disabled' }}>T{t.number}</Typography>
-                    <Typography variant="caption" sx={{ display: 'block', fontWeight: 800, color: hasCapacity ? '#e9762b' : 'error.main' }}>{t.current_occupancy || 0}/{t.capacity}</Typography>
+                    <Typography variant="caption" sx={{ display: 'block', fontWeight: 800, color: hasCapacity ? theme.palette.primary.main : 'error.main' }}>{t.current_occupancy || 0}/{t.capacity}</Typography>
                   </Paper>
                 );
               })}
@@ -1410,7 +1410,7 @@ const OrderDialog: React.FC<OrderDialogProps> = ({ open, onClose, table, initial
         </DialogContent>
         <DialogActions sx={{ p: 3, pt: 0, gap: 2 }}>
           <Button onClick={() => setMoveTableOpen(false)} sx={{ fontWeight: 900, color: 'text.disabled' }}>CANCEL</Button>
-          <Button variant="contained" disabled={!selectedTargetTable || moving} onClick={() => setMoveFinalConfirmOpen(true)} sx={{ fontWeight: 950, borderRadius: '16px', px: 4, py: 1.5, bgcolor: '#e9762b', boxShadow: '0 8px 20px rgba(233, 118, 43, 0.2)' }}>MOVE ORDER</Button>
+          <Button variant="contained" disabled={!selectedTargetTable || moving} onClick={() => setMoveFinalConfirmOpen(true)} sx={{ fontWeight: 950, borderRadius: '0.65rem', px: 4, py: 1.5, bgcolor: theme.palette.primary.main, boxShadow: `0 8px 20px ${alpha(theme.palette.primary.main, 0.2)}` }}>MOVE ORDER</Button>
         </DialogActions>
       </Dialog>
 
@@ -1420,15 +1420,15 @@ const OrderDialog: React.FC<OrderDialogProps> = ({ open, onClose, table, initial
         onClose={() => setMoveFinalConfirmOpen(false)}
         maxWidth="xs"
         fullWidth
-        slotProps={{ paper: { sx: { borderRadius: '32px', p: 2 } } }}
+        slotProps={{ paper: { sx: { borderRadius: '0.65rem', p: 2 } } }}
       >
         <DialogTitle sx={{ fontWeight: 1000, textAlign: 'center', fontSize: '1.5rem' }}>Confirm Move</DialogTitle>
         <DialogContent sx={{ textAlign: 'center' }}>
           <Typography variant="body1" sx={{ mb: 3, fontWeight: 700 }}>
             Are you sure you want to transfer this order?
           </Typography>
-          <Box sx={{ bgcolor: alpha('#e9762b', 0.05), p: 3, borderRadius: '24px', mb: 1 }}>
-            <Typography variant="h6" sx={{ fontWeight: 1000, color: '#e9762b' }}>
+          <Box sx={{ bgcolor: alpha(theme.palette.primary.main, 0.05), p: 3, borderRadius: '0.65rem', mb: 1 }}>
+            <Typography variant="h6" sx={{ fontWeight: 1000, color: theme.palette.primary.main }}>
               Table {table?.number} → Table {selectedTargetTable?.number}
             </Typography>
             <Typography variant="caption" sx={{ fontWeight: 800, color: 'text.secondary', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
@@ -1442,7 +1442,7 @@ const OrderDialog: React.FC<OrderDialogProps> = ({ open, onClose, table, initial
             variant="contained" 
             onClick={handleMoveTable}
             disabled={moving}
-            sx={{ fontWeight: 950, borderRadius: '16px', px: 6, py: 1.5, bgcolor: '#e9762b' }}
+            sx={{ fontWeight: 950, borderRadius: '0.65rem', px: 6, py: 1.5, bgcolor: theme.palette.primary.main }}
           >
             {moving ? <CircularProgress size={24} color="inherit" /> : 'YES, MOVE IT'}
           </Button>
@@ -1456,7 +1456,7 @@ const OrderDialog: React.FC<OrderDialogProps> = ({ open, onClose, table, initial
         onClose={() => setSelectedItemForDetail(null)}
         maxWidth="xs"
         fullWidth
-        slotProps={{ paper: { sx: { borderRadius: '32px', overflow: 'hidden' } } }}
+        slotProps={{ paper: { sx: { borderRadius: '0.65rem', overflow: 'hidden' } } }}
       >
         {selectedItemForDetail && (
           <>
@@ -1470,8 +1470,8 @@ const OrderDialog: React.FC<OrderDialogProps> = ({ open, onClose, table, initial
                   />
                 </Box>
               ) : (
-                <Box sx={{ width: '100%', height: 160, bgcolor: alpha('#e9762b', 0.05), display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                  <FoodIcon sx={{ fontSize: 64, color: alpha('#e9762b', 0.2) }} />
+                <Box sx={{ width: '100%', height: 160, bgcolor: alpha(theme.palette.primary.main, 0.05), display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  <FoodIcon sx={{ fontSize: 64, color: alpha(theme.palette.primary.main, 0.2) }} />
                 </Box>
               )}
               <IconButton 
@@ -1487,7 +1487,7 @@ const OrderDialog: React.FC<OrderDialogProps> = ({ open, onClose, table, initial
                   <Typography variant="h4" sx={{ fontWeight: 1000, letterSpacing: '-0.02em', mb: 0.5 }}>{selectedItemForDetail.name}</Typography>
                   <Chip label={selectedItemForDetail.category_name} size="small" sx={{ fontWeight: 900, bgcolor: alpha('#000', 0.05) }} />
                 </Box>
-                <Typography variant="h4" sx={{ fontWeight: 1000, color: '#e9762b' }}>₹{parseFloat(selectedItemForDetail.price).toFixed(0)}</Typography>
+                <Typography variant="h4" sx={{ fontWeight: 1000, color: theme.palette.primary.main }}>₹{parseFloat(selectedItemForDetail.price).toFixed(0)}</Typography>
               </Box>
               <Typography variant="body1" color="text.secondary" sx={{ fontWeight: 600, lineHeight: 1.6 }}>
                 {selectedItemForDetail.description || 'No description available for this item.'}
@@ -1498,7 +1498,7 @@ const OrderDialog: React.FC<OrderDialogProps> = ({ open, onClose, table, initial
                 fullWidth 
                 variant="contained" 
                 onClick={() => { handleAddItem(selectedItemForDetail); setSelectedItemForDetail(null); }} 
-                sx={{ py: 2, borderRadius: '18px', fontWeight: 950, fontSize: '1rem', bgcolor: '#e9762b' }}
+                sx={{ py: 2, borderRadius: '0.65rem', fontWeight: 950, fontSize: '1rem', bgcolor: theme.palette.primary.main }}
               >
                 ADD TO ORDER
               </Button>

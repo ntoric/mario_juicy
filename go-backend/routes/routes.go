@@ -15,7 +15,8 @@ func SetupRoutes(r *gin.Engine, hub *websocket.Hub) {
 		{
 			users.POST("/login/", controllers.Login)
 			users.GET("/profile/", middleware.AuthMiddleware(), controllers.GetProfile)
-			
+			users.POST("/change-password/", middleware.AuthMiddleware(), controllers.ChangePassword)
+
 			// Protected management routes
 			management := users.Group("/management", middleware.AuthMiddleware(), middleware.StoreMiddleware())
 			{
@@ -23,8 +24,9 @@ func SetupRoutes(r *gin.Engine, hub *websocket.Hub) {
 				management.POST("/", controllers.CreateUser)
 				management.PATCH("/:id/", controllers.UpdateUser)
 				management.DELETE("/:id/", controllers.DeleteUser)
+				management.POST("/:id/reset-password/", controllers.ResetPassword)
 			}
-			
+
 			perms := users.Group("/", middleware.AuthMiddleware(), middleware.StoreMiddleware())
 			{
 				perms.GET("/groups/", controllers.GetGroups)
@@ -39,7 +41,6 @@ func SetupRoutes(r *gin.Engine, hub *websocket.Hub) {
 			stores.PATCH("/:id/", middleware.StoreMiddleware(), middleware.SuperuserMiddleware(), controllers.UpdateStore)
 			stores.DELETE("/:id/", middleware.SuperuserMiddleware(), controllers.DeleteStore)
 		}
-
 
 		// Catalog, Restaurant, Core, Reports all need Store isolation
 		protected := api.Group("/", middleware.AuthMiddleware(), middleware.StoreMiddleware())
@@ -125,6 +126,9 @@ func SetupRoutes(r *gin.Engine, hub *websocket.Hub) {
 			reports := protected.Group("/reports")
 			{
 				reports.GET("/dashboard/", controllers.GetDashboardStats)
+				reports.GET("/business-statistics/", controllers.GetBusinessStatistics)
+				reports.GET("/store-basis-sales/", controllers.GetStoreBasisSales)
+				reports.GET("/store-basis-top-items/", controllers.GetStoreBasisTopItems)
 			}
 
 			notifications := protected.Group("/notifications")

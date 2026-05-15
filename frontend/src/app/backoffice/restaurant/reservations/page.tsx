@@ -27,16 +27,17 @@ import {
   Zoom,
 } from '@mui/material';
 import {
-  Add as AddIcon,
-  Edit as EditIcon,
-  Delete as DeleteIcon,
-  Refresh as RefreshIcon,
-  CheckCircle as CheckIcon,
-  Cancel as CancelIcon,
-  Event as EventIcon,
+  AddOutlined as AddIcon,
+  EditOutlined as EditIcon,
+  DeleteOutlined as DeleteIcon,
+  RefreshOutlined as RefreshIcon,
+  CheckCircleOutlined as CheckIcon,
+  CancelOutlined as CancelIcon,
+  EventOutlined as EventIcon,
 } from '@mui/icons-material';
 import { restaurantService, Reservation, Table as RestaurantTable } from '@/services/restaurantService';
 import ReservationForm from '@/components/backoffice/restaurant/ReservationForm';
+import PageHeader from "@/components/backoffice/PageHeader";
 import { useAuth } from '@/hooks/useAuth';
 import { useConfirm } from '@/context/ConfirmContext';
 import { useToast } from '@/context/ToastContext';
@@ -134,17 +135,9 @@ export default function ReservationsPage() {
 
   return (
     <Box sx={{ p: { xs: 2, md: 3 } }}>
-      <Box sx={{ 
-        mb: 4, 
-        display: 'flex', 
-        justifyContent: "space-between", 
-        alignItems: { xs: "flex-start", sm: "center" }, 
-        flexWrap: "wrap", 
-        gap: 2, 
-        flexDirection: { xs: "column", sm: "row" } 
-      }}>
+      <PageHeader>
         <Box>
-          <Typography variant="h4" sx={{ fontWeight: 500, color: '#e9762b', fontSize: '1.5rem' }}>
+          <Typography variant="h4" sx={{ fontWeight: 500, color: theme.palette.primary.main, fontSize: '1.5rem' }}>
             Reservations
           </Typography>
         </Box>
@@ -154,7 +147,7 @@ export default function ReservationsPage() {
             startIcon={<RefreshIcon />} 
             onClick={fetchData} 
             disabled={loading}
-            sx={{ borderRadius: 2, height: 48 }}
+            sx={{ borderRadius: '0.65rem', height: 48 }}
           >
             Refresh
           </Button>
@@ -162,12 +155,12 @@ export default function ReservationsPage() {
             variant="contained"
             startIcon={<AddIcon />}
             onClick={() => { setSelected(null); setIsFormOpen(true); }}
-            sx={{ borderRadius: 2, height: 48, px: 3 }}
+            sx={{ borderRadius: '0.65rem', height: 48, px: 3 }}
           >
             New Reservation
           </Button>
         </Stack>
-      </Box>
+      </PageHeader>
 
       {error && <Alert severity="error" sx={{ mb: 2 }} onClose={() => setError(null)}>{error}</Alert>}
 
@@ -223,7 +216,7 @@ export default function ReservationsPage() {
         </Box>
       ) : (
         /* ── Desktop Table view ── */
-        <TableContainer component={Paper} sx={{ borderRadius: '5px' }}>
+        <TableContainer component={Paper} sx={{ borderRadius: '0.65rem' }}>
           <Table>
             <TableHead sx={{ bgcolor: 'rgba(15,23,42,0.04)' }}>
               <TableRow>

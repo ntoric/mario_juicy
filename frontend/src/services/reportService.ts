@@ -44,6 +44,27 @@ export interface TaxReport {
   total_amount: number;
 }
 
+export interface BusinessStatistics {
+  total_revenue: number;
+  total_orders: number;
+  total_stores: number;
+}
+
+export interface StoreBasisSales {
+  store_id: number;
+  store_name: string;
+  sales: number;
+  count: number;
+}
+
+export interface StoreBasisTopItem {
+  store_id: number;
+  store_name: string;
+  item_name: string;
+  quantity: number;
+  revenue: number;
+}
+
 const getQueryString = (params?: Record<string, string | number | undefined>) => {
   if (!params) return "";
   const filteredParams = Object.entries(params)
@@ -53,24 +74,33 @@ const getQueryString = (params?: Record<string, string | number | undefined>) =>
 };
 
 export const reportService = {
-  getSummary: (params?: { start_date?: string; end_date?: string }) => 
+  getSummary: (params?: { start_date?: string; end_date?: string; store_id?: string | number }) => 
     fetcher(`/restaurants/reports/summary/${getQueryString(params)}`),
   
-  getSalesByType: (params?: { start_date?: string; end_date?: string }) => 
+  getSalesByType: (params?: { start_date?: string; end_date?: string; store_id?: string | number }) => 
     fetcher(`/restaurants/reports/sales_by_type/${getQueryString(params)}`),
   
-  getSalesByPayment: (params?: { start_date?: string; end_date?: string }) => 
+  getSalesByPayment: (params?: { start_date?: string; end_date?: string; store_id?: string | number }) => 
     fetcher(`/restaurants/reports/sales_by_payment/${getQueryString(params)}`),
   
-  getDailySales: (params?: { start_date?: string; end_date?: string }) => 
+  getDailySales: (params?: { start_date?: string; end_date?: string; store_id?: string | number }) => 
     fetcher(`/restaurants/reports/daily_sales/${getQueryString(params)}`),
   
-  getSalesByCategory: (params?: { start_date?: string; end_date?: string }) => 
+  getSalesByCategory: (params?: { start_date?: string; end_date?: string; store_id?: string | number }) => 
     fetcher(`/restaurants/reports/sales_by_category/${getQueryString(params)}`),
   
-  getSalesByItem: (params?: { start_date?: string; end_date?: string }) => 
+  getSalesByItem: (params?: { start_date?: string; end_date?: string; store_id?: string | number }) => 
     fetcher(`/restaurants/reports/sales_by_item/${getQueryString(params)}`),
   
-  getTaxReport: (params?: { start_date?: string; end_date?: string }) => 
+  getTaxReport: (params?: { start_date?: string; end_date?: string; store_id?: string | number }) => 
     fetcher(`/restaurants/reports/tax_report/${getQueryString(params)}`),
+
+  getBusinessStatistics: (params?: { start_date?: string; end_date?: string; store_id?: string | number }) => 
+    fetcher(`/reports/business-statistics/${getQueryString(params)}`),
+
+  getStoreBasisSales: (params?: { start_date?: string; end_date?: string; store_id?: string | number }) => 
+    fetcher(`/reports/store-basis-sales/${getQueryString(params)}`),
+
+  getStoreBasisTopItems: (params?: { start_date?: string; end_date?: string; store_id?: string | number }) => 
+    fetcher(`/reports/store-basis-top-items/${getQueryString(params)}`),
 };

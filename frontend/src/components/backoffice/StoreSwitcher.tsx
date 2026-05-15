@@ -11,8 +11,8 @@ import {
   alpha,
   useTheme
 } from '@mui/material';
-import StoreIcon from '@mui/icons-material/Store';
-import KeyboardArrowDownIcon from '@mui/icons-material/KeyboardArrowDown';
+import StoreIcon from '@mui/icons-material/StoreOutlined';
+import KeyboardArrowDownIcon from '@mui/icons-material/KeyboardArrowDownOutlined';
 import { useAuth } from '@/context/AuthContext';
 import { storeService, Store } from '@/services/storeService';
 
@@ -75,7 +75,7 @@ const StoreSwitcher: React.FC<StoreSwitcherProps> = ({ fullWidth = false }) => {
         px: 1.5, 
         py: 0.5, 
         bgcolor: alpha(theme.palette.primary.main, 0.05),
-        borderRadius: '8px',
+        borderRadius: '0.65rem',
         border: `1px solid ${alpha(theme.palette.primary.main, 0.1)}`
       }}>
         <StoreIcon sx={{ fontSize: 20, color: theme.palette.primary.main }} />
@@ -95,7 +95,7 @@ const StoreSwitcher: React.FC<StoreSwitcherProps> = ({ fullWidth = false }) => {
         fullWidth={fullWidth}
         endIcon={<KeyboardArrowDownIcon />}
         sx={{
-          borderRadius: '10px',
+          borderRadius: '0.65rem',
           textTransform: 'none',
           fontWeight: 800,
           borderColor: alpha(theme.palette.primary.main, 0.2),
@@ -121,10 +121,11 @@ const StoreSwitcher: React.FC<StoreSwitcherProps> = ({ fullWidth = false }) => {
         onClose={handleClose}
         slotProps={{
           paper: {
+            className: 'glass-effect',
             sx: {
               mt: 1,
               minWidth: 200,
-              borderRadius: '12px',
+              borderRadius: '0.65rem',
               boxShadow: '0 10px 30px rgba(0,0,0,0.1)',
             }
           }

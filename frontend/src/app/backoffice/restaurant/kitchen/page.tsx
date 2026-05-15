@@ -40,6 +40,7 @@ import { restaurantService, OrderItem } from '@/services/restaurantService';
 import { useAuth } from '@/hooks/useAuth';
 import { useWebSocket } from '@/hooks/useWebSocket';
 import { useToast } from '@/context/ToastContext';
+import PageHeader from "@/components/backoffice/PageHeader";
 
 // ── Animations ──────────────────────────────────────────────────────────────
 const pulse = keyframes`
@@ -88,7 +89,7 @@ function ElapsedChip({ iso }: { iso: string }) {
         borderColor: s > 600 ? 'error.main' : s > 300 ? 'warning.main' : '#e8e4d8',
         color: s > 600 ? 'error.main' : s > 300 ? 'warning.main' : 'text.secondary',
         bgcolor: 'white',
-        borderRadius: '7px'
+        borderRadius: '0.65rem'
       }}
     />
   );
@@ -112,7 +113,7 @@ function OrderTicket({ group, onAttend, onReady, onReject, canManage }: {
         height: '100%',
         display: 'flex',
         flexDirection: 'column',
-        borderRadius: '7px',
+        borderRadius: '0.65rem',
         border: '1px solid #e8e4d8',
         bgcolor: 'white',
         position: 'relative',
@@ -150,7 +151,7 @@ function OrderTicket({ group, onAttend, onReady, onReject, canManage }: {
               key={item.id}
               sx={{
                 display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between',
-                p: 1, borderRadius: '7px',
+                p: 1, borderRadius: '0.65rem',
                 bgcolor: item.status === 'READY' ? '#FCF9EA' : 'white',
                 border: '1px solid',
                 borderColor: item.status === 'READY' ? '#e8e4d8' : alpha('#D4C4A8', 0.3),
@@ -171,7 +172,7 @@ function OrderTicket({ group, onAttend, onReady, onReject, canManage }: {
                   {item.quantity}× {(item.item_details?.name || 'Unknown Item').toUpperCase()}
                 </Typography>
                 {item.notes && (
-                  <Box sx={{ mt: 0.5, p: 0.5, bgcolor: alpha(theme.palette.error.main, 0.05), border: `1px solid ${alpha(theme.palette.error.main, 0.1)}`, borderRadius: '4px' }}>
+                  <Box sx={{ mt: 0.5, p: 0.5, bgcolor: alpha(theme.palette.error.main, 0.05), border: `1px solid ${alpha(theme.palette.error.main, 0.1)}`, borderRadius: '0.65rem' }}>
                     <Typography variant="caption" color="error.dark" sx={{ fontWeight: 800, fontFamily: 'monospace', fontSize: '0.65rem' }}>
                       {item.notes.toUpperCase()}
                     </Typography>
@@ -193,7 +194,7 @@ function OrderTicket({ group, onAttend, onReady, onReject, canManage }: {
                         onClick={() => onAttend(item.id)} 
                         sx={{ 
                           bgcolor: alpha(theme.palette.primary.main, 0.1), 
-                          borderRadius: '7px',
+                          borderRadius: '0.65rem',
                           '&:hover': { bgcolor: 'primary.main', color: 'white' } 
                         }}
                       >
@@ -207,7 +208,7 @@ function OrderTicket({ group, onAttend, onReady, onReject, canManage }: {
                         onClick={() => onReject(item.id)} 
                         sx={{ 
                           bgcolor: alpha(theme.palette.error.main, 0.1),
-                          borderRadius: '7px' 
+                          borderRadius: '0.65rem' 
                         }}
                       >
                         <CancelIcon sx={{ fontSize: 16 }} />
@@ -221,7 +222,7 @@ function OrderTicket({ group, onAttend, onReady, onReject, canManage }: {
                     variant="contained" 
                     color="success" 
                     onClick={() => onReady(item.id)}
-                    sx={{ minWidth: 0, p: '2px 8px', borderRadius: '7px', fontWeight: 800, fontSize: '0.65rem' }}
+                    sx={{ minWidth: 0, p: '2px 8px', borderRadius: '0.65rem', fontWeight: 800, fontSize: '0.65rem' }}
                   >
                     READY
                   </Button>
@@ -238,7 +239,7 @@ function OrderTicket({ group, onAttend, onReady, onReject, canManage }: {
 
       <CardActions sx={{ p: 1.5, bgcolor: 'white' }}>
         {allReady ? (
-          <Box sx={{ width: '100%', textAlign: 'center', py: 0.75, bgcolor: alpha(theme.palette.success.main, 0.1), borderRadius: '7px', border: `1px solid ${alpha(theme.palette.success.main, 0.2)}` }}>
+          <Box sx={{ width: '100%', textAlign: 'center', py: 0.75, bgcolor: alpha(theme.palette.success.main, 0.1), borderRadius: '0.65rem', border: `1px solid ${alpha(theme.palette.success.main, 0.2)}` }}>
             <Typography variant="body2" sx={{ fontWeight: 800, color: 'success.main', fontSize: '0.75rem' }}>✓ COMPLETED</Typography>
           </Box>
         ) : (
@@ -335,7 +336,7 @@ export default function KitchenDisplayPage() {
   if (!canViewKDS && !loading) {
     return (
       <Box sx={{ p: 5, textAlign: 'center' }}>
-        <Alert severity="error" sx={{ mx: 'auto', maxWidth: 500, borderRadius: '7px' }}>
+        <Alert severity="error" sx={{ mx: 'auto', maxWidth: 500, borderRadius: '0.65rem' }}>
           You do not have permission to view the Kitchen Display.
         </Alert>
       </Box>
@@ -364,22 +365,16 @@ export default function KitchenDisplayPage() {
 
   return (
     <Box sx={{ height: { xs: 'auto', md: '100%' }, display: "flex", flexDirection: "column", p: { xs: 1.5, md: 2 }, bgcolor: '#FCF9EA', overflow: { xs: 'visible', md: 'hidden' } }}>
-      <Box sx={{ 
-        mb: 2, 
-        display: { xs: 'none', md: 'flex' }, 
-        justifyContent: "space-between", 
-        alignItems: 'center', 
-        gap: 2 
-      }}>
+      <PageHeader>
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
-          <KitchenIcon sx={{ color: '#e9762b', fontSize: 28 }} />
-          <Typography variant="h4" sx={{ fontWeight: 500, color: '#e9762b', fontSize: '1.25rem' }}>
+          <KitchenIcon sx={{ color: theme.palette.primary.main, fontSize: 28 }} />
+          <Typography variant="h4" sx={{ fontWeight: 500, color: theme.palette.primary.main, fontSize: '1.25rem' }}>
             KITCHEN DISPLAY
           </Typography>
           <Chip 
             label={`LAST UPDATED: ${lastRefresh.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })}`}
             size="small"
-            sx={{ fontWeight: 800, fontSize: '0.65rem', borderRadius: '7px', bgcolor: 'white', border: '1px solid #e8e4d8' }}
+            sx={{ fontWeight: 800, fontSize: '0.65rem', borderRadius: '0.65rem', bgcolor: 'white', border: '1px solid #e8e4d8' }}
           />
         </Box>
         <Stack direction="row" spacing={1} sx={{ alignItems: 'center' }}>
@@ -388,21 +383,21 @@ export default function KitchenDisplayPage() {
               variant="outlined" 
               size="small"
               onClick={fetchItems} 
-              sx={{ borderRadius: '7px', height: 40, minWidth: 40, p: 0 }}
+              sx={{ borderRadius: '0.65rem', height: 40, minWidth: 40, p: 0 }}
             >
               <RefreshIcon />
             </Button>
           </Tooltip>
         </Stack>
-      </Box>
+      </PageHeader>
 
-      {error && <Alert severity="error" sx={{ mb: 2, borderRadius: '7px' }}>{error}</Alert>}
+      {error && <Alert severity="error" sx={{ mb: 2, borderRadius: '0.65rem' }}>{error}</Alert>}
 
       {(preparingCount > 0 || orderedCount > 0) && (
         <Grid container spacing={1.5} sx={{ mb: 2 }}>
           {orderedCount > 0 && (
             <Grid key="alert-ordered" size={{ xs: 12, sm: 6 }}>
-              <Box sx={{ p: 1.5, bgcolor: alpha(theme.palette.error.main, 0.05), border: `1px solid ${alpha(theme.palette.error.main, 0.1)}`, borderRadius: '7px', display: 'flex', alignItems: 'center', gap: 1.5 }}>
+              <Box sx={{ p: 1.5, bgcolor: alpha(theme.palette.error.main, 0.05), border: `1px solid ${alpha(theme.palette.error.main, 0.1)}`, borderRadius: '0.65rem', display: 'flex', alignItems: 'center', gap: 1.5 }}>
                 <AlertIcon sx={{ color: 'error.main', fontSize: 20 }} />
                 <Typography sx={{ fontWeight: 800, color: 'error.main', fontSize: '0.8rem' }}>
                   {orderedCount} NEW ORDERS AWAITING ATTENTION
@@ -412,7 +407,7 @@ export default function KitchenDisplayPage() {
           )}
           {preparingCount > 0 && (
             <Grid key="alert-preparing" size={{ xs: 12, sm: 6 }}>
-              <Box sx={{ p: 1.5, bgcolor: alpha(theme.palette.warning.main, 0.05), border: `1px solid ${alpha(theme.palette.warning.main, 0.1)}`, borderRadius: '7px', display: 'flex', alignItems: 'center', gap: 1.5 }}>
+              <Box sx={{ p: 1.5, bgcolor: alpha(theme.palette.warning.main, 0.05), border: `1px solid ${alpha(theme.palette.warning.main, 0.1)}`, borderRadius: '0.65rem', display: 'flex', alignItems: 'center', gap: 1.5 }}>
                 <StartIcon sx={{ color: 'warning.main', fontSize: 20 }} />
                 <Typography sx={{ fontWeight: 800, color: 'warning.dark', fontSize: '0.8rem' }}>
                   {preparingCount} ITEMS CURRENTLY IN PREPARATION
@@ -427,7 +422,7 @@ export default function KitchenDisplayPage() {
       {loading && items.length === 0 ? (
         <Box sx={{ textAlign: 'center', py: 10 }}><CircularProgress /></Box>
       ) : grouped.length === 0 ? (
-        <Box sx={{ textAlign: 'center', py: 15, bgcolor: 'white', borderRadius: '7px', border: '2px dashed #e8e4d8' }}>
+        <Box sx={{ textAlign: 'center', py: 15, bgcolor: 'white', borderRadius: '0.65rem', border: '2px dashed #e8e4d8' }}>
           <DoneIcon sx={{ fontSize: 60, color: '#FCF9EA', mb: 2 }} />
           <Typography variant="h5" sx={{ color: 'text.secondary', fontWeight: 900, fontSize: '1.25rem' }}>KITCHEN IS CLEAR</Typography>
           <Typography variant="body2" color="text.secondary">Waiting for new orders...</Typography>
@@ -453,7 +448,7 @@ export default function KitchenDisplayPage() {
       <Dialog 
         open={rejectOpen} 
         onClose={() => setRejectOpen(false)}
-        slotProps={{ paper: { sx: { borderRadius: '12px' } } }}
+        slotProps={{ paper: { sx: { borderRadius: '0.65rem' } } }}
       >
         <DialogTitle sx={{ fontWeight: 800, fontSize: '1.1rem' }}>Reject Item</DialogTitle>
         <DialogContent sx={{ py: 1 }}>
@@ -468,13 +463,13 @@ export default function KitchenDisplayPage() {
             multiline
             rows={2}
             slotProps={{
-              input: { sx: { borderRadius: '7px' } }
+              input: { sx: { borderRadius: '0.65rem' } }
             }}
           />
         </DialogContent>
         <DialogActions sx={{ p: 2 }}>
           <Button onClick={() => setRejectOpen(false)} color="inherit" sx={{ fontWeight: 700 }}>Cancel</Button>
-          <Button variant="contained" color="error" onClick={handleConfirmReject} disabled={!rejectNote.trim()} sx={{ borderRadius: '7px', fontWeight: 800 }}>
+          <Button variant="contained" color="error" onClick={handleConfirmReject} disabled={!rejectNote.trim()} sx={{ borderRadius: '0.65rem', fontWeight: 800 }}>
             Confirm Rejection
           </Button>
         </DialogActions>

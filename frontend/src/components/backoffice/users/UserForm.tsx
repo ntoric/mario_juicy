@@ -21,14 +21,14 @@ import {
   Divider,
 } from "@mui/material";
 import {
-  Visibility as VisibilityIcon,
-  VisibilityOff as VisibilityOffIcon,
-  Password as PasswordIcon,
-  ChevronLeft as ChevronLeftIcon,
-  Save as SaveIcon,
-  Badge as BadgeIcon,
-  Email as EmailIcon,
-  Store as StoreIcon,
+  VisibilityOutlined as VisibilityIcon,
+  VisibilityOffOutlined as VisibilityOffIcon,
+  PasswordOutlined as PasswordIcon,
+  ChevronLeftOutlined as ChevronLeftIcon,
+  SaveOutlined as SaveIcon,
+  BadgeOutlined as BadgeIcon,
+  EmailOutlined as EmailIcon,
+  StoreOutlined as StoreIcon,
 } from "@mui/icons-material";
 import { User, UserFormData } from "@/services/userService";
 import { storeService, Store } from "@/services/storeService";
@@ -160,7 +160,7 @@ export default function UserForm({
           startIcon={loading ? <CircularProgress size={20} color="inherit" /> : <SaveIcon />}
           onClick={handleFormSubmit}
           disabled={loading || !formData.username.trim() || (mode === 'create' && !formData.password)}
-          sx={{ borderRadius: '12px', fontWeight: 800, px: 3 }}
+          sx={{ borderRadius: '0.65rem', fontWeight: 800, px: 3 }}
         >
           {loading ? "SAVING..." : "SAVE USER"}
         </Button>
@@ -170,10 +170,10 @@ export default function UserForm({
       <Box sx={{ flexGrow: 1, overflowY: 'auto', p: { xs: 2, md: 4 }, bgcolor: '#f9f9f9' }}>
         <Grid container spacing={4} sx={{ justifyContent: 'center' }}>
           <Grid size={{ xs: 12, md: 8, lg: 6 }}>
-            <Paper sx={{ p: 4, borderRadius: '24px', border: '1px solid #e8e4d8', boxShadow: '0 8px 32px rgba(0,0,0,0.03)' }}>
+            <Paper sx={{ p: 4, borderRadius: '0.65rem', border: '1px solid #e8e4d8', boxShadow: '0 8px 32px rgba(0,0,0,0.03)' }}>
               <Stack spacing={4}>
                 {error && (
-                  <Alert severity="error" sx={{ borderRadius: '12px', fontWeight: 700 }}>
+                  <Alert severity="error" sx={{ borderRadius: '0.65rem', fontWeight: 700 }}>
                     {error}
                   </Alert>
                 )}
@@ -192,7 +192,7 @@ export default function UserForm({
                         slotProps={{ 
                           input: { 
                             startAdornment: <BadgeIcon sx={{ mr: 1, color: 'text.disabled' }} />,
-                            sx: { borderRadius: '12px', bgcolor: 'white' } 
+                            sx: { borderRadius: '0.65rem', bgcolor: 'white' } 
                           } 
                         }}
                       />
@@ -204,7 +204,7 @@ export default function UserForm({
                           label="User Role"
                           value={formData.role}
                           onChange={(e) => setFormData({ ...formData, role: e.target.value })}
-                          sx={{ borderRadius: '12px', bgcolor: 'white' }}
+                          sx={{ borderRadius: '0.65rem', bgcolor: 'white' }}
                         >
                           {availableRoles.map(role => (
                             <MenuItem key={role.value} value={role.value}>{role.label}</MenuItem>
@@ -228,7 +228,7 @@ export default function UserForm({
                             label="Assigned Store (Optional)"
                             value={formData.store || ""}
                             onChange={(e) => setFormData({ ...formData, store: e.target.value ? Number(e.target.value) : undefined })}
-                            sx={{ borderRadius: '12px', bgcolor: 'white' }}
+                            sx={{ borderRadius: '0.65rem', bgcolor: 'white' }}
                             startAdornment={<StoreIcon sx={{ mr: 1, color: 'text.disabled', ml: 1 }} />}
                           >
                             <MenuItem value=""><em>None (Global Access)</em></MenuItem>
@@ -249,7 +249,7 @@ export default function UserForm({
                         slotProps={{ 
                           input: { 
                             startAdornment: <EmailIcon sx={{ mr: 1, color: 'text.disabled' }} />,
-                            sx: { borderRadius: '12px', bgcolor: 'white' } 
+                            sx: { borderRadius: '0.65rem', bgcolor: 'white' } 
                           } 
                         }}
                       />
@@ -272,7 +272,7 @@ export default function UserForm({
                                 </IconButton>
                               </InputAdornment>
                             ),
-                            sx: { borderRadius: '12px', bgcolor: 'white' }
+                            sx: { borderRadius: '0.65rem', bgcolor: 'white' }
                           }
                         }}
                       />
@@ -280,7 +280,7 @@ export default function UserForm({
                   </Grid>
                 </Box>
 
-                <Box sx={{ display: "flex", alignItems: "center", justifyContent: "space-between", p: 3, bgcolor: "#FCF9EA", borderRadius: '16px', border: "1px solid #e8e4d8" }}>
+                <Box sx={{ display: "flex", alignItems: "center", justifyContent: "space-between", p: 3, bgcolor: "#FCF9EA", borderRadius: '0.65rem', border: "1px solid #e8e4d8" }}>
                   <Box>
                     <Typography variant="subtitle1" sx={{ fontWeight: 900 }}>Account Access</Typography>
                     <Typography variant="body2" color="text.secondary" sx={{ fontWeight: 600 }}>

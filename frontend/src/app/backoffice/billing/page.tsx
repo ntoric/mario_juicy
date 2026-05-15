@@ -31,17 +31,17 @@ import {
   Drawer,
 } from "@mui/material";
 import {
-  Search as SearchIcon,
-  Print as PrintIcon,
-  Refresh as RefreshIcon,
-  Receipt as BillIcon,
-  Visibility as ViewIcon,
-  AccountBalanceWallet as SettlementIcon,
-  ShoppingBag as ShoppingBagIcon,
-  Room as LocationIcon,
-  Delete as DeleteIcon,
-  ChevronRight as ChevronRightIcon,
-  Info as InfoIcon,
+  SearchOutlined as SearchIcon,
+  PrintOutlined as PrintIcon,
+  RefreshOutlined as RefreshIcon,
+  ReceiptOutlined as BillIcon,
+  VisibilityOutlined as ViewIcon,
+  AccountBalanceWalletOutlined as SettlementIcon,
+  ShoppingBagOutlined as ShoppingBagIcon,
+  RoomOutlined as LocationIcon,
+  DeleteOutlined as DeleteIcon,
+  ChevronRightOutlined as ChevronRightIcon,
+  InfoOutlined as InfoIcon,
 } from '@mui/icons-material';
 import { restaurantService, Order } from '@/services/restaurantService';
 import { OrderStatusChip } from '@/components/backoffice/restaurant/StatusChips';
@@ -49,6 +49,7 @@ import InvoicePrint from '@/components/backoffice/restaurant/InvoicePrint';
 import InvoicePreviewDialog from '@/components/backoffice/restaurant/InvoicePreviewDialog';
 import SettlementDialog from '@/components/backoffice/restaurant/SettlementDialog';
 import { useAuth } from '@/hooks/useAuth';
+import PageHeader from "@/components/backoffice/PageHeader";
 import { useWebSocket } from '@/hooks/useWebSocket';
 
 export default function BillingPage() {
@@ -281,17 +282,14 @@ export default function BillingPage() {
   return (
     <Box sx={{ position: 'relative', height: '100%', display: "flex", flexDirection: "column", p: { xs: 2, md: 3 }, pb: { xs: 15, md: 3 }, overflow: 'hidden' }}>
       {/* Decorative blobs */}
-      <Box sx={{ position: 'absolute', top: -80, right: -80, width: 280, height: 280, background: 'radial-gradient(circle, rgba(233,118,43,0.07) 0%, transparent 70%)', borderRadius: '50%', zIndex: 0, pointerEvents: 'none' }} />
+      <Box sx={{ position: 'absolute', top: -80, right: -80, width: 280, height: 280, background: `radial-gradient(circle, ${alpha(theme.palette.primary.main, 0.07)} 0%, transparent 70%)`, borderRadius: '50%', zIndex: 0, pointerEvents: 'none' }} />
       <Box sx={{ position: 'absolute', bottom: -80, left: -80, width: 320, height: 320, background: 'radial-gradient(circle, rgba(255,212,29,0.05) 0%, transparent 70%)', borderRadius: '50%', zIndex: 0, pointerEvents: 'none' }} />
 
       {/* Header Row */}
-      <Box sx={{ mb: 3, display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 2, position: 'relative', zIndex: 1 }}>
+      <PageHeader>
         <Box>
-          <Typography variant="h4" sx={{ fontWeight: 900, fontSize: { xs: '1.5rem', md: '2rem' }, background: 'linear-gradient(90deg, #E9762B 0%, #FFB800 100%)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', letterSpacing: '-0.02em', mb: 0.25 }}>
+          <Typography variant="h4" sx={{ fontWeight: 600, fontSize: '2rem', background: `linear-gradient(90deg, ${theme.palette.primary.main} 0%, ${theme.palette.secondary.main} 100%)`, WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', letterSpacing: '-0.02em', mb: 0.25 }}>
             Billing
-          </Typography>
-          <Typography variant="body2" sx={{ color: 'text.secondary', fontWeight: 500, display: { xs: 'none', md: 'block' } }}>
-            Manage pending settlements and invoice history.
           </Typography>
         </Box>
 
@@ -303,30 +301,30 @@ export default function BillingPage() {
               placeholder="Search orders, tables..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              slotProps={{ input: { startAdornment: (<InputAdornment position="start"><SearchIcon sx={{ color: 'text.disabled', fontSize: 18 }} /></InputAdornment>), sx: { borderRadius: '14px', height: 42, bgcolor: 'white', border: '1px solid rgba(233,118,43,0.15)', '&:hover': { border: '1px solid rgba(233,118,43,0.3)' } } } }}
+              slotProps={{ input: { startAdornment: (<InputAdornment position="start"><SearchIcon sx={{ color: 'text.disabled', fontSize: 18 }} /></InputAdornment>), sx: { borderRadius: '0.65rem', height: 42, bgcolor: 'white', border: `1px solid ${alpha(theme.palette.primary.main, 0.15)}`, '&:hover': { border: `1px solid ${alpha(theme.palette.primary.main, 0.3)}` } } } }}
             />
           </Box>
           <Tooltip title="Refresh" arrow>
             <Button variant="contained" onClick={fetchData} disabled={loading}
-              sx={{ borderRadius: '14px', minWidth: { xs: 44, md: 48 }, height: { xs: 44, md: 48 }, p: 0, background: 'linear-gradient(135deg, #E9762B 0%, #D35400 100%)', boxShadow: '0 8px 20px rgba(233,118,43,0.25)', '&:hover': { background: 'linear-gradient(135deg, #D35400 0%, #B85C1D 100%)', transform: 'translateY(-2px)', boxShadow: '0 12px 24px rgba(233,118,43,0.35)' }, transition: 'all 0.3s cubic-bezier(0.4,0,0.2,1)' }}
+              sx={{ borderRadius: '0.65rem', minWidth: 48, height: 48, p: 0, background: `linear-gradient(135deg, ${theme.palette.primary.main} 0%, ${theme.palette.primary.dark} 100%)`, boxShadow: `0 8px 20px ${alpha(theme.palette.primary.main, 0.25)}`, '&:hover': { background: `linear-gradient(135deg, ${theme.palette.primary.dark} 0%, #B85C1D 100%)`, transform: 'translateY(-2px)', boxShadow: `0 12px 24px ${alpha(theme.palette.primary.main, 0.35)}` }, transition: 'all 0.3s cubic-bezier(0.4,0,0.2,1)' }}
             >
               <RefreshIcon sx={{ animation: loading ? 'spin 1s linear infinite' : 'none' }} />
             </Button>
           </Tooltip>
         </Stack>
-      </Box>
+      </PageHeader>
 
       {/* Tabs Row */}
       <Box sx={{ mb: 2, position: 'relative', zIndex: 1 }}>
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, flexWrap: 'wrap' }}>
-          <Box sx={{ display: 'flex', gap: 1, p: 0.5, bgcolor: 'rgba(233,118,43,0.06)', borderRadius: '16px', border: '1px solid rgba(233,118,43,0.1)' }}>
+          <Box sx={{ display: 'flex', gap: 1, p: 0.5, bgcolor: alpha(theme.palette.primary.main, 0.06), borderRadius: '0.65rem', border: `1px solid ${alpha(theme.palette.primary.main, 0.1)}` }}>
             {['Pending', 'Cancelled', 'History'].map((label, idx) => (
               <Button key={label} onClick={() => setTab(idx)}
-                sx={{ borderRadius: '12px', fontWeight: 800, fontSize: { xs: '0.75rem', md: '0.85rem' }, px: { xs: 1.5, md: 2.5 }, py: 0.75, minWidth: 0, transition: 'all 0.25s', ...(tab === idx ? { background: 'linear-gradient(135deg, #E9762B 0%, #D35400 100%)', color: 'white', boxShadow: '0 4px 12px rgba(233,118,43,0.3)' } : { color: 'text.secondary', '&:hover': { bgcolor: 'rgba(233,118,43,0.08)', color: '#E9762B' } }) }}
+                sx={{ borderRadius: '0.65rem', fontWeight: 800, fontSize: { xs: '0.75rem', md: '0.85rem' }, px: { xs: 1.5, md: 2.5 }, py: 0.75, minWidth: 0, transition: 'all 0.25s', ...(tab === idx ? { background: `linear-gradient(135deg, ${theme.palette.primary.main} 0%, ${theme.palette.primary.dark} 100%)`, color: 'white', boxShadow: `0 4px 12px ${alpha(theme.palette.primary.main, 0.3)}` } : { color: 'text.secondary', '&:hover': { bgcolor: alpha(theme.palette.primary.main, 0.08), color: theme.palette.primary.main } }) }}
               >
                 {label}
                 {idx === 0 && (dineInOrders.length + takeAwayOrders.length) > 0 && (
-                  <Box component="span" sx={{ ml: 1, px: 0.8, py: 0.1, bgcolor: tab === 0 ? 'rgba(255,255,255,0.3)' : 'rgba(233,118,43,0.15)', borderRadius: '10px', fontSize: '0.7rem', fontWeight: 900, color: tab === 0 ? 'white' : '#E9762B' }}>{dineInOrders.length + takeAwayOrders.length}</Box>
+                  <Box component="span" sx={{ ml: 1, px: 0.8, py: 0.1, bgcolor: tab === 0 ? 'rgba(255,255,255,0.3)' : alpha(theme.palette.primary.main, 0.15), borderRadius: '0.65rem', fontSize: '0.7rem', fontWeight: 900, color: tab === 0 ? 'white' : theme.palette.primary.main }}>{dineInOrders.length + takeAwayOrders.length}</Box>
                 )}
               </Button>
             ))}
@@ -334,15 +332,15 @@ export default function BillingPage() {
           {/* Mobile search */}
           <Box sx={{ display: { xs: 'block', md: 'none' }, flexGrow: 1 }}>
             <TextField fullWidth size="small" placeholder="Search..." value={search} onChange={(e) => setSearch(e.target.value)}
-              slotProps={{ input: { startAdornment: (<InputAdornment position="start"><SearchIcon sx={{ color: 'text.disabled', fontSize: 16 }} /></InputAdornment>), sx: { borderRadius: '12px', height: 40, bgcolor: 'white' } } }}
+              slotProps={{ input: { startAdornment: (<InputAdornment position="start"><SearchIcon sx={{ color: 'text.disabled', fontSize: 16 }} /></InputAdornment>), sx: { borderRadius: '0.65rem', height: 40, bgcolor: 'white' } } }}
             />
           </Box>
         </Box>
       </Box>
 
-      {error && <Alert severity="error" sx={{ mb: 2, borderRadius: '16px' }}>{error}</Alert>}
+      {error && <Alert severity="error" sx={{ mb: 2, borderRadius: '0.65rem' }}>{error}</Alert>}
 
-      <Paper sx={{ flexGrow: 1, display: 'flex', flexDirection: 'column', borderRadius: '24px', overflow: 'hidden', border: '1px solid rgba(255,255,255,0.8)', background: 'rgba(255,255,255,0.75)', backdropFilter: 'blur(20px)', boxShadow: '0 10px 40px rgba(0,0,0,0.04)', minHeight: 0, position: 'relative', zIndex: 1 }}>
+      <Paper sx={{ flexGrow: 1, display: 'flex', flexDirection: 'column', borderRadius: '0.65rem', overflow: 'hidden', border: '1px solid rgba(255,255,255,0.8)', background: 'rgba(255,255,255,0.75)', backdropFilter: 'blur(20px)', boxShadow: '0 10px 40px rgba(0,0,0,0.04)', minHeight: 0, position: 'relative', zIndex: 1 }}>
 
 
         <TableContainer sx={{ flexGrow: 1, overflowY: 'auto', display: isMobile ? 'none' : 'block', px: 1 }}>
@@ -407,19 +405,19 @@ export default function BillingPage() {
                             <Typography variant="subtitle2" sx={{ fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
                               Dine-in Orders
                             </Typography>
-                            <Chip label={dineInOrders.length} size="small" sx={{ fontWeight: 800, height: 20, bgcolor: 'primary.main', color: 'white', borderRadius: '7px' }} />
+                            <Chip label={dineInOrders.length} size="small" sx={{ fontWeight: 800, height: 20, bgcolor: 'primary.main', color: 'white', borderRadius: '0.65rem' }} />
                           </Stack>
                         </TableCell>
                       </TableRow>
                     )}
                     {dineInOrders.map((order) => (
-                      <TableRow key={order.id} sx={{ bgcolor: '#fff', transition: 'all 0.2s', '& td:first-of-type': { borderTopLeftRadius: '10px', borderBottomLeftRadius: '10px', pl: 3 }, '& td:last-child': { borderTopRightRadius: '10px', borderBottomRightRadius: '10px', pr: 2 }, '&:hover': { bgcolor: '#fdf8f2', boxShadow: '0 4px 16px rgba(233,118,43,0.08)' }, '& td': { borderBottom: 'none', py: 0.75 } }}>
+                      <TableRow key={order.id} sx={{ bgcolor: '#fff', transition: 'all 0.2s', '& td:first-of-type': { borderTopLeftRadius: '0.65rem', borderBottomLeftRadius: '0.65rem', pl: 3 }, '& td:last-child': { borderTopRightRadius: '0.65rem', borderBottomRightRadius: '0.65rem', pr: 2 }, '&:hover': { bgcolor: '#fdf8f2', boxShadow: `0 4px 16px ${alpha(theme.palette.primary.main, 0.08)}` }, '& td': { borderBottom: 'none', py: 0.75 } }}>
                         <TableCell><Typography variant="body2" sx={{ fontWeight: 800, color: '#2c1810', fontSize: '0.85rem' }}>#{order.id}</Typography></TableCell>
-                        <TableCell><Chip label={`Table ${order.table_number}`} size="small" sx={{ height: 22, fontSize: '0.7rem', fontWeight: 700, borderRadius: '8px', bgcolor: alpha('#E9762B', 0.08), color: '#E9762B', border: '1px solid rgba(233,118,43,0.2)' }} /></TableCell>
+                        <TableCell><Chip label={`Table ${order.table_number}`} size="small" sx={{ height: 22, fontSize: '0.7rem', fontWeight: 700, borderRadius: '0.65rem', bgcolor: alpha(theme.palette.primary.main, 0.08), color: theme.palette.primary.main, border: `1px solid ${alpha(theme.palette.primary.main, 0.2)}` }} /></TableCell>
                         <TableCell><Typography variant="body2" sx={{ fontWeight: 600, fontSize: '0.85rem' }}>{order.waiter_name}</Typography></TableCell>
-                        <TableCell><Chip label={order.invoice ? 'Bill Generated' : order.status} size="small" color={order.invoice ? 'info' : 'warning'} sx={{ height: 22, fontWeight: 800, borderRadius: '8px', fontSize: '0.65rem' }} /></TableCell>
-                        <TableCell align="right"><Typography variant="body1" sx={{ fontWeight: 900, color: '#E9762B', fontSize: '0.9rem' }}>₹{parseFloat(order.total_amount).toFixed(2)}</Typography></TableCell>
-                        <TableCell align="right"><Button variant="contained" size="small" onClick={() => setSelectedOrder(order)} sx={{ fontWeight: 800, borderRadius: '8px', px: 2, height: 30, fontSize: '0.75rem', background: 'linear-gradient(135deg, #E9762B 0%, #D35400 100%)', boxShadow: '0 4px 12px rgba(233,118,43,0.2)', '&:hover': { transform: 'translateY(-1px)' } }}>SETTLE</Button></TableCell>
+                        <TableCell><Chip label={order.invoice ? 'Bill Generated' : order.status} size="small" color={order.invoice ? 'info' : 'warning'} sx={{ height: 22, fontWeight: 800, borderRadius: '0.65rem', fontSize: '0.65rem' }} /></TableCell>
+                        <TableCell align="right"><Typography variant="body1" sx={{ fontWeight: 900, color: theme.palette.primary.main, fontSize: '0.9rem' }}>₹{parseFloat(order.total_amount).toFixed(2)}</Typography></TableCell>
+                        <TableCell align="right"><Button variant="contained" size="small" onClick={() => setSelectedOrder(order)} sx={{ fontWeight: 800, borderRadius: '0.65rem', px: 2, height: 30, fontSize: '0.75rem', background: `linear-gradient(135deg, ${theme.palette.primary.main} 0%, ${theme.palette.primary.dark} 100%)`, boxShadow: `0 4px 12px ${alpha(theme.palette.primary.main, 0.2)}`, '&:hover': { transform: 'translateY(-1px)' } }}>SETTLE</Button></TableCell>
                       </TableRow>
                     ))}
 
@@ -437,13 +435,13 @@ export default function BillingPage() {
                       </TableRow>
                     )}
                     {takeawayEnabled && takeAwayOrders.map((order) => (
-                      <TableRow key={order.id} sx={{ bgcolor: '#fff', transition: 'all 0.2s', '& td:first-of-type': { borderTopLeftRadius: '10px', borderBottomLeftRadius: '10px', pl: 3 }, '& td:last-child': { borderTopRightRadius: '10px', borderBottomRightRadius: '10px', pr: 2 }, '&:hover': { bgcolor: '#fffdf5', boxShadow: '0 4px 16px rgba(255,180,0,0.1)' }, '& td': { borderBottom: 'none', py: 0.75 } }}>
+                      <TableRow key={order.id} sx={{ bgcolor: '#fff', transition: 'all 0.2s', '& td:first-of-type': { borderTopLeftRadius: '0.65rem', borderBottomLeftRadius: '0.65rem', pl: 3 }, '& td:last-child': { borderTopRightRadius: '0.65rem', borderBottomRightRadius: '0.65rem', pr: 2 }, '&:hover': { bgcolor: '#fffdf5', boxShadow: '0 4px 16px rgba(255,180,0,0.1)' }, '& td': { borderBottom: 'none', py: 0.75 } }}>
                         <TableCell><Typography variant="body2" sx={{ fontWeight: 800, fontSize: '0.85rem' }}>#{order.id}</Typography></TableCell>
-                        <TableCell><Chip label="Parcel" size="small" sx={{ height: 22, fontSize: '0.7rem', fontWeight: 700, borderRadius: '8px', bgcolor: alpha('#FFB800', 0.1), color: '#C7A600', border: '1px solid rgba(255,184,0,0.25)' }} /></TableCell>
+                        <TableCell><Chip label="Parcel" size="small" sx={{ height: 22, fontSize: '0.7rem', fontWeight: 700, borderRadius: '0.65rem', bgcolor: alpha(theme.palette.secondary.main, 0.1), color: '#C7A600', border: '1px solid rgba(255,184,0,0.25)' }} /></TableCell>
                         <TableCell><Typography variant="body2" sx={{ fontWeight: 600, fontSize: '0.85rem' }}>{order.waiter_name}</Typography></TableCell>
-                        <TableCell><Chip label={order.invoice ? 'Bill Generated' : order.status} size="small" color={order.invoice ? 'info' : 'warning'} sx={{ height: 22, fontWeight: 800, borderRadius: '8px', fontSize: '0.65rem' }} /></TableCell>
-                        <TableCell align="right"><Typography variant="body1" sx={{ fontWeight: 900, color: '#E9762B', fontSize: '0.9rem' }}>₹{parseFloat(order.total_amount).toFixed(2)}</Typography></TableCell>
-                        <TableCell align="right"><Button variant="contained" size="small" color="secondary" onClick={() => setSelectedOrder(order)} sx={{ fontWeight: 800, borderRadius: '8px', px: 2, height: 30, fontSize: '0.75rem', boxShadow: '0 4px 12px rgba(255,212,29,0.25)', '&:hover': { transform: 'translateY(-1px)' } }}>SETTLE</Button></TableCell>
+                        <TableCell><Chip label={order.invoice ? 'Bill Generated' : order.status} size="small" color={order.invoice ? 'info' : 'warning'} sx={{ height: 22, fontWeight: 800, borderRadius: '0.65rem', fontSize: '0.65rem' }} /></TableCell>
+                        <TableCell align="right"><Typography variant="body1" sx={{ fontWeight: 900, color: theme.palette.primary.main, fontSize: '0.9rem' }}>₹{parseFloat(order.total_amount).toFixed(2)}</Typography></TableCell>
+                        <TableCell align="right"><Button variant="contained" size="small" color="secondary" onClick={() => setSelectedOrder(order)} sx={{ fontWeight: 800, borderRadius: '0.65rem', px: 2, height: 30, fontSize: '0.75rem', boxShadow: '0 4px 12px rgba(255,212,29,0.25)', '&:hover': { transform: 'translateY(-1px)' } }}>SETTLE</Button></TableCell>
                       </TableRow>
                     ))}
                   </>
@@ -462,13 +460,13 @@ export default function BillingPage() {
                 ) : (
                   <>
                     {cancelledOrders.map((order) => (
-                      <TableRow key={order.id} sx={{ bgcolor: '#fff', transition: 'all 0.2s', '& td:first-of-type': { borderTopLeftRadius: '10px', borderBottomLeftRadius: '10px', pl: 3 }, '& td:last-child': { borderTopRightRadius: '10px', borderBottomRightRadius: '10px', pr: 2 }, '&:hover': { bgcolor: '#fff5f5', boxShadow: '0 4px 16px rgba(207,15,15,0.06)' }, '& td': { borderBottom: 'none', py: 0.75 } }}>
+                      <TableRow key={order.id} sx={{ bgcolor: '#fff', transition: 'all 0.2s', '& td:first-of-type': { borderTopLeftRadius: '0.65rem', borderBottomLeftRadius: '0.65rem', pl: 3 }, '& td:last-child': { borderTopRightRadius: '0.65rem', borderBottomRightRadius: '0.65rem', pr: 2 }, '&:hover': { bgcolor: '#fff5f5', boxShadow: '0 4px 16px rgba(207,15,15,0.06)' }, '& td': { borderBottom: 'none', py: 0.75 } }}>
                         <TableCell><Typography variant="body2" sx={{ fontWeight: 800, fontSize: '0.85rem' }}>#{order.id}</Typography></TableCell>
-                        <TableCell><Chip label="CANCELLED" size="small" sx={{ height: 20, fontWeight: 800, borderRadius: '8px', bgcolor: alpha('#CF0F0F', 0.08), color: '#CF0F0F', border: '1px solid rgba(207,15,15,0.15)', fontSize: '0.6rem' }} /></TableCell>
+                        <TableCell><Chip label="CANCELLED" size="small" sx={{ height: 20, fontWeight: 800, borderRadius: '0.65rem', bgcolor: alpha('#CF0F0F', 0.08), color: '#CF0F0F', border: '1px solid rgba(207,15,15,0.15)', fontSize: '0.6rem' }} /></TableCell>
                         <TableCell><Typography variant="body2" sx={{ fontWeight: 600, fontSize: '0.85rem' }}>{order.waiter_name}</Typography></TableCell>
                         <TableCell><Typography variant="caption" sx={{ fontWeight: 600, color: 'text.secondary', maxWidth: 200, display: 'block', fontSize: '0.7rem' }}>{order.notes?.replace('CANCELLED: ', '') || 'No reason provided'}</Typography></TableCell>
                         <TableCell align="right"><Typography variant="body1" sx={{ fontWeight: 900, color: 'error.main', fontSize: '0.9rem' }}>₹{parseFloat(order.total_amount).toFixed(2)}</Typography></TableCell>
-                        <TableCell align="right"><IconButton size="small" onClick={() => { setDrawerOrder(order); setDrawerOpen(true); }} sx={{ color: 'error.main', bgcolor: alpha('#CF0F0F', 0.06), borderRadius: '8px', '&:hover': { bgcolor: alpha('#CF0F0F', 0.12) } }}><ViewIcon sx={{ fontSize: 16 }} /></IconButton></TableCell>
+                        <TableCell align="right"><IconButton size="small" onClick={() => { setDrawerOrder(order); setDrawerOpen(true); }} sx={{ color: 'error.main', bgcolor: alpha('#CF0F0F', 0.06), borderRadius: '0.65rem', '&:hover': { bgcolor: alpha('#CF0F0F', 0.12) } }}><ViewIcon sx={{ fontSize: 16 }} /></IconButton></TableCell>
                       </TableRow>
                     ))}
                   </>
@@ -486,17 +484,17 @@ export default function BillingPage() {
                   </TableRow>
                 ) : (
                   filteredInvoices.map((invoice) => (
-                    <TableRow key={invoice.id} sx={{ bgcolor: '#fff', transition: 'all 0.2s', '& td:first-of-type': { borderTopLeftRadius: '10px', borderBottomLeftRadius: '10px', pl: 3 }, '& td:last-child': { borderTopRightRadius: '10px', borderBottomRightRadius: '10px', pr: 2 }, '&:hover': { bgcolor: '#fdf8f2', boxShadow: '0 4px 16px rgba(233,118,43,0.08)' }, '& td': { borderBottom: 'none', py: 0.75 } }}>
+                    <TableRow key={invoice.id} sx={{ bgcolor: '#fff', transition: 'all 0.2s', '& td:first-of-type': { borderTopLeftRadius: '0.65rem', borderBottomLeftRadius: '0.65rem', pl: 3 }, '& td:last-child': { borderTopRightRadius: '0.65rem', borderBottomRightRadius: '0.65rem', pr: 2 }, '&:hover': { bgcolor: '#fdf8f2', boxShadow: `0 4px 16px ${alpha(theme.palette.primary.main, 0.08)}` }, '& td': { borderBottom: 'none', py: 0.75 } }}>
                       <TableCell><Typography variant="body2" sx={{ fontWeight: 800, color: '#2c1810', fontSize: '0.85rem' }}>{invoice.invoice_number}</Typography></TableCell>
                       <TableCell><Typography variant="body2" sx={{ fontWeight: 600, color: 'text.secondary', fontSize: '0.8rem' }}>{new Date(invoice.created_at).toLocaleString()}</Typography></TableCell>
-                      <TableCell><Chip label={`Order #${invoice.order}`} size="small" sx={{ height: 20, fontSize: '0.65rem', fontWeight: 700, borderRadius: '8px', bgcolor: alpha('#E9762B', 0.06), color: '#E9762B' }} /></TableCell>
-                      <TableCell><Chip label={invoice.payment_method} size="small" color={invoice.payment_method === 'CASH' ? 'success' : 'primary'} sx={{ height: 20, fontWeight: 800, borderRadius: '8px', fontSize: '0.65rem' }} /></TableCell>
-                      <TableCell align="right"><Typography variant="body1" sx={{ fontWeight: 900, color: '#E9762B', fontSize: '0.9rem' }}>₹{parseFloat(invoice.total_amount).toFixed(2)}</Typography></TableCell>
+                      <TableCell><Chip label={`Order #${invoice.order}`} size="small" sx={{ height: 20, fontSize: '0.65rem', fontWeight: 700, borderRadius: '0.65rem', bgcolor: alpha(theme.palette.primary.main, 0.06), color: theme.palette.primary.main }} /></TableCell>
+                      <TableCell><Chip label={invoice.payment_method} size="small" color={invoice.payment_method === 'CASH' ? 'success' : 'primary'} sx={{ height: 20, fontWeight: 800, borderRadius: '0.65rem', fontSize: '0.65rem' }} /></TableCell>
+                      <TableCell align="right"><Typography variant="body1" sx={{ fontWeight: 900, color: theme.palette.primary.main, fontSize: '0.9rem' }}>₹{parseFloat(invoice.total_amount).toFixed(2)}</Typography></TableCell>
                       <TableCell align="right">
                         <Box sx={{ display: 'flex', flexDirection: 'row', gap: 0.5, justifyContent: 'flex-end' }}>
-                          <IconButton size="small" onClick={() => setPreviewInvoice(invoice)} sx={{ color: '#E9762B', bgcolor: alpha('#E9762B', 0.07), borderRadius: '8px', p: 0.5 }}><ViewIcon sx={{ fontSize: 16 }} /></IconButton>
-                          <IconButton size="small" onClick={() => { setDrawerOrder(invoice); setDrawerOpen(true); }} sx={{ color: 'info.main', bgcolor: alpha('#0288d1', 0.07), borderRadius: '8px', p: 0.5 }}><InfoIcon sx={{ fontSize: 16 }} /></IconButton>
-                          <IconButton size="small" onClick={() => handlePrint(invoice)} sx={{ color: '#5D4037', bgcolor: alpha('#5D4037', 0.07), borderRadius: '8px', p: 0.5 }}><PrintIcon sx={{ fontSize: 16 }} /></IconButton>
+                          <IconButton size="small" onClick={() => setPreviewInvoice(invoice)} sx={{ color: theme.palette.primary.main, bgcolor: alpha(theme.palette.primary.main, 0.07), borderRadius: '0.65rem', p: 0.5 }}><ViewIcon sx={{ fontSize: 16 }} /></IconButton>
+                          <IconButton size="small" onClick={() => { setDrawerOrder(invoice); setDrawerOpen(true); }} sx={{ color: 'info.main', bgcolor: alpha('#0288d1', 0.07), borderRadius: '0.65rem', p: 0.5 }}><InfoIcon sx={{ fontSize: 16 }} /></IconButton>
+                          <IconButton size="small" onClick={() => handlePrint(invoice)} sx={{ color: '#5D4037', bgcolor: alpha('#5D4037', 0.07), borderRadius: '0.65rem', p: 0.5 }}><PrintIcon sx={{ fontSize: 16 }} /></IconButton>
                         </Box>
                       </TableCell>
                     </TableRow>
@@ -525,25 +523,25 @@ export default function BillingPage() {
                 <Stack spacing={1}>
                   {dineInOrders.length > 0 && (
                     <>
-                      <Box sx={{ px: 1.5, py: 0.75, bgcolor: alpha('#E9762B', 0.06), borderRadius: '12px', border: '1px solid rgba(233,118,43,0.1)', display: 'inline-flex', alignItems: 'center', gap: 1, width: 'fit-content' }}>
-                        <LocationIcon sx={{ fontSize: 14, color: '#E9762B' }} />
-                        <Typography variant="caption" sx={{ fontWeight: 900, textTransform: 'uppercase', color: '#E9762B', letterSpacing: '0.05em' }}>Dine-in Orders</Typography>
-                        <Box component="span" sx={{ px: 0.8, bgcolor: '#E9762B', color: 'white', borderRadius: '8px', fontSize: '0.7rem', fontWeight: 900 }}>{dineInOrders.length}</Box>
+                      <Box sx={{ px: 1.5, py: 0.75, bgcolor: alpha(theme.palette.primary.main, 0.06), borderRadius: '0.65rem', border: `1px solid ${alpha(theme.palette.primary.main, 0.1)}`, display: 'inline-flex', alignItems: 'center', gap: 1, width: 'fit-content' }}>
+                        <LocationIcon sx={{ fontSize: 14, color: theme.palette.primary.main }} />
+                        <Typography variant="caption" sx={{ fontWeight: 900, textTransform: 'uppercase', color: theme.palette.primary.main, letterSpacing: '0.05em' }}>Dine-in Orders</Typography>
+                        <Box component="span" sx={{ px: 0.8, bgcolor: theme.palette.primary.main, color: 'white', borderRadius: '0.65rem', fontSize: '0.7rem', fontWeight: 900 }}>{dineInOrders.length}</Box>
                       </Box>
                       {dineInOrders.map((order) => (
-                        <Paper key={order.id} sx={{ p: 1.5, borderRadius: '14px', border: '1px solid rgba(233,118,43,0.12)', boxShadow: '0 4px 16px rgba(233,118,43,0.06)', cursor: 'pointer', bgcolor: 'white', transition: 'all 0.2s', '&:active': { bgcolor: alpha('#E9762B', 0.04) } }} onClick={() => { setDrawerOrder(order); setDrawerOpen(true); }}>
+                        <Paper key={order.id} sx={{ p: 1.5, borderRadius: '0.65rem', border: `1px solid ${alpha(theme.palette.primary.main, 0.12)}`, boxShadow: `0 4px 16px ${alpha(theme.palette.primary.main, 0.06)}`, cursor: 'pointer', bgcolor: 'white', transition: 'all 0.2s', '&:active': { bgcolor: alpha(theme.palette.primary.main, 0.04) } }} onClick={() => { setDrawerOrder(order); setDrawerOpen(true); }}>
                           <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                             <Box sx={{ flexGrow: 1 }}>
                               <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 0.25 }}>
                                 <Typography variant="subtitle2" sx={{ fontWeight: 900, color: '#2c1810', fontSize: '0.8rem' }}>#{order.id}</Typography>
-                                <Chip label={`T${order.table_number}`} size="small" sx={{ height: 18, fontSize: '0.65rem', fontWeight: 800, borderRadius: '6px', bgcolor: alpha('#E9762B', 0.1), color: '#E9762B' }} />
+                                <Chip label={`T${order.table_number}`} size="small" sx={{ height: 18, fontSize: '0.65rem', fontWeight: 800, borderRadius: '0.65rem', bgcolor: alpha(theme.palette.primary.main, 0.1), color: theme.palette.primary.main }} />
                               </Box>
                               <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600, fontSize: '0.7rem' }}>{order.waiter_name}</Typography>
                             </Box>
                             <Box sx={{ textAlign: 'right', mr: 1.5 }}>
-                              <Typography variant="subtitle2" sx={{ fontWeight: 900, color: '#E9762B', fontSize: '0.9rem' }}>₹{parseFloat(order.total_amount).toFixed(0)}</Typography>
+                              <Typography variant="subtitle2" sx={{ fontWeight: 900, color: theme.palette.primary.main, fontSize: '0.9rem' }}>₹{parseFloat(order.total_amount).toFixed(0)}</Typography>
                             </Box>
-                            <Button variant="contained" size="small" onClick={(e) => { e.stopPropagation(); setSelectedOrder(order); }} sx={{ minWidth: 70, height: 30, borderRadius: '10px', fontWeight: 800, fontSize: '0.7rem', background: 'linear-gradient(135deg, #E9762B 0%, #D35400 100%)', boxShadow: '0 4px 12px rgba(233,118,43,0.2)' }}>SETTLE</Button>
+                            <Button variant="contained" size="small" onClick={(e) => { e.stopPropagation(); setSelectedOrder(order); }} sx={{ minWidth: 70, height: 30, borderRadius: '0.65rem', fontWeight: 800, fontSize: '0.7rem', background: `linear-gradient(135deg, ${theme.palette.primary.main} 0%, ${theme.palette.primary.dark} 100%)`, boxShadow: `0 4px 12px ${alpha(theme.palette.primary.main, 0.2)}` }}>SETTLE</Button>
                           </Box>
                         </Paper>
                       ))}
@@ -552,23 +550,23 @@ export default function BillingPage() {
 
                   {takeawayEnabled && takeAwayOrders.length > 0 && (
                     <>
-                      <Box sx={{ px: 1.5, py: 0.75, bgcolor: alpha('#FFB800', 0.08), borderRadius: '12px', border: '1px solid rgba(255,184,0,0.2)', display: 'inline-flex', alignItems: 'center', gap: 1, width: 'fit-content', mt: 1 }}>
+                      <Box sx={{ px: 1.5, py: 0.75, bgcolor: alpha(theme.palette.secondary.main, 0.08), borderRadius: '0.65rem', border: '1px solid rgba(255,184,0,0.2)', display: 'inline-flex', alignItems: 'center', gap: 1, width: 'fit-content', mt: 1 }}>
                         <ShoppingBagIcon sx={{ fontSize: 14, color: '#C7A600' }} />
                         <Typography variant="caption" sx={{ fontWeight: 900, textTransform: 'uppercase', color: '#C7A600', letterSpacing: '0.05em' }}>Parcel Orders</Typography>
-                        <Box component="span" sx={{ px: 0.8, bgcolor: '#FFB800', color: 'white', borderRadius: '8px', fontSize: '0.7rem', fontWeight: 900 }}>{takeAwayOrders.length}</Box>
+                        <Box component="span" sx={{ px: 0.8, bgcolor: theme.palette.secondary.main, color: 'white', borderRadius: '0.65rem', fontSize: '0.7rem', fontWeight: 900 }}>{takeAwayOrders.length}</Box>
                       </Box>
                       {takeAwayOrders.map((order) => (
-                        <Paper key={order.id} sx={{ p: 1.5, borderRadius: '14px', border: '1px solid rgba(255,184,0,0.15)', boxShadow: '0 4px 16px rgba(255,184,0,0.06)', cursor: 'pointer', bgcolor: '#fffdf5', transition: 'all 0.2s', '&:active': { bgcolor: alpha('#FFB800', 0.05) } }} onClick={() => { setDrawerOrder(order); setDrawerOpen(true); }}>
+                        <Paper key={order.id} sx={{ p: 1.5, borderRadius: '0.65rem', border: '1px solid rgba(255,184,0,0.15)', boxShadow: '0 4px 16px rgba(255,184,0,0.06)', cursor: 'pointer', bgcolor: '#fffdf5', transition: 'all 0.2s', '&:active': { bgcolor: alpha(theme.palette.secondary.main, 0.05) } }} onClick={() => { setDrawerOrder(order); setDrawerOpen(true); }}>
                           <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                             <Box sx={{ flexGrow: 1 }}>
                               <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 0.25 }}>
                                 <Typography variant="subtitle2" sx={{ fontWeight: 900, fontSize: '0.8rem' }}>#{order.id}</Typography>
-                                <Chip label="PARCEL" size="small" sx={{ height: 18, fontSize: '0.6rem', fontWeight: 800, borderRadius: '6px', bgcolor: alpha('#FFB800', 0.15), color: '#C7A600' }} />
+                                <Chip label="PARCEL" size="small" sx={{ height: 18, fontSize: '0.6rem', fontWeight: 800, borderRadius: '0.65rem', bgcolor: alpha(theme.palette.secondary.main, 0.15), color: '#C7A600' }} />
                               </Box>
                               <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600, fontSize: '0.7rem' }}>{order.customer_name || 'No Name'}</Typography>
                             </Box>
-                            <Typography variant="subtitle2" sx={{ fontWeight: 900, color: '#E9762B', mr: 1.5, fontSize: '0.9rem' }}>₹{parseFloat(order.total_amount).toFixed(0)}</Typography>
-                            <Button variant="contained" size="small" color="secondary" onClick={(e) => { e.stopPropagation(); setSelectedOrder(order); }} sx={{ minWidth: 70, height: 30, borderRadius: '10px', fontWeight: 800, fontSize: '0.7rem', boxShadow: '0 4px 12px rgba(255,212,29,0.3)' }}>SETTLE</Button>
+                            <Typography variant="subtitle2" sx={{ fontWeight: 900, color: theme.palette.primary.main, mr: 1.5, fontSize: '0.9rem' }}>₹{parseFloat(order.total_amount).toFixed(0)}</Typography>
+                            <Button variant="contained" size="small" color="secondary" onClick={(e) => { e.stopPropagation(); setSelectedOrder(order); }} sx={{ minWidth: 70, height: 30, borderRadius: '0.65rem', fontWeight: 800, fontSize: '0.7rem', boxShadow: '0 4px 12px rgba(255,212,29,0.3)' }}>SETTLE</Button>
                           </Box>
                         </Paper>
                       ))}
@@ -586,14 +584,14 @@ export default function BillingPage() {
               ) : (
                 <Stack spacing={1}>
                   {cancelledOrders.map((order) => (
-                    <Paper key={order.id} sx={{ p: 1.5, borderRadius: '14px', border: '1px solid rgba(207,15,15,0.1)', bgcolor: '#fff8f8', boxShadow: '0 4px 16px rgba(207,15,15,0.04)' }}>
+                    <Paper key={order.id} sx={{ p: 1.5, borderRadius: '0.65rem', border: '1px solid rgba(207,15,15,0.1)', bgcolor: '#fff8f8', boxShadow: '0 4px 16px rgba(207,15,15,0.04)' }}>
                       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                         <Box sx={{ flexGrow: 1 }}>
                           <Typography variant="subtitle2" sx={{ fontWeight: 900, color: '#2c1810', fontSize: '0.8rem' }}>#{order.id}</Typography>
                           <Typography variant="caption" sx={{ color: 'error.main', fontWeight: 700, display: 'block', fontSize: '0.7rem' }}>{order.notes?.replace('CANCELLED: ', '').substring(0, 40) || 'No reason'}</Typography>
                         </Box>
                         <Typography variant="subtitle2" sx={{ fontWeight: 900, color: 'error.main', mr: 1.5, fontSize: '0.9rem' }}>₹{parseFloat(order.total_amount).toFixed(0)}</Typography>
-                        <IconButton size="small" onClick={() => { setDrawerOrder(order); setDrawerOpen(true); }} sx={{ color: 'error.main', bgcolor: alpha('#CF0F0F', 0.08), borderRadius: '10px' }}><ChevronRightIcon /></IconButton>
+                        <IconButton size="small" onClick={() => { setDrawerOrder(order); setDrawerOpen(true); }} sx={{ color: 'error.main', bgcolor: alpha('#CF0F0F', 0.08), borderRadius: '0.65rem' }}><ChevronRightIcon /></IconButton>
                       </Box>
                     </Paper>
                   ))}
@@ -609,19 +607,19 @@ export default function BillingPage() {
               ) : (
                 <Stack spacing={1}>
                   {filteredInvoices.map((invoice) => (
-                    <Paper key={invoice.id} sx={{ p: 1.5, borderRadius: '14px', border: '1px solid rgba(233,118,43,0.1)', boxShadow: '0 4px 16px rgba(233,118,43,0.05)', bgcolor: 'white', transition: 'all 0.2s' }}>
+                    <Paper key={invoice.id} sx={{ p: 1.5, borderRadius: '0.65rem', border: `1px solid ${alpha(theme.palette.primary.main, 0.1)}`, boxShadow: `0 4px 16px ${alpha(theme.palette.primary.main, 0.05)}`, bgcolor: 'white', transition: 'all 0.2s' }}>
                       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                         <Box sx={{ flexGrow: 1 }}>
                           <Typography variant="subtitle2" sx={{ fontWeight: 900, color: '#2c1810', fontSize: '0.8rem' }}>{invoice.invoice_number}</Typography>
                           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mt: 0.5 }}>
-                            <Chip label={invoice.payment_method} size="small" color="success" sx={{ height: 18, fontSize: '0.6rem', fontWeight: 800, borderRadius: '6px' }} />
+                            <Chip label={invoice.payment_method} size="small" color="success" sx={{ height: 18, fontSize: '0.6rem', fontWeight: 800, borderRadius: '0.65rem' }} />
                             <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600, fontSize: '0.7rem' }}>{new Date(invoice.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</Typography>
                           </Box>
                         </Box>
-                        <Typography variant="subtitle2" sx={{ fontWeight: 900, color: '#E9762B', mr: 1.5, fontSize: '0.9rem' }}>₹{parseFloat(invoice.total_amount).toFixed(0)}</Typography>
+                        <Typography variant="subtitle2" sx={{ fontWeight: 900, color: theme.palette.primary.main, mr: 1.5, fontSize: '0.9rem' }}>₹{parseFloat(invoice.total_amount).toFixed(0)}</Typography>
                         <Box sx={{ display: 'flex', gap: 0.5 }}>
-                          <IconButton size="small" onClick={() => setPreviewInvoice(invoice)} sx={{ color: '#E9762B', bgcolor: alpha('#E9762B', 0.08), borderRadius: '8px', p: 0.5 }}><ViewIcon sx={{ fontSize: 16 }} /></IconButton>
-                          <IconButton size="small" onClick={() => handlePrint(invoice)} sx={{ color: 'text.secondary', bgcolor: alpha('#000', 0.04), borderRadius: '8px', p: 0.5 }}><PrintIcon sx={{ fontSize: 16 }} /></IconButton>
+                          <IconButton size="small" onClick={() => setPreviewInvoice(invoice)} sx={{ color: theme.palette.primary.main, bgcolor: alpha(theme.palette.primary.main, 0.08), borderRadius: '0.65rem', p: 0.5 }}><ViewIcon sx={{ fontSize: 16 }} /></IconButton>
+                          <IconButton size="small" onClick={() => handlePrint(invoice)} sx={{ color: 'text.secondary', bgcolor: alpha('#000', 0.04), borderRadius: '0.65rem', p: 0.5 }}><PrintIcon sx={{ fontSize: 16 }} /></IconButton>
                         </Box>
                       </Box>
                     </Paper>
@@ -674,6 +672,7 @@ export default function BillingPage() {
         anchor="right"
         open={drawerOpen}
         onClose={() => setDrawerOpen(false)}
+        sx={{ zIndex: theme.zIndex.drawer + 5 }}
         slotProps={{
           paper: {
             sx: { width: { xs: '100%', sm: 400 }, borderRadius: { xs: 0, sm: '16px 0 0 16px' } }
@@ -683,7 +682,7 @@ export default function BillingPage() {
         {drawerOrder && (
           <Box sx={{ height: '100%', display: 'flex', flexDirection: 'column', bgcolor: '#fafafa' }}>
             {/* Drawer Header */}
-            <Box sx={{ p: 3, background: 'linear-gradient(135deg, #E9762B 0%, #D35400 100%)', color: 'white' }}>
+            <Box sx={{ p: 3, background: `linear-gradient(135deg, ${theme.palette.primary.main} 0%, ${theme.palette.primary.dark} 100%)`, color: 'white' }}>
               <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 1 }}>
                 <Box>
                   <Typography variant="h5" sx={{ fontWeight: 900, color: 'white' }}>
@@ -696,7 +695,7 @@ export default function BillingPage() {
                     {drawerOrder.invoice_number ? `Invoice ${drawerOrder.invoice_number}` : `Order #${drawerOrder.id}`}
                   </Typography>
                 </Box>
-                <IconButton onClick={() => setDrawerOpen(false)} size="small" sx={{ color: 'white', bgcolor: 'rgba(255,255,255,0.15)', borderRadius: '10px', '&:hover': { bgcolor: 'rgba(255,255,255,0.25)' } }}>
+                <IconButton onClick={() => setDrawerOpen(false)} size="small" sx={{ color: 'white', bgcolor: 'rgba(255,255,255,0.15)', borderRadius: '0.65rem', '&:hover': { bgcolor: 'rgba(255,255,255,0.25)' } }}>
                   <ChevronRightIcon />
                 </IconButton>
               </Box>
@@ -756,16 +755,16 @@ export default function BillingPage() {
             </Box>
 
             {/* Footer */}
-            <Box sx={{ p: 3, pb: { xs: 'calc(80px + env(safe-area-inset-bottom))', sm: 3 }, borderTop: '2px solid rgba(233,118,43,0.15)', bgcolor: 'white' }}>
-              <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2, p: 2, borderRadius: '16px', background: 'linear-gradient(135deg, rgba(233,118,43,0.05) 0%, rgba(233,118,43,0.12) 100%)', border: '1px solid rgba(233,118,43,0.15)' }}>
+            <Box sx={{ p: 3, pb: { xs: 'calc(80px + env(safe-area-inset-bottom))', sm: 3 }, borderTop: `2px solid ${alpha(theme.palette.primary.main, 0.15)}`, bgcolor: 'white' }}>
+              <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2, p: 2, borderRadius: '0.65rem', background: `linear-gradient(135deg, rgba(233,118,43,0.05) 0%, ${alpha(theme.palette.primary.main, 0.12)} 100%)`, border: `1px solid ${alpha(theme.palette.primary.main, 0.15)}` }}>
                 <Typography variant="h6" sx={{ fontWeight: 900, color: '#2c1810' }}>Total Amount</Typography>
-                <Typography variant="h5" sx={{ fontWeight: 900, color: '#E9762B' }}>
+                <Typography variant="h5" sx={{ fontWeight: 900, color: theme.palette.primary.main }}>
                   ₹{parseFloat(drawerOrder.total_amount).toFixed(2)}
                 </Typography>
               </Box>
               
               {drawerOrder.notes && (
-                <Box sx={{ p: 2, bgcolor: alpha('#CF0F0F', 0.04), borderRadius: '12px', border: '1px solid rgba(207,15,15,0.1)' }}>
+                <Box sx={{ p: 2, bgcolor: alpha('#CF0F0F', 0.04), borderRadius: '0.65rem', border: '1px solid rgba(207,15,15,0.1)' }}>
                   <Typography variant="caption" sx={{ fontWeight: 800, color: 'error.main', display: 'block', mb: 0.5 }}>NOTES</Typography>
                   <Typography variant="body2" sx={{ fontWeight: 600, color: 'text.primary' }}>{drawerOrder.notes}</Typography>
                 </Box>

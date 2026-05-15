@@ -1,4 +1,5 @@
 "use client";
+import { useTheme, alpha } from "@mui/material/styles";
 
 import { useState, useEffect } from "react";
 import {
@@ -14,11 +15,13 @@ import {
   Grid,
   Divider,
 } from "@mui/material";
-import { Save as SaveIcon, Business as BusinessIcon } from "@mui/icons-material";
+import { SaveOutlined as SaveIcon, BusinessOutlined as BusinessIcon } from "@mui/icons-material";
 import { useAuth } from "@/hooks/useAuth";
 import { businessConfigService, BusinessConfig } from "@/services/businessConfigService";
 
 export default function BusinessConfigForm() {
+  const theme = useTheme();
+
   const { activeStoreId, loading: authLoading } = useAuth();
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -84,7 +87,7 @@ export default function BusinessConfigForm() {
 
   if (!activeStoreId && !authLoading) {
     return (
-      <Alert severity="warning" sx={{ borderRadius: '7px' }}>
+      <Alert severity="warning" sx={{ borderRadius: '0.65rem' }}>
         No active store selected. Please select a store to view configuration.
       </Alert>
     );
@@ -92,13 +95,13 @@ export default function BusinessConfigForm() {
 
   return (
     <Box sx={{ maxWidth: 800 }}>
-      {error && <Alert severity="error" sx={{ mb: 3, borderRadius: '7px' }}>{error}</Alert>}
+      {error && <Alert severity="error" sx={{ mb: 3, borderRadius: '0.65rem' }}>{error}</Alert>}
       
-      <Paper elevation={0} sx={{ border: '1px solid #e8e4d8', p: 4, borderRadius: '7px', bgcolor: 'white' }}>
+      <Paper elevation={0} sx={{ border: '1px solid #e8e4d8', p: 4, borderRadius: '0.65rem', bgcolor: 'white' }}>
         <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
-            <BusinessIcon sx={{ color: '#e9762b' }} />
-            <Typography variant="h6" sx={{ fontWeight: 800, fontSize: '1rem', color: '#e9762b', textTransform: 'uppercase' }}>
+            <BusinessIcon sx={{ color: theme.palette.primary.main }} />
+            <Typography variant="h6" sx={{ fontWeight: 800, fontSize: '1rem', color: theme.palette.primary.main, textTransform: 'uppercase' }}>
               Invoice Details (Overrides)
             </Typography>
           </Box>
@@ -107,7 +110,7 @@ export default function BusinessConfigForm() {
             onClick={handleSave}
             disabled={saving}
             startIcon={saving ? <CircularProgress size={20} color="inherit" /> : <SaveIcon />}
-            sx={{ borderRadius: '8px', fontWeight: 800, px: 3 }}
+            sx={{ borderRadius: '0.65rem', fontWeight: 800, px: 3, height: 48 }}
           >
             {saving ? "SAVING..." : "SAVE CONFIG"}
           </Button>
@@ -169,7 +172,7 @@ export default function BusinessConfigForm() {
               helperText="Indian GSTIN should be 15 characters"
               slotProps={{ 
                 inputLabel: { shrink: true },
-                input: { sx: { borderRadius: '8px' } },
+                input: { sx: { borderRadius: '0.65rem' } },
                 htmlInput: { maxLength: 25 }
               }}
             />
@@ -193,7 +196,7 @@ export default function BusinessConfigForm() {
         onClose={() => setSuccess(false)}
         anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
       >
-        <Alert onClose={() => setSuccess(false)} severity="success" sx={{ width: '100%', borderRadius: '5px', bgcolor: 'primary.main', color: 'white' }}>
+        <Alert onClose={() => setSuccess(false)} severity="success" sx={{ width: '100%', borderRadius: '0.65rem', bgcolor: 'primary.main', color: 'white' }}>
           Business configuration saved successfully
         </Alert>
       </Snackbar>

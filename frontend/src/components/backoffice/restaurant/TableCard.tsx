@@ -10,10 +10,10 @@ import {
   Stack
 } from '@mui/material';
 import { 
-  Add as AddIcon, 
-  Visibility as ViewIcon, 
-  Group as GroupIcon,
-  Restaurant as RestaurantIcon
+  AddOutlined as AddIcon, 
+  VisibilityOutlined as ViewIcon, 
+  GroupOutlined as GroupIcon,
+  RestaurantOutlined as RestaurantIcon
 } from '@mui/icons-material';
 import { Table } from '@/services/restaurantService';
 import { TableStatusChip } from './StatusChips';

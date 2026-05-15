@@ -20,6 +20,8 @@ type CategoryResponse struct {
 	Name      string    `json:"name"`
 	Image     string    `json:"image"`
 	IsEnabled bool      `json:"is_enabled"`
+	StoreID   *uint     `json:"store_id"`
+	StoreName string    `json:"store_name"`
 	CreatedAt string    `json:"created_at"`
 	UpdatedAt string    `json:"updated_at"`
 }
@@ -32,33 +34,61 @@ func GetCategories(c *gin.Context) {
 	}
 	storeID := storeIDVal.(uint)
 
-	cacheKey := services.GetCategoriesCacheKey(storeID)
 	var response []CategoryResponse
-	if services.GetCache(cacheKey, &response) {
-		utils.Debug("Cache hit for categories", zap.Uint("storeID", storeID))
-		utils.SuccessResponse(c, http.StatusOK, response)
-		return
+	reqStoreID := c.Query("store_id")
+
+	// Only use cache if no global filter is applied
+	if reqStoreID == "" {
+		cacheKey := services.GetCategoriesCacheKey(storeID)
+		if services.GetCache(cacheKey, &response) {
+			utils.Debug("Cache hit for categories", zap.Uint("storeID", storeID))
+			utils.SuccessResponse(c, http.StatusOK, response)
+			return
+		}
 	}
 
 	var categories []models.Category
 	utils.Debug("Fetching categories from DB", zap.Uint("storeID", storeID))
-	if err := config.DB.Where("store_id = ?", storeID).Find(&categories).Error; err != nil {
+	
+	query := config.DB.Preload("Store")
+	
+	// If store_id query param is provided and user is global, use it
+	if reqStoreID != "" && reqStoreID != "all" {
+		if sID, err := strconv.ParseUint(reqStoreID, 10, 32); err == nil {
+			query = query.Where("store_id = ?", uint(sID))
+		}
+	} else if reqStoreID == "all" {
+		// No where clause for all stores
+	} else {
+		query = query.Where("store_id = ?", storeID)
+	}
+
+	if err := query.Find(&categories).Error; err != nil {
 		utils.Error("Failed to fetch categories", zap.Error(err), zap.Uint("storeID", storeID))
 	}
 
 	response = []CategoryResponse{}
 	for _, cat := range categories {
+		storeName := ""
+		if cat.Store.ID != 0 {
+			storeName = cat.Store.Name
+		}
 		response = append(response, CategoryResponse{
 			ID:        cat.ID,
 			Name:      cat.Name,
 			Image:     cat.Image,
 			IsEnabled: cat.IsEnabled,
+			StoreID:   cat.StoreID,
+			StoreName: storeName,
 			CreatedAt: cat.CreatedAt.Format("2006-01-02T15:04:05.999Z07:00"),
 			UpdatedAt: cat.UpdatedAt.Format("2006-01-02T15:04:05.999Z07:00"),
 		})
 	}
 
-	services.SetCache(cacheKey, response, services.CacheExpiration)
+	if reqStoreID == "" {
+		cacheKey := services.GetCategoriesCacheKey(storeID)
+		services.SetCache(cacheKey, response, services.CacheExpiration)
+	}
 	utils.SuccessResponse(c, http.StatusOK, response)
 }
 
@@ -66,6 +96,8 @@ type ItemResponse struct {
 	ID           uint      `json:"id"`
 	Category     *uint     `json:"category"`
 	CategoryName string    `json:"category_name"`
+	StoreID      *uint     `json:"store_id"`
+	StoreName    string    `json:"store_name"`
 	Code         string    `json:"code"`
 	Name         string    `json:"name"`
 	Image        string    `json:"image"`
@@ -85,17 +117,35 @@ func GetItems(c *gin.Context) {
 	storeID := storeIDVal.(uint)
 	categoryID := c.Query("category_id")
 
-	cacheKey := services.GetItemsCacheKey(storeID, categoryID)
 	var response []ItemResponse
-	if services.GetCache(cacheKey, &response) {
-		utils.Debug("Cache hit for items", zap.Uint("storeID", storeID), zap.String("categoryID", categoryID))
-		utils.SuccessResponse(c, http.StatusOK, response)
-		return
+	reqStoreID := c.Query("store_id")
+
+	// Only use cache if no global filter is applied
+	if reqStoreID == "" {
+		cacheKey := services.GetItemsCacheKey(storeID, categoryID)
+		if services.GetCache(cacheKey, &response) {
+			utils.Debug("Cache hit for items", zap.Uint("storeID", storeID), zap.String("categoryID", categoryID))
+			utils.SuccessResponse(c, http.StatusOK, response)
+			return
+		}
 	}
 
 	var items []models.Item
 	utils.Debug("Fetching items from DB", zap.Uint("storeID", storeID), zap.String("categoryID", categoryID))
-	query := config.DB.Preload("Category").Where("store_id = ?", storeID)
+	
+	query := config.DB.Preload("Category").Preload("Store")
+	
+	// If store_id query param is provided and user is global, use it
+	if reqStoreID != "" && reqStoreID != "all" {
+		if sID, err := strconv.ParseUint(reqStoreID, 10, 32); err == nil {
+			query = query.Where("store_id = ?", uint(sID))
+		}
+	} else if reqStoreID == "all" {
+		// No where clause for all stores
+	} else {
+		query = query.Where("store_id = ?", storeID)
+	}
+
 	if categoryID != "" {
 		query = query.Where("category_id = ?", categoryID)
 	}
@@ -107,10 +157,16 @@ func GetItems(c *gin.Context) {
 		if i.Category.ID != 0 {
 			catName = i.Category.Name
 		}
+		storeName := ""
+		if i.Store.ID != 0 {
+			storeName = i.Store.Name
+		}
 		response = append(response, ItemResponse{
 			ID:           i.ID,
 			Category:     i.CategoryID,
 			CategoryName: catName,
+			StoreID:      i.StoreID,
+			StoreName:    storeName,
 			Code:         i.Code,
 			Name:         i.Name,
 			Image:        i.Image,
@@ -122,7 +178,10 @@ func GetItems(c *gin.Context) {
 		})
 	}
 
-	services.SetCache(cacheKey, response, services.CacheExpiration)
+	if reqStoreID == "" {
+		cacheKey := services.GetItemsCacheKey(storeID, categoryID)
+		services.SetCache(cacheKey, response, services.CacheExpiration)
+	}
 	utils.SuccessResponse(c, http.StatusOK, response)
 }
 

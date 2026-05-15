@@ -1,4 +1,5 @@
 "use client";
+import { useTheme, alpha } from "@mui/material/styles";
 
 import React, { useEffect, useState, useMemo, useCallback } from "react";
 import {
@@ -26,9 +27,12 @@ import { userService, User, UserFormData } from "@/services/userService";
 import UserTable from "@/components/backoffice/users/UserTable";
 import UserForm from "@/components/backoffice/users/UserForm";
 import ConfirmActionDialog from "@/components/backoffice/users/ConfirmActionDialog";
-import { alpha } from "@mui/material/styles";
+import PageHeader from "@/components/backoffice/PageHeader";
+
 
 export default function UsersPage() {
+  const theme = useTheme();
+
   const { showSuccess, showError } = useToast();
   const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
@@ -148,14 +152,8 @@ export default function UsersPage() {
   return (
     <Box sx={{ p: { xs: 1.5, md: 2 }, height: '100%', display: 'flex', flexDirection: 'column' }}>
       {/* Optimized Compact Header */}
-      <Box sx={{ 
-        mb: 2, 
-        display: 'flex', 
-        justifyContent: "space-between", 
-        alignItems: "center", 
-        gap: 2 
-      }}>
-        <Typography variant="h4" sx={{ fontWeight: 900, color: '#e9762b', fontSize: '1.5rem', whiteSpace: 'nowrap', display: { xs: 'none', sm: 'block' } }}>
+      <PageHeader>
+        <Typography variant="h4" sx={{ fontWeight: 600, color: theme.palette.primary.main, fontSize: '2rem', whiteSpace: 'nowrap', display: { xs: 'none', sm: 'block' } }}>
           Users
         </Typography>
 
@@ -174,7 +172,7 @@ export default function UsersPage() {
                     <SearchIcon sx={{ color: "text.secondary", fontSize: 20 }} />
                   </InputAdornment>
                 ),
-                sx: { borderRadius: '12px', height: 44, bgcolor: 'white' }
+                sx: { borderRadius: '0.65rem', height: 44, bgcolor: 'white' }
               }
             }}
           />
@@ -184,7 +182,7 @@ export default function UsersPage() {
           <Tooltip title="Refresh List">
             <IconButton 
               onClick={fetchUsers} 
-              sx={{ bgcolor: 'white', border: '1px solid #e8e4d8', borderRadius: '12px', width: 44, height: 44 }}
+              sx={{ bgcolor: 'white', border: '1px solid #e8e4d8', borderRadius: '0.65rem', width: 48, height: 48 }}
             >
               <RefreshIcon />
             </IconButton>
@@ -194,15 +192,15 @@ export default function UsersPage() {
             variant="contained"
             startIcon={<AddIcon />}
             onClick={handleOpenCreate}
-            sx={{ borderRadius: '12px', height: 44, px: 3, fontWeight: 800 }}
+            sx={{ borderRadius: '0.65rem', height: 48, px: 3, fontWeight: 800 }}
           >
             ADD USER
           </Button>
         </Stack>
-      </Box>
+      </PageHeader>
 
       {error && (
-        <Alert severity="error" sx={{ mb: 3, borderRadius: '12px' }} onClose={() => setError(null)}>
+        <Alert severity="error" sx={{ mb: 3, borderRadius: '0.65rem' }} onClose={() => setError(null)}>
           {error}
         </Alert>
       )}

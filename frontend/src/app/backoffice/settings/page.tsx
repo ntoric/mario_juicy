@@ -1,4 +1,5 @@
 "use client";
+import { useTheme, alpha } from "@mui/material/styles";
 
 import { Box, Typography, Breadcrumbs, Link, Divider, CircularProgress } from "@mui/material";
 import SystemReset from "@/components/backoffice/settings/SystemReset";
@@ -6,6 +7,8 @@ import NextLink from "next/link";
 import { useAuth } from "@/hooks/useAuth";
 
 export default function SettingsPage() {
+  const theme = useTheme();
+
   const { isRole, hasPermission, loading } = useAuth();
   const isSuperAdmin = isRole('SUPER_ADMIN');
   const canManageSettings = hasPermission('store_settings');
@@ -21,7 +24,7 @@ export default function SettingsPage() {
   return (
     <Box sx={{ p: { xs: 1.5, md: 2 } }}>
       <Box sx={{ mb: 3 }}>
-        <Typography variant="h4" sx={{ fontWeight: 500, color: '#e9762b', fontSize: '1.25rem' }}>
+        <Typography variant="h4" sx={{ fontWeight: 500, color: theme.palette.primary.main, fontSize: '1.25rem' }}>
           System Configs
         </Typography>
       </Box>

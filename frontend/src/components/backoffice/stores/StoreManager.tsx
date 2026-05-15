@@ -1,4 +1,5 @@
 "use client";
+import { useTheme, alpha } from "@mui/material/styles";
 
 import React, { useState, useEffect, useCallback } from "react";
 import {
@@ -20,26 +21,29 @@ import {
   Divider,
   Switch,
 } from "@mui/material";
-import { alpha } from "@mui/material/styles";
+
 import {
-  Add as AddIcon,
-  Edit as EditIcon,
-  Delete as DeleteIcon,
-  Store as StoreIcon,
-  LocationOn as LocationIcon,
-  Phone as PhoneIcon,
-  Refresh as RefreshIcon,
-  Save as SaveIcon,
-  ChevronLeft as ChevronLeftIcon,
-  History as HistoryIcon,
-  Payments as PaymentsIcon,
+  AddOutlined as AddIcon,
+  EditOutlined as EditIcon,
+  DeleteOutlined as DeleteIcon,
+  StoreOutlined as StoreIcon,
+  LocationOnOutlined as LocationIcon,
+  PhoneOutlined as PhoneIcon,
+  RefreshOutlined as RefreshIcon,
+  SaveOutlined as SaveIcon,
+  ChevronLeftOutlined as ChevronLeftIcon,
+  HistoryOutlined as HistoryIcon,
+  PaymentsOutlined as PaymentsIcon,
 } from "@mui/icons-material";
 import { storeService, Store, StoreFormData } from "@/services/storeService";
 import { useAuth } from "@/hooks/useAuth";
 import { useConfirm } from "@/context/ConfirmContext";
 import { useToast } from "@/context/ToastContext";
+import PageHeader from "@/components/backoffice/PageHeader";
 
 export default function StoreManager() {
+  const theme = useTheme();
+
   const { user } = useAuth();
   const { confirm } = useConfirm();
   const { showError, showSuccess } = useToast();
@@ -146,16 +150,16 @@ export default function StoreManager() {
             variant="contained" 
             onClick={handleSubmit}
             startIcon={<SaveIcon />}
-            sx={{ borderRadius: '12px', fontWeight: 800, px: 3 }}
+            sx={{ borderRadius: '0.65rem', fontWeight: 800, px: 3 }}
           >
             SAVE STORE
           </Button>
         </Box>
 
-        <Box sx={{ flexGrow: 1, overflowY: 'auto', p: { xs: 2, md: 4 }, bgcolor: '#f9f9f9' }}>
+        <Box sx={{ flexGrow: 1, overflowY: 'auto', p: { xs: 2, md: 4 }, bgcolor: 'transparent' }}>
           <Grid container spacing={4} sx={{ justifyContent: 'center' }}>
             <Grid size={{ xs: 12, md: 8, lg: 6 }}>
-              <Paper sx={{ p: 4, borderRadius: '24px', border: '1px solid #e8e4d8', boxShadow: '0 8px 32px rgba(0,0,0,0.03)' }}>
+              <Paper sx={{ p: 4, borderRadius: '0.65rem', border: '1px solid #e8e4d8', boxShadow: '0 8px 32px rgba(0,0,0,0.03)' }}>
                 <Stack spacing={4}>
                   <Box>
                     <Typography variant="overline" sx={{ fontWeight: 900, color: 'primary.main', mb: 2, display: 'block' }}>STORE IDENTITY</Typography>
@@ -165,7 +169,7 @@ export default function StoreManager() {
                           label="Store Name" fullWidth required
                           value={formData.name}
                           onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                          slotProps={{ input: { sx: { borderRadius: '12px', bgcolor: 'white' } } }}
+                          slotProps={{ input: { sx: { borderRadius: '0.65rem', bgcolor: 'white' } } }}
                         />
                       </Grid>
                       <Grid size={{ xs: 12 }}>
@@ -173,7 +177,7 @@ export default function StoreManager() {
                           label="Address" fullWidth required multiline rows={2}
                           value={formData.address}
                           onChange={(e) => setFormData({ ...formData, address: e.target.value })}
-                          slotProps={{ input: { sx: { borderRadius: '12px', bgcolor: 'white' } } }}
+                          slotProps={{ input: { sx: { borderRadius: '0.65rem', bgcolor: 'white' } } }}
                         />
                       </Grid>
                       <Grid size={{ xs: 12 }}>
@@ -181,7 +185,7 @@ export default function StoreManager() {
                           label="Branch Name" fullWidth
                           value={formData.branch}
                           onChange={(e) => setFormData({ ...formData, branch: e.target.value })}
-                          slotProps={{ input: { sx: { borderRadius: '12px', bgcolor: 'white' } } }}
+                          slotProps={{ input: { sx: { borderRadius: '0.65rem', bgcolor: 'white' } } }}
                         />
                       </Grid>
                     </Grid>
@@ -197,7 +201,7 @@ export default function StoreManager() {
                           label="Mobile / Phone" fullWidth required
                           value={formData.mobile}
                           onChange={(e) => setFormData({ ...formData, mobile: e.target.value })}
-                          slotProps={{ input: { sx: { borderRadius: '12px', bgcolor: 'white' } } }}
+                          slotProps={{ input: { sx: { borderRadius: '0.65rem', bgcolor: 'white' } } }}
                         />
                       </Grid>
                       <Grid size={{ xs: 12, sm: 6 }}>
@@ -205,7 +209,7 @@ export default function StoreManager() {
                           label="Invoice Prefix" fullWidth required
                           value={formData.invoice_prefix}
                           onChange={(e) => setFormData({ ...formData, invoice_prefix: e.target.value.toUpperCase() })}
-                          slotProps={{ input: { sx: { borderRadius: '12px', bgcolor: 'white' } } }}
+                          slotProps={{ input: { sx: { borderRadius: '0.65rem', bgcolor: 'white' } } }}
                         />
                       </Grid>
                       <Grid size={{ xs: 12, sm: 6 }}>
@@ -213,7 +217,7 @@ export default function StoreManager() {
                           label="GST Number" fullWidth
                           value={formData.gst_number}
                           onChange={(e) => setFormData({ ...formData, gst_number: e.target.value })}
-                          slotProps={{ input: { sx: { borderRadius: '12px', bgcolor: 'white' } } }}
+                          slotProps={{ input: { sx: { borderRadius: '0.65rem', bgcolor: 'white' } } }}
                         />
                       </Grid>
                       <Grid size={{ xs: 12, sm: 6 }}>
@@ -221,7 +225,7 @@ export default function StoreManager() {
                           label="FSSAI Lic No." fullWidth
                           value={formData.fssai_lic_no}
                           onChange={(e) => setFormData({ ...formData, fssai_lic_no: e.target.value })}
-                          slotProps={{ input: { sx: { borderRadius: '12px', bgcolor: 'white' } } }}
+                          slotProps={{ input: { sx: { borderRadius: '0.65rem', bgcolor: 'white' } } }}
                         />
                       </Grid>
                       <Grid size={{ xs: 12 }}>
@@ -229,13 +233,13 @@ export default function StoreManager() {
                           label="Email Address" type="email" fullWidth
                           value={formData.email}
                           onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                          slotProps={{ input: { sx: { borderRadius: '12px', bgcolor: 'white' } } }}
+                          slotProps={{ input: { sx: { borderRadius: '0.65rem', bgcolor: 'white' } } }}
                         />
                       </Grid>
                     </Grid>
                   </Box>
 
-                  <Box sx={{ display: "flex", alignItems: "center", justifyContent: "space-between", p: 3, bgcolor: "#FCF9EA", borderRadius: '16px', border: "1px solid #e8e4d8" }}>
+                  <Box sx={{ display: "flex", alignItems: "center", justifyContent: "space-between", p: 3, bgcolor: "#FCF9EA", borderRadius: '0.65rem', border: "1px solid #e8e4d8" }}>
                     <Box>
                       <Typography variant="subtitle1" sx={{ fontWeight: 900 }}>Operating Status</Typography>
                       <Typography variant="body2" color="text.secondary" sx={{ fontWeight: 600 }}>
@@ -253,7 +257,7 @@ export default function StoreManager() {
                       variant="contained"
                       onClick={handleSubmit}
                       startIcon={<SaveIcon />}
-                      sx={{ borderRadius: '12px', fontWeight: 800, px: 4, py: 1.5 }}
+                      sx={{ borderRadius: '0.65rem', fontWeight: 800, px: 4, py: 1.5 }}
                     >
                       SAVE STORE
                     </Button>
@@ -278,13 +282,13 @@ export default function StoreManager() {
 
   return (
     <Box sx={{ p: { xs: 1.5, md: 2 }, height: '100%', display: 'flex', flexDirection: 'column' }}>
-      <Box sx={{ mb: 3, display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 2 }}>
-        <Typography variant="h4" sx={{ fontWeight: 900, color: '#e9762b', fontSize: '1.5rem' }}>
+      <PageHeader>
+        <Typography variant="h4" sx={{ fontWeight: 600, color: theme.palette.primary.main, fontSize: '2rem' }}>
           Stores
         </Typography>
         <Stack direction="row" spacing={1.5}>
           <Tooltip title="Refresh Stores">
-            <IconButton onClick={loadStores} sx={{ bgcolor: 'white', border: '1px solid #e8e4d8', borderRadius: '12px', width: 44, height: 44 }}>
+            <IconButton onClick={loadStores} sx={{ bgcolor: 'white', border: '1px solid #e8e4d8', borderRadius: '0.65rem', width: 48, height: 48 }}>
               <RefreshIcon />
             </IconButton>
           </Tooltip>
@@ -293,16 +297,16 @@ export default function StoreManager() {
               variant="contained"
               startIcon={<AddIcon />}
               onClick={handleOpenCreate}
-              sx={{ borderRadius: '12px', height: 44, px: 3, fontWeight: 800 }}
+              sx={{ borderRadius: '0.65rem', height: 48, px: 3, fontWeight: 800 }}
             >
               ADD STORE
             </Button>
           )}
         </Stack>
-      </Box>
+      </PageHeader>
 
       {error && (
-        <Alert severity="error" sx={{ mb: 3, borderRadius: '12px' }} onClose={() => setError(null)}>
+        <Alert severity="error" sx={{ mb: 3, borderRadius: '0.65rem' }} onClose={() => setError(null)}>
           {error}
         </Alert>
       )}
@@ -313,14 +317,14 @@ export default function StoreManager() {
             key={store.id}
             elevation={0}
             sx={{
-              borderRadius: '20px',
+              borderRadius: '0.65rem',
               border: "1px solid #e8e4d8",
               bgcolor: 'white',
               transition: "all 0.3s cubic-bezier(0.4, 0, 0.2, 1)",
               "&:hover": {
                 transform: "translateY(-4px)",
-                boxShadow: "0 12px 32px rgba(233,118,43,0.08)",
-                borderColor: '#e9762b'
+                boxShadow: `0 12px 32px ${alpha(theme.palette.primary.main, 0.08)}`,
+                borderColor: theme.palette.primary.main
               },
             }}
           >
@@ -330,9 +334,9 @@ export default function StoreManager() {
                   <Avatar
                     sx={{
                       width: 52, height: 52,
-                      bgcolor: alpha('#e9762b', 0.1),
-                      color: "#e9762b",
-                      borderRadius: '14px',
+                      bgcolor: alpha(theme.palette.primary.main, 0.1),
+                      color: theme.palette.primary.main,
+                      borderRadius: '0.65rem',
                     }}
                   >
                     <StoreIcon fontSize="medium" />
@@ -348,17 +352,17 @@ export default function StoreManager() {
                         height: 20, fontSize: "0.65rem", fontWeight: 900,
                         bgcolor: store.is_active ? alpha('#2e7d32', 0.1) : alpha('#757575', 0.1),
                         color: store.is_active ? '#2e7d32' : '#757575',
-                        borderRadius: '6px'
+                        borderRadius: '0.65rem'
                       }}
                     />
                   </Box>
                 </Box>
                 <Box sx={{ display: 'flex', gap: 1 }}>
-                  <IconButton onClick={() => handleOpenEdit(store)} size="small" sx={{ bgcolor: '#f5f5f5', borderRadius: '10px' }}>
+                  <IconButton onClick={() => handleOpenEdit(store)} size="small" sx={{ bgcolor: '#f5f5f5', borderRadius: '0.65rem' }}>
                     <EditIcon fontSize="small" />
                   </IconButton>
                   {isSuperAdmin && (
-                    <IconButton onClick={() => handleDelete(store.id)} size="small" sx={{ color: "error.main", bgcolor: alpha('#d32f2f', 0.05), borderRadius: '10px' }}>
+                    <IconButton onClick={() => handleDelete(store.id)} size="small" sx={{ color: "error.main", bgcolor: alpha('#d32f2f', 0.05), borderRadius: '0.65rem' }}>
                       <DeleteIcon fontSize="small" />
                     </IconButton>
                   )}
@@ -380,10 +384,10 @@ export default function StoreManager() {
                 </Box>
               </Stack>
 
-              <Box sx={{ p: 2, bgcolor: '#FCF9EA', borderRadius: '12px', border: '1px solid #e8e4d8', display: 'flex', justifyContent: 'space-around', mb: 2 }}>
+              <Box sx={{ p: 2, bgcolor: '#FCF9EA', borderRadius: '0.65rem', border: '1px solid #e8e4d8', display: 'flex', justifyContent: 'space-around', mb: 2 }}>
                 <Box sx={{ textAlign: 'center' }}>
                   <Typography variant="caption" sx={{ fontWeight: 900, color: "text.disabled", display: 'block', fontSize: '0.6rem' }}>PREFIX</Typography>
-                  <Typography variant="body2" sx={{ fontWeight: 900, color: '#e9762b' }}>{store.invoice_prefix}</Typography>
+                  <Typography variant="body2" sx={{ fontWeight: 900, color: theme.palette.primary.main }}>{store.invoice_prefix}</Typography>
                 </Box>
                 <Divider orientation="vertical" flexItem sx={{ borderStyle: 'dashed' }} />
                 <Box sx={{ textAlign: 'center' }}>

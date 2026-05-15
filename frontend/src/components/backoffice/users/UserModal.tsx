@@ -1,5 +1,5 @@
 "use client";
-
+import { useTheme } from "@mui/material/styles";
 import React, { useState, useEffect } from "react";
 import {
   Dialog,
@@ -19,9 +19,9 @@ import {
   InputAdornment,
 } from "@mui/material";
 import {
-  Visibility as VisibilityIcon,
-  VisibilityOff as VisibilityOffIcon,
-  Password as PasswordIcon,
+  VisibilityOutlined as VisibilityIcon,
+  VisibilityOffOutlined as VisibilityOffIcon,
+  PasswordOutlined as PasswordIcon,
 } from "@mui/icons-material";
 import { userService, User, UserFormData } from "@/services/userService";
 import { storeService, Store } from "@/services/storeService";
@@ -50,6 +50,7 @@ export default function UserModal({
   onClose,
   onSubmit,
 }: UserModalProps) {
+  const theme = useTheme();
   const { user: currentUser } = useAuth();
   const [formData, setFormData] = useState<UserFormData>({
     username: "",
@@ -74,7 +75,7 @@ export default function UserModal({
     if (mode === "edit" && user) {
       setFormData({
         username: user.username,
-        password: "", 
+        password: "",
         role: (typeof user.groups[0] === 'string' ? user.groups[0] : user.groups[0]?.name) || "CASHIER",
         email: user.email || "",
         is_active: user.is_active,
@@ -96,21 +97,21 @@ export default function UserModal({
 
   const getAvailableRoles = () => {
     if (!currentUser) return [];
-    
+
     const role = currentUser.primary_role;
-    
+
     if (role === "SUPER_ADMIN") {
       return ALL_ROLES;
     }
-    
+
     if (role === "ADMIN") {
       return ALL_ROLES.filter(r => !["SUPER_ADMIN", "ADMIN"].includes(r.value));
     }
-    
+
     if (role === "MANAGER") {
       return ALL_ROLES.filter(r => ["CASHIER", "STAFF"].includes(r.value));
     }
-    
+
     return [];
   };
 
@@ -126,7 +127,7 @@ export default function UserModal({
       if (mode === "edit" && !submissionData.password) {
         delete submissionData.password;
       }
-      
+
       await onSubmit(submissionData);
       onClose();
     } catch (err: any) {
@@ -138,13 +139,13 @@ export default function UserModal({
   };
 
   return (
-    <Dialog 
-      open={open} 
-      onClose={onClose} 
-      fullWidth 
+    <Dialog
+      open={open}
+      onClose={onClose}
+      fullWidth
       maxWidth="xs"
       slotProps={{
-        paper: { sx: { borderRadius: 3, boxShadow: '0 20px 40px rgba(44, 24, 16, 0.1)' } }
+        paper: { sx: { borderRadius: '0.65rem', boxShadow: '0 20px 40px rgba(44, 24, 16, 0.1)' } }
       }}
     >
       <DialogTitle sx={{ fontWeight: 700, pb: 1 }}>
@@ -152,7 +153,7 @@ export default function UserModal({
       </DialogTitle>
       <DialogContent sx={{ py: 2 }}>
         {error && (
-          <Box sx={{ mb: 3, p: 2, bgcolor: "#fff4f4", borderRadius: 2, border: "1px solid #ffebeb" }}>
+          <Box sx={{ mb: 3, p: 2, bgcolor: "#fff4f4", borderRadius: '0.65rem', border: "1px solid #ffebeb" }}>
             <Typography variant="body2" color="error" sx={{ fontWeight: 600 }}>
               {error}
             </Typography>
@@ -244,12 +245,12 @@ export default function UserModal({
             }}
           />
 
-          <Box sx={{ display: "flex", alignItems: "center", justifyContent: "space-between", p: 1.5, bgcolor: "#FCF9EA", borderRadius: 2, border: '1px solid #e8e4d8' }}>
+          <Box sx={{ display: "flex", alignItems: "center", justifyContent: "space-between", p: 1.5, bgcolor: "#FCF9EA", borderRadius: '0.65rem', border: '1px solid #e8e4d8' }}>
             <Box>
-                <Typography variant="body2" sx={{ fontWeight: 600 }}>Account Status</Typography>
-                <Typography variant="caption" color="text.secondary">
-                    {formData.is_active ? "User can log in" : "User access is disabled"}
-                </Typography>
+              <Typography variant="body2" sx={{ fontWeight: 600 }}>Account Status</Typography>
+              <Typography variant="caption" color="text.secondary">
+                {formData.is_active ? "User can log in" : "User access is disabled"}
+              </Typography>
             </Box>
             <Switch
               checked={formData.is_active}
@@ -264,18 +265,18 @@ export default function UserModal({
         <Button onClick={onClose} color="inherit" sx={{ fontWeight: 600 }}>
           Cancel
         </Button>
-        <Button 
-          onClick={handleFormSubmit} 
-          variant="contained" 
+        <Button
+          onClick={handleFormSubmit}
+          variant="contained"
           disabled={loading || !formData.username.trim() || (mode === 'create' && !formData.password)}
-          sx={{ 
-            px: 4, 
-            bgcolor: '#E9762B', 
+          sx={{
+            px: 4,
+            bgcolor: theme.palette.primary.main,
             color: '#fff',
-            '&:hover': { bgcolor: '#d35400' },
+            '&:hover': { bgcolor: theme.palette.primary.dark },
             boxShadow: 'none',
             fontWeight: 600,
-            borderRadius: 2
+            borderRadius: '0.65rem'
           }}
         >
           {loading ? "Processing..." : (mode === "create" ? "Create User" : "Save Changes")}

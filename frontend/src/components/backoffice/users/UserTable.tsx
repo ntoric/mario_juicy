@@ -24,15 +24,15 @@ import {
 } from "@mui/material";
 import { alpha } from "@mui/material/styles";
 import {
-  Edit as EditIcon,
-  Delete as DeleteIcon,
-  MoreVert as MoreVertIcon,
-  ToggleOn as ToggleOnIcon,
-  ToggleOff as ToggleOffIcon,
-  Person as PersonIcon,
-  AdminPanelSettings as AdminIcon,
-  Security as ManagerIcon,
-  PointOfSale as CashierIcon,
+  EditOutlined as EditIcon,
+  DeleteOutlined as DeleteIcon,
+  MoreVertOutlined as MoreVertIcon,
+  ToggleOnOutlined as ToggleOnIcon,
+  ToggleOffOutlined as ToggleOffIcon,
+  PersonOutlined as PersonIcon,
+  AdminPanelSettingsOutlined as AdminIcon,
+  SecurityOutlined as ManagerIcon,
+  PointOfSaleOutlined as CashierIcon,
 } from "@mui/icons-material";
 import { User } from "@/services/userService";
 
@@ -92,7 +92,7 @@ export default function UserTable({
 
   if (users.length === 0) {
     return (
-      <TableContainer component={Paper} sx={{ borderRadius: "7px", border: '1px solid #e8e4d8', boxShadow: 'none' }}>
+      <TableContainer component={Paper} sx={{ borderRadius: '0.65rem', border: '1px solid #e8e4d8', boxShadow: 'none' }}>
         <Box sx={{ p: 5, textAlign: "center" }}>
           <Typography color="text.secondary" sx={{ fontWeight: 600 }}>No users found.</Typography>
         </Box>
@@ -101,15 +101,15 @@ export default function UserTable({
   }
 
   return (
-    <TableContainer component={Paper} sx={{ borderRadius: "7px", overflow: "hidden", border: '1px solid #e8e4d8', boxShadow: '0 2px 8px rgba(0,0,0,0.02)' }}>
+    <TableContainer component={Paper} sx={{ borderRadius: '0.65rem', overflow: "hidden", border: '1px solid #e8e4d8', boxShadow: '0 2px 8px rgba(0,0,0,0.02)' }}>
       <Table>
         <TableHead sx={{ backgroundColor: "#FCF9EA" }}>
           <TableRow>
-            <TableCell sx={{ color: "#e9762b", fontWeight: 800, fontSize: '0.7rem', py: 1.5, textTransform: 'uppercase', letterSpacing: '0.05em' }}>User</TableCell>
-            <TableCell sx={{ color: "#e9762b", fontWeight: 800, fontSize: '0.7rem', py: 1.5, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Role</TableCell>
-            <TableCell sx={{ color: "#e9762b", fontWeight: 800, fontSize: '0.7rem', py: 1.5, textTransform: 'uppercase', letterSpacing: '0.05em', display: { xs: "none", md: "table-cell" } }}>Email</TableCell>
-            <TableCell sx={{ color: "#e9762b", fontWeight: 800, fontSize: '0.7rem', py: 1.5, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Status</TableCell>
-            <TableCell sx={{ color: "#e9762b", fontWeight: 800, fontSize: '0.7rem', py: 1.5, textTransform: 'uppercase', letterSpacing: '0.05em', textAlign: "right" }}>Actions</TableCell>
+            <TableCell sx={{ color: theme.palette.primary.main, fontWeight: 800, fontSize: '0.7rem', py: 1.5, textTransform: 'uppercase', letterSpacing: '0.05em' }}>User</TableCell>
+            <TableCell sx={{ color: theme.palette.primary.main, fontWeight: 800, fontSize: '0.7rem', py: 1.5, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Role</TableCell>
+            <TableCell sx={{ color: theme.palette.primary.main, fontWeight: 800, fontSize: '0.7rem', py: 1.5, textTransform: 'uppercase', letterSpacing: '0.05em', display: { xs: "none", md: "table-cell" } }}>Email</TableCell>
+            <TableCell sx={{ color: theme.palette.primary.main, fontWeight: 800, fontSize: '0.7rem', py: 1.5, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Status</TableCell>
+            <TableCell sx={{ color: theme.palette.primary.main, fontWeight: 800, fontSize: '0.7rem', py: 1.5, textTransform: 'uppercase', letterSpacing: '0.05em', textAlign: "right" }}>Actions</TableCell>
           </TableRow>
         </TableHead>
         <TableBody>
@@ -130,7 +130,7 @@ export default function UserTable({
               >
                 <TableCell sx={{ py: 1 }}>
                   <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
-                    <Avatar sx={{ bgcolor: alpha('#e9762b', 0.1), color: '#e9762b', width: 28, height: 28, fontSize: '0.8rem', fontWeight: 800, borderRadius: '6px' }}>
+                    <Avatar sx={{ bgcolor: alpha(theme.palette.primary.main, 0.1), color: theme.palette.primary.main, width: 28, height: 28, fontSize: '0.8rem', fontWeight: 800, borderRadius: '0.65rem' }}>
                       {user.username.charAt(0).toUpperCase()}
                     </Avatar>
                     <Box>
@@ -153,7 +153,7 @@ export default function UserTable({
                       color: roleStyle.text,
                       fontWeight: 800,
                       fontSize: '0.6rem',
-                      borderRadius: '6px',
+                      borderRadius: '0.65rem',
                       height: 20,
                       '& .MuiChip-icon': { color: 'inherit', fontSize: 12 }
                     }}
@@ -172,7 +172,7 @@ export default function UserTable({
                           fontWeight: 800, 
                           height: 18,
                           fontSize: '0.55rem',
-                          borderRadius: '6px',
+                          borderRadius: '0.65rem',
                           bgcolor: user.is_active ? alpha('#2e7d32', 0.1) : alpha('#757575', 0.1),
                           color: user.is_active ? '#2e7d32' : '#757575',
                           border: `1px solid ${user.is_active ? alpha('#2e7d32', 0.1) : alpha('#757575', 0.1)}`
@@ -190,7 +190,7 @@ export default function UserTable({
                         sx={{ 
                           color: user.is_active ? 'warning.main' : 'success.main',
                           bgcolor: user.is_active ? alpha('#ed6c02', 0.05) : alpha('#2e7d32', 0.05), 
-                          borderRadius: '6px',
+                          borderRadius: '0.65rem',
                           p: 0.5,
                           '&:hover': { bgcolor: user.is_active ? alpha('#ed6c02', 0.1) : alpha('#2e7d32', 0.1) } 
                         }}
@@ -204,7 +204,7 @@ export default function UserTable({
                         onClick={() => onEdit(user)}
                         sx={{ 
                           bgcolor: alpha('#000', 0.03), 
-                          borderRadius: '6px',
+                          borderRadius: '0.65rem',
                           p: 0.5,
                           '&:hover': { bgcolor: alpha('#000', 0.08) }, 
                           color: 'text.primary' 
@@ -220,7 +220,7 @@ export default function UserTable({
                         sx={{ 
                           color: 'error.main',
                           bgcolor: alpha('#d32f2f', 0.05), 
-                          borderRadius: '6px',
+                          borderRadius: '0.65rem',
                           p: 0.5,
                           '&:hover': { bgcolor: alpha('#d32f2f', 0.1) } 
                         }}
@@ -254,7 +254,7 @@ export default function UserTable({
         anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
         transformOrigin={{ vertical: 'top', horizontal: 'right' }}
         slotProps={{
-          paper: { sx: { boxShadow: '0 4px 20px rgba(0,0,0,0.1)', borderRadius: '12px', minWidth: 150 } }
+          paper: { sx: { boxShadow: '0 4px 20px rgba(0,0,0,0.1)', borderRadius: '0.65rem', minWidth: 150 } }
         }}
       >
         <MenuItem onClick={() => {

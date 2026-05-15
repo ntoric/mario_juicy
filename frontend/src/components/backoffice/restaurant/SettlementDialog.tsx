@@ -1,4 +1,5 @@
 "use client";
+import { useTheme, alpha } from "@mui/material/styles";
 
 import React, { useState } from 'react';
 import {
@@ -26,13 +27,13 @@ import {
   TextField,
 } from '@mui/material';
 import {
-  Close as CloseIcon,
-  Receipt as BillIcon,
-  CheckCircle as PaidIcon,
-  Print as PrintIcon,
-  Visibility as PreviewIcon,
-  Download as DownloadIcon,
-  ChevronLeft as ChevronLeftIcon,
+  CloseOutlined as CloseIcon,
+  ReceiptOutlined as BillIcon,
+  CheckCircleOutlined as PaidIcon,
+  PrintOutlined as PrintIcon,
+  VisibilityOutlined as PreviewIcon,
+  DownloadOutlined as DownloadIcon,
+  ChevronLeftOutlined as ChevronLeftIcon,
 } from '@mui/icons-material';
 import { Tooltip } from '@mui/material';
 import { restaurantService, Order } from '@/services/restaurantService';
@@ -48,6 +49,8 @@ interface SettlementDialogProps {
 }
 
 export default function SettlementDialog({ open, onClose, order, onSuccess }: SettlementDialogProps) {
+  const theme = useTheme();
+
   const { activeStore } = useAuth();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -194,8 +197,8 @@ export default function SettlementDialog({ open, onClose, order, onSuccess }: Se
         <Grid container spacing={3}>
           {/* Left Column: Order Details */}
           <Grid size={{ xs: 12, lg: 7, xl: 8 }}>
-            <Paper sx={{ p: { xs: 2, md: 3 }, borderRadius: '24px', border: '1px solid #e8e4d8', boxShadow: '0 8px 32px rgba(0,0,0,0.03)', height: '100%' }}>
-              {error && <Alert severity="error" sx={{ mb: 3, borderRadius: '12px' }}>{error}</Alert>}
+            <Paper sx={{ p: { xs: 2, md: 3 }, borderRadius: '0.65rem', border: '1px solid #e8e4d8', boxShadow: '0 8px 32px rgba(0,0,0,0.03)', height: '100%' }}>
+              {error && <Alert severity="error" sx={{ mb: 3, borderRadius: '0.65rem' }}>{error}</Alert>}
 
               <Box sx={{ mb: 4, display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
                 <Box>
@@ -206,12 +209,12 @@ export default function SettlementDialog({ open, onClose, order, onSuccess }: Se
                 <Chip 
                   label={order.order_type === 'DINE_IN' ? `TABLE ${order.table_number}` : 'PARCEL'} 
                   color="primary" 
-                  sx={{ fontWeight: 900, borderRadius: '8px', px: 1, height: 32 }} 
+                  sx={{ fontWeight: 900, borderRadius: '0.65rem', px: 1, height: 32 }} 
                 />
               </Box>
 
               <Typography variant="overline" sx={{ fontWeight: 900, color: 'primary.main', mb: 2, display: 'block' }}>ORDER ITEMS</Typography>
-              <TableContainer sx={{ borderRadius: '16px', border: '1px solid #e8e4d8', overflow: 'hidden' }}>
+              <TableContainer sx={{ borderRadius: '0.65rem', border: '1px solid #e8e4d8', overflow: 'hidden' }}>
                 <Table size="small">
                   <TableHead sx={{ bgcolor: '#FCF9EA' }}>
                     <TableRow>
@@ -240,7 +243,7 @@ export default function SettlementDialog({ open, onClose, order, onSuccess }: Se
           <Grid size={{ xs: 12, lg: 5, xl: 4 }}>
             <Stack spacing={3} sx={{ position: { lg: 'sticky' }, top: 0 }}>
               {/* Payment Settings */}
-              <Paper sx={{ p: 3, borderRadius: '24px', border: '1px solid #e8e4d8', boxShadow: '0 8px 32px rgba(0,0,0,0.03)' }}>
+              <Paper sx={{ p: 3, borderRadius: '0.65rem', border: '1px solid #e8e4d8', boxShadow: '0 8px 32px rgba(0,0,0,0.03)' }}>
                 <Typography variant="overline" sx={{ fontWeight: 900, color: 'primary.main', mb: 2, display: 'block' }}>PAYMENT SETTINGS</Typography>
                 <FormControl fullWidth variant="outlined">
                   <InputLabel sx={{ fontWeight: 700 }}>Payment Method</InputLabel>
@@ -249,7 +252,7 @@ export default function SettlementDialog({ open, onClose, order, onSuccess }: Se
                     label="Payment Method"
                     onChange={(e) => setPaymentMethod(e.target.value as string)}
                     disabled={loading}
-                    sx={{ borderRadius: '12px', bgcolor: 'white', fontWeight: 700 }}
+                    sx={{ borderRadius: '0.65rem', bgcolor: 'white', fontWeight: 700 }}
                   >
                     <MenuItem value="UPI" sx={{ fontWeight: 700 }}>UPI Payment</MenuItem>
                     <MenuItem value="CASH" sx={{ fontWeight: 700 }}>Cash Payment</MenuItem>
@@ -259,25 +262,25 @@ export default function SettlementDialog({ open, onClose, order, onSuccess }: Se
                 </FormControl>
 
                 {invoice ? (
-                  <Box sx={{ mt: 3, p: 2.5, bgcolor: '#FFF9E6', borderRadius: '16px', border: '1.5px solid #E9762B' }}>
+                  <Box sx={{ mt: 3, p: 2.5, bgcolor: '#FFF9E6', borderRadius: '0.65rem', border: `1.5px solid ${theme.palette.primary.main}` }}>
                     <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
-                      <Typography variant="body2" sx={{ fontWeight: 900, color: '#E9762B' }}>
+                      <Typography variant="body2" sx={{ fontWeight: 900, color: theme.palette.primary.main }}>
                         BILL: {invoice.invoice_number}
                       </Typography>
                       <Stack direction="row" spacing={1}>
                         <Tooltip title="Preview">
-                          <IconButton size="small" onClick={() => setPreviewOpen(true)} sx={{ color: '#E9762B', bgcolor: 'white', borderRadius: '8px' }}>
+                          <IconButton size="small" onClick={() => setPreviewOpen(true)} sx={{ color: theme.palette.primary.main, bgcolor: 'white', borderRadius: '0.65rem' }}>
                             <PreviewIcon fontSize="small" />
                           </IconButton>
                         </Tooltip>
                         <Tooltip title="Print">
-                          <IconButton size="small" onClick={handlePrint} sx={{ color: '#E9762B', bgcolor: 'white', borderRadius: '8px' }}>
+                          <IconButton size="small" onClick={handlePrint} sx={{ color: theme.palette.primary.main, bgcolor: 'white', borderRadius: '0.65rem' }}>
                             <PrintIcon fontSize="small" />
                           </IconButton>
                         </Tooltip>
                         <Tooltip title="Download">
                           <span>
-                            <IconButton size="small" onClick={handleDownload} disabled={downloading} sx={{ color: '#E9762B', bgcolor: 'white', borderRadius: '8px' }}>
+                            <IconButton size="small" onClick={handleDownload} disabled={downloading} sx={{ color: theme.palette.primary.main, bgcolor: 'white', borderRadius: '0.65rem' }}>
                               {downloading ? <CircularProgress size={16} color="inherit" /> : <DownloadIcon fontSize="small" />}
                             </IconButton>
                           </span>
@@ -289,14 +292,14 @@ export default function SettlementDialog({ open, onClose, order, onSuccess }: Se
                     </Typography>
                   </Box>
                 ) : (
-                  <Alert severity="info" sx={{ mt: 3, borderRadius: '12px', fontWeight: 600 }}>
+                  <Alert severity="info" sx={{ mt: 3, borderRadius: '0.65rem', fontWeight: 600 }}>
                     Click Checkout to see taxes and charges.
                   </Alert>
                 )}
               </Paper>
 
               {/* Summary */}
-              <Paper sx={{ p: 3, borderRadius: '24px', border: '1px solid #e8e4d8', boxShadow: '0 8px 32px rgba(0,0,0,0.03)', bgcolor: '#fcfcfc' }}>
+              <Paper sx={{ p: 3, borderRadius: '0.65rem', border: '1px solid #e8e4d8', boxShadow: '0 8px 32px rgba(0,0,0,0.03)', bgcolor: '#fcfcfc' }}>
                 <Typography variant="overline" sx={{ fontWeight: 900, color: 'text.disabled', mb: 2, display: 'block' }}>SUMMARY</Typography>
                 <Stack spacing={2}>
                   <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
@@ -333,7 +336,7 @@ export default function SettlementDialog({ open, onClose, order, onSuccess }: Se
                       fullWidth
                       onClick={handleCheckout}
                       disabled={loading}
-                      sx={{ py: 2, fontWeight: 900, borderRadius: '12px', fontSize: '1rem', boxShadow: '0 8px 24px rgba(233,118,43,0.1)' }}
+                      sx={{ py: 2, fontWeight: 900, borderRadius: '0.65rem', fontSize: '1rem', boxShadow: `0 8px 24px ${alpha(theme.palette.primary.main, 0.1)}` }}
                     >
                       {loading ? 'CHECKING OUT...' : 'CHECKOUT'}
                     </Button>
@@ -343,7 +346,7 @@ export default function SettlementDialog({ open, onClose, order, onSuccess }: Se
                       fullWidth
                       onClick={handleGenerateBill}
                       disabled={loading}
-                      sx={{ py: 2, fontWeight: 900, borderRadius: '12px', fontSize: '1rem', boxShadow: '0 8px 24px rgba(233,118,43,0.1)' }}
+                      sx={{ py: 2, fontWeight: 900, borderRadius: '0.65rem', fontSize: '1rem', boxShadow: `0 8px 24px ${alpha(theme.palette.primary.main, 0.1)}` }}
                     >
                       GENERATE & PRINT BILL
                     </Button>
@@ -363,7 +366,7 @@ export default function SettlementDialog({ open, onClose, order, onSuccess }: Se
                         color="success"
                         onClick={handleMarkAsPaid}
                         disabled={loading}
-                        sx={{ py: 2, fontWeight: 900, borderRadius: '12px', fontSize: '1rem', boxShadow: '0 8px 24px rgba(16,185,129,0.1)' }}
+                        sx={{ py: 2, fontWeight: 900, borderRadius: '0.65rem', fontSize: '1rem', boxShadow: '0 8px 24px rgba(16,185,129,0.1)' }}
                       >
                         {loading ? 'PROCESSING...' : 'MARK AS PAID'}
                       </Button>
