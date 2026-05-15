@@ -101,7 +101,7 @@ export default function ItemTable({
 
   if (isMobile) {
     return (
-      <Box sx={{ pb: { xs: 12, md: 2 } }}>
+      <Box sx={{ pb: { xs: 12, md: 2 }, flexGrow: 1, overflowY: 'auto', minHeight: 0, '&::-webkit-scrollbar': { width: 6 }, '&::-webkit-scrollbar-thumb': { bgcolor: alpha(theme.palette.primary.main, 0.2), borderRadius: 3 } }}>
         <Grid container spacing={2}>
           {items.map((item) => (
             <Grid size={{ xs: 12, sm: 6 }} key={item.id}>
@@ -231,11 +231,15 @@ export default function ItemTable({
     <TableContainer sx={{ 
       borderRadius: "0.65rem", 
       overflow: "auto", 
+      flexGrow: 1,
+      minHeight: 0,
       border: '1px solid',
       borderColor: alpha(theme.palette.divider, 0.08), 
       boxShadow: '0 20px 60px rgba(0,0,0,0.04)',
       bgcolor: 'rgba(255, 255, 255, 0.6)',
-      backdropFilter: 'blur(20px)'
+      backdropFilter: 'blur(20px)',
+      '&::-webkit-scrollbar': { width: 6, height: 6 },
+      '&::-webkit-scrollbar-thumb': { bgcolor: alpha(theme.palette.primary.main, 0.2), borderRadius: 3 }
     }}>
       <Table stickyHeader>
         <TableHead>

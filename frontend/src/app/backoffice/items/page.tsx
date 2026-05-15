@@ -128,17 +128,7 @@ export default function ItemsPage() {
     }
   };
 
-  if (view === 'create' || view === 'edit') {
-    return (
-      <ItemForm
-        open={true}
-        mode={view === 'create' ? 'create' : 'edit'}
-        item={selectedItem}
-        onClose={() => setView('list')}
-        onSubmit={handleModalSubmit}
-      />
-    );
-  }
+  // Form modal rendering removed from early return, moved to main return
 
   if (view === 'details' && selectedItem) {
     return (
@@ -253,9 +243,9 @@ export default function ItemsPage() {
           </Alert>
         )}
 
-        <Box sx={{ flexGrow: 1, overflowY: 'auto', px: 0.5, pb: 4, '&::-webkit-scrollbar': { width: 6 }, '&::-webkit-scrollbar-thumb': { bgcolor: alpha(theme.palette.primary.main, 0.2), borderRadius: 3 } }}>
+        <Box sx={{ flexGrow: 1, display: 'flex', flexDirection: 'column', minHeight: 0, px: 0.5, pb: 4 }}>
           {loading ? (
-            <Box sx={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", height: 400, gap: 2 }}>
+            <Box sx={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", flexGrow: 1, gap: 2 }}>
               <CircularProgress size={40} thickness={4} sx={{ color: theme.palette.primary.main }} />
               <Typography color="text.secondary" variant="body2" sx={{ fontWeight: 800 }}>Fetching catalog...</Typography>
             </Box>
@@ -293,6 +283,14 @@ export default function ItemsPage() {
           }
         }}
         title={`Delete ${itemToDelete?.name}?`}
+      />
+
+      <ItemForm
+        open={view === 'create' || view === 'edit'}
+        mode={view === 'create' ? 'create' : 'edit'}
+        item={selectedItem}
+        onClose={() => setView('list')}
+        onSubmit={handleModalSubmit}
       />
     </Box>
   );

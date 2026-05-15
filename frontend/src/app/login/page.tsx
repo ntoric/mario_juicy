@@ -86,46 +86,15 @@ export default function LoginPage() {
 
   return (
     <div className={`login-container animate-fade-in`}>
-      {/* Branding section for mobile/desktop */}
-      <div className="login-brand-section">
-        <div className="brand-icon-wrapper" style={{ overflow: 'hidden', padding: 0, backgroundColor: 'white', borderRadius: '0.65rem', border: '2px solid #E9762B' }}>
-          <img 
-            src="/mario_juicy_logo.png" 
-            alt="Mario Logo" 
-            style={{ width: '100%', height: '100%', objectFit: 'contain', animation: 'pulse-float 4s ease-in-out infinite' }} 
-          />
-        </div>
-        <h2 className="mobile-brand-title font-pacifico">Mario</h2>
-      </div>
 
       <div className="login-card">
-        {/* Settings Button */}
-        <button 
-          onClick={() => setShowSettings(true)}
-          style={{ 
-            position: 'absolute', 
-            top: '20px', 
-            right: '20px', 
-            background: 'none', 
-            border: 'none', 
-            color: '#E9762B', 
-            cursor: 'pointer',
-            padding: '8px',
-            borderRadius: '50%',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            transition: 'background 0.3s ease',
-            zIndex: 10
-          }}
-          title="Server Settings"
-        >
-          <Settings size={20} />
-        </button>
 
-        <header className="login-header">
-          <h1 className="login-title font-pacifico">Mario</h1>
-          <p className="login-subtitle">Enter your credentials to access the POS</p>
+        <header className="login-header" style={{ marginBottom: "0px" }}>
+          <img
+            src="/mario_juicy_logo.png"
+            alt="Mario Logo"
+            style={{ width: '50%', height: '50%', objectFit: 'contain', animation: 'pulse-float 4s ease-in-out infinite', marginBottom: "2px", }}
+          />
         </header>
 
         <form onSubmit={handleSubmit}>
@@ -189,7 +158,7 @@ export default function LoginPage() {
         </form>
 
         <footer className="login-footer">
-          <p>Unable to log in? <a href="#">Support</a></p>
+          <p>Unable to log in? <a href="mailto:mariojuicy2026@gmail.com">Support</a></p>
         </footer>
       </div>
 
@@ -220,7 +189,7 @@ export default function LoginPage() {
             <p style={{ marginBottom: '20px', fontSize: '0.9rem', color: '#666' }}>
               Configure the API server address. This is required for mobile devices to connect to your local server.
             </p>
-            
+
             <div className="form-group">
               <label className="form-label">API Base URL</label>
               <input
@@ -236,14 +205,14 @@ export default function LoginPage() {
             </div>
 
             <div style={{ display: 'flex', gap: '12px', marginTop: '30px' }}>
-              <button 
+              <button
                 onClick={() => setShowSettings(false)}
                 className="form-input"
                 style={{ flex: 1, backgroundColor: '#f5f5f5', cursor: 'pointer' }}
               >
                 Cancel
               </button>
-              <button 
+              <button
                 onClick={handleSaveSettings}
                 className="login-button"
                 style={{ flex: 1, marginTop: 0 }}

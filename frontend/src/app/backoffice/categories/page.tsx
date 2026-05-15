@@ -50,7 +50,7 @@ import {
   MoreVertOutlined as MoreVertIcon,
   ToggleOnOutlined as ToggleOnIcon,
   ToggleOffOutlined as ToggleOffIcon,
-  ArrowBackOutlined as ArrowBackIcon,
+  CloseOutlined as CloseIcon,
 } from "@mui/icons-material";
 import { categoryService, Category } from "@/services/categoryService";
 import { useAuth } from "@/hooks/useAuth";
@@ -226,186 +226,7 @@ export default function CategoryPage() {
     }).format(new Date(dateString));
   };
 
-  if (view === 'create' || view === 'edit') {
-    return (
-      <Box sx={{ 
-        flexGrow: 1, 
-        bgcolor: 'transparent', 
-        display: 'flex', 
-        flexDirection: 'column',
-        minHeight: '100%',
-        animation: `${fadeIn} 0.3s ease-out`,
-        position: 'relative',
-        p: { xs: 2, md: 4 }
-      }}>
-        {/* Background Blobs */}
-        <Box sx={{ position: 'absolute', top: -100, right: -100, width: 400, height: 400, background: `radial-gradient(circle, ${alpha(theme.palette.primary.main, 0.05)} 0%, transparent 70%)`, borderRadius: '50%', zIndex: 0 }} />
-        
-        <Box sx={{ position: 'relative', zIndex: 1, maxWidth: 800, mx: 'auto', width: '100%' }}>
-          <Box sx={{ mb: 4, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-              <IconButton 
-                onClick={handleCloseForm} 
-                sx={{ 
-                  bgcolor: 'white', 
-                  border: '1px solid', 
-                  borderColor: alpha(theme.palette.divider, 0.1), 
-                  borderRadius: '0.65rem',
-                  boxShadow: '0 4px 12px rgba(0,0,0,0.03)',
-                  '&:hover': { bgcolor: alpha(theme.palette.primary.main, 0.05), color: theme.palette.primary.main }
-                }}
-              >
-                <ArrowBackIcon />
-              </IconButton>
-              <Box>
-                <Typography variant="h4" sx={{ fontWeight: 600, letterSpacing: '-0.02em', color: '#1a1a1a' }}>
-                  {view === 'create' ? "Add Category" : "Edit Category"}
-                </Typography>
-                <Typography variant="body2" sx={{ color: 'text.secondary', fontWeight: 600 }}>
-                  Fill in the details below to {view === 'create' ? 'create a new' : 'update the'} category.
-                </Typography>
-              </Box>
-            </Box>
-            <Button 
-              variant="contained" 
-              onClick={handleSubmit}
-              sx={{ 
-                borderRadius: '0.65rem', 
-                fontWeight: 600, 
-                px: 4, 
-                height: 48,
-                background: `linear-gradient(135deg, ${theme.palette.primary.main} 0%, ${theme.palette.primary.dark} 100%)`,
-                boxShadow: `0 8px 20px ${alpha(theme.palette.primary.main, 0.3)}`,
-                '&:hover': { transform: 'translateY(-2px)', boxShadow: `0 12px 25px ${alpha(theme.palette.primary.main, 0.4)}` }
-              }}
-            >
-              SAVE CHANGES
-            </Button>
-          </Box>
-
-          <Grid container spacing={3}>
-            <Grid size={{ xs: 12 }}>
-              <Card sx={{ 
-                p: 4, 
-                borderRadius: '0.65rem', 
-                border: '1px solid', 
-                borderColor: alpha(theme.palette.divider, 0.08), 
-                boxShadow: '0 20px 50px rgba(0,0,0,0.04)',
-                bgcolor: 'white',
-              }}>
-                <Stack spacing={4}>
-                  <Box>
-                    <Typography variant="overline" sx={{ fontWeight: 600, color: theme.palette.primary.main, mb: 2, display: 'block', letterSpacing: '0.1em' }}>GENERAL INFORMATION</Typography>
-                    <TextField
-                      fullWidth
-                      label="Category Name"
-                      placeholder="e.g. Italian Pizzas, Refreshments..."
-                      value={formData.name}
-                      onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                      required
-                      variant="outlined"
-                      slotProps={{
-                        input: { sx: { borderRadius: '0.65rem', bgcolor: 'white', fontWeight: 700 } },
-                        inputLabel: { sx: { fontWeight: 700 } }
-                      }}
-                    />
-                  </Box>
-
-                  <Box>
-                    <Typography variant="overline" sx={{ fontWeight: 600, color: theme.palette.primary.main, mb: 2, display: 'block', letterSpacing: '0.1em' }}>CATEGORY VISUALS</Typography>
-                    <Box sx={{ 
-                      display: "flex", 
-                      alignItems: "center", 
-                      flexDirection: { xs: 'column', sm: 'row' },
-                      gap: 4, 
-                      p: 3, 
-                      bgcolor: alpha(theme.palette.primary.main, 0.02), 
-                      borderRadius: '0.65rem', 
-                      border: '2px dashed',
-                      borderColor: alpha(theme.palette.primary.main, 0.1)
-                    }}>
-                      <Avatar
-                        src={getImageUrl(imagePreview)}
-                        variant="rounded"
-                        sx={{ 
-                          width: 140, 
-                          height: 140, 
-                          bgcolor: "white", 
-                          border: "1px solid",
-                          borderColor: alpha(theme.palette.divider, 0.1),
-                          borderRadius: '0.65rem',
-                          boxShadow: '0 8px 20px rgba(0,0,0,0.05)'
-                        }}
-                      >
-                        <ImageIcon sx={{ color: alpha('#1a1a1a', 0.1), fontSize: 60 }} />
-                      </Avatar>
-                      <Box sx={{ textAlign: { xs: 'center', sm: 'left' } }}>
-                        <Typography variant="subtitle1" sx={{ fontWeight: 600, mb: 1 }}>Cover Image</Typography>
-                        <Typography variant="body2" sx={{ color: 'text.secondary', fontWeight: 600, mb: 3 }}>
-                          Recommended size: 512x512px. PNG, JPG or WEBP formats supported.
-                        </Typography>
-                        <label htmlFor="category-image">
-                          <Input
-                            id="category-image"
-                            type="file"
-                            inputProps={{ accept: "image/*" }}
-                            sx={{ display: "none" }}
-                            onChange={handleImageChange}
-                          />
-                          <Button
-                            variant="outlined"
-                            component="span"
-                            startIcon={<ImageIcon />}
-                            sx={{ 
-                              borderRadius: '0.65rem', 
-                              fontWeight: 600, 
-                              textTransform: 'none', 
-                              px: 3,
-                              borderColor: alpha('#1a1a1a', 0.2),
-                              color: '#1a1a1a',
-                              '&:hover': { borderColor: '#1a1a1a', bgcolor: alpha('#1a1a1a', 0.05) }
-                            }}
-                          >
-                            Upload New Image
-                          </Button>
-                        </label>
-                      </Box>
-                    </Box>
-                  </Box>
-
-                  <Box sx={{ 
-                    display: "flex", 
-                    alignItems: "center", 
-                    justifyContent: "space-between", 
-                    p: 3, 
-                    bgcolor: alpha('#10b981', 0.05), 
-                    borderRadius: '0.65rem', 
-                    border: "1px solid",
-                    borderColor: alpha('#10b981', 0.1)
-                  }}>
-                    <Box>
-                      <Typography variant="subtitle1" sx={{ fontWeight: 600 }}>Available in POS</Typography>
-                      <Typography variant="body2" sx={{ color: 'text.secondary', fontWeight: 600 }}>
-                        Enable this to make this category and its items visible to staff during billing.
-                      </Typography>
-                    </Box>
-                    <Switch
-                      checked={formData.is_enabled}
-                      onChange={(e) => setFormData({ ...formData, is_enabled: e.target.checked })}
-                      sx={{
-                        '& .MuiSwitch-switchBase.Mui-checked': { color: '#10b981' },
-                        '& .MuiSwitch-switchBase.Mui-checked + .MuiSwitch-track': { bgcolor: '#10b981' }
-                      }}
-                    />
-                  </Box>
-                </Stack>
-              </Card>
-            </Grid>
-          </Grid>
-        </Box>
-      </Box>
-    );
-  }
+  // Form Dialog rendering removed from here, moved to main return as a Modal
 
   return (
     <Box sx={{ 
@@ -656,7 +477,7 @@ export default function CategoryPage() {
           onClose={() => setOpenDeleteDialog(false)}
           slotProps={{ paper: { sx: { borderRadius: '0.65rem', p: 2, maxWidth: 450 } } }}
         >
-          <DialogTitle sx={{ textAlign: 'center', pb: 0 }}>
+          <DialogTitle component="div" sx={{ textAlign: 'center', pb: 0 }}>
             <Box sx={{ p: 2, borderRadius: '0.65rem', bgcolor: alpha('#ef4444', 0.05), display: 'inline-flex', mb: 2 }}>
               <DeleteIcon sx={{ fontSize: 40, color: '#ef4444' }} />
             </Box>
@@ -695,6 +516,215 @@ export default function CategoryPage() {
               DELETE NOW
             </Button>
           </DialogActions>
+        </Dialog>
+
+        {/* Category Form Dialog */}
+        <Dialog 
+          open={view === 'create' || view === 'edit'} 
+          onClose={handleCloseForm}
+          maxWidth="md"
+          fullWidth
+          scroll="paper"
+          slotProps={{ 
+            paper: { 
+              sx: { 
+                borderRadius: '0.65rem',
+                bgcolor: '#f8fafc' 
+              } 
+            } 
+          }}
+        >
+          <DialogContent sx={{ p: 0, overflowY: 'auto', overflowX: 'hidden', overscrollBehavior: 'contain' }}>
+            {/* Sticky Header */}
+            <Box sx={{ 
+              position: 'sticky', 
+              top: 0, 
+              zIndex: 10, 
+              bgcolor: 'white', 
+              display: 'flex', 
+              alignItems: 'center', 
+              justifyContent: 'space-between', 
+              p: 3, 
+              borderBottom: '1px solid', 
+              borderColor: alpha(theme.palette.divider, 0.1) 
+            }}>
+              <Box>
+                <Typography variant="h5" sx={{ fontWeight: 1000, letterSpacing: '-0.02em', color: '#1a1a1a' }}>
+                  {view === 'create' ? "Add Category" : "Edit Category"}
+                </Typography>
+                <Typography variant="body2" sx={{ color: 'text.secondary', fontWeight: 600 }}>
+                  Fill in the details below to {view === 'create' ? 'create a new' : 'update the'} category.
+                </Typography>
+              </Box>
+              <IconButton 
+                onClick={handleCloseForm} 
+                sx={{ 
+                  bgcolor: alpha(theme.palette.divider, 0.05),
+                  '&:hover': { bgcolor: alpha(theme.palette.error.main, 0.1), color: theme.palette.error.main }
+                }}
+              >
+                <CloseIcon />
+              </IconButton>
+            </Box>
+
+            {/* Scrollable Body Content */}
+            <Box sx={{ p: { xs: 2, md: 4 } }}>
+            <Grid container spacing={3}>
+              <Grid size={{ xs: 12 }}>
+                <Card sx={{ 
+                  p: 3, 
+                  borderRadius: '0.65rem', 
+                  border: '1px solid', 
+                  borderColor: alpha(theme.palette.divider, 0.08), 
+                  boxShadow: 'none',
+                  bgcolor: 'white',
+                }}>
+                  <Stack spacing={4}>
+                    <Box>
+                      <Typography variant="overline" sx={{ fontWeight: 600, color: theme.palette.primary.main, mb: 2, display: 'block', letterSpacing: '0.1em' }}>GENERAL INFORMATION</Typography>
+                      <TextField
+                        fullWidth
+                        label="Category Name"
+                        placeholder="e.g. Italian Pizzas, Refreshments..."
+                        value={formData.name}
+                        onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                        required
+                        variant="outlined"
+                        slotProps={{
+                          input: { sx: { borderRadius: '0.65rem', bgcolor: 'white', fontWeight: 700 } },
+                          inputLabel: { sx: { fontWeight: 700 } }
+                        }}
+                      />
+                    </Box>
+
+                    <Box>
+                      <Typography variant="overline" sx={{ fontWeight: 600, color: theme.palette.primary.main, mb: 2, display: 'block', letterSpacing: '0.1em' }}>CATEGORY VISUALS</Typography>
+                      <Box sx={{ 
+                        display: "flex", 
+                        alignItems: "center", 
+                        flexDirection: { xs: 'column', sm: 'row' },
+                        gap: 4, 
+                        p: 3, 
+                        bgcolor: alpha(theme.palette.primary.main, 0.02), 
+                        borderRadius: '0.65rem', 
+                        border: '2px dashed',
+                        borderColor: alpha(theme.palette.primary.main, 0.1)
+                      }}>
+                        <Avatar
+                          src={getImageUrl(imagePreview)}
+                          variant="rounded"
+                          sx={{ 
+                            width: 120, 
+                            height: 120, 
+                            bgcolor: "white", 
+                            border: "1px solid",
+                            borderColor: alpha(theme.palette.divider, 0.1),
+                            borderRadius: '0.65rem',
+                            boxShadow: '0 8px 20px rgba(0,0,0,0.05)'
+                          }}
+                        >
+                          <ImageIcon sx={{ color: alpha('#1a1a1a', 0.1), fontSize: 50 }} />
+                        </Avatar>
+                        <Box sx={{ textAlign: { xs: 'center', sm: 'left' } }}>
+                          <Typography variant="subtitle1" sx={{ fontWeight: 600, mb: 1 }}>Cover Image</Typography>
+                          <Typography variant="body2" sx={{ color: 'text.secondary', fontWeight: 600, mb: 3 }}>
+                            Recommended size: 512x512px. PNG, JPG or WEBP formats supported.
+                          </Typography>
+                          <label htmlFor="category-image">
+                            <Input
+                              id="category-image"
+                              type="file"
+                              inputProps={{ accept: "image/*" }}
+                              sx={{ display: "none" }}
+                              onChange={handleImageChange}
+                            />
+                            <Button
+                              variant="outlined"
+                              component="span"
+                              startIcon={<ImageIcon />}
+                              sx={{ 
+                                borderRadius: '0.65rem', 
+                                fontWeight: 600, 
+                                textTransform: 'none', 
+                                px: 3,
+                                borderColor: alpha('#1a1a1a', 0.2),
+                                color: '#1a1a1a',
+                                '&:hover': { borderColor: '#1a1a1a', bgcolor: alpha('#1a1a1a', 0.05) }
+                              }}
+                            >
+                              Upload New Image
+                            </Button>
+                          </label>
+                        </Box>
+                      </Box>
+                    </Box>
+
+                    <Box sx={{ 
+                      display: "flex", 
+                      alignItems: "center", 
+                      justifyContent: "space-between", 
+                      p: 3, 
+                      bgcolor: alpha('#10b981', 0.05), 
+                      borderRadius: '0.65rem', 
+                      border: "1px solid",
+                      borderColor: alpha('#10b981', 0.1)
+                    }}>
+                      <Box>
+                        <Typography variant="subtitle1" sx={{ fontWeight: 600 }}>Available in POS</Typography>
+                        <Typography variant="body2" sx={{ color: 'text.secondary', fontWeight: 600 }}>
+                          Enable this to make this category and its items visible to staff during billing.
+                        </Typography>
+                      </Box>
+                      <Switch
+                        checked={formData.is_enabled}
+                        onChange={(e) => setFormData({ ...formData, is_enabled: e.target.checked })}
+                        sx={{
+                          '& .MuiSwitch-switchBase.Mui-checked': { color: '#10b981' },
+                          '& .MuiSwitch-switchBase.Mui-checked + .MuiSwitch-track': { bgcolor: '#10b981' }
+                        }}
+                      />
+                    </Box>
+                  </Stack>
+                </Card>
+              </Grid>
+            </Grid>
+            </Box>
+
+            {/* Sticky Footer */}
+            <Box sx={{ 
+              position: 'sticky', 
+              bottom: 0, 
+              zIndex: 10, 
+              bgcolor: 'white', 
+              p: 3, 
+              borderTop: '1px solid', 
+              borderColor: alpha(theme.palette.divider, 0.1), 
+              display: 'flex', 
+              justifyContent: 'flex-end', 
+              gap: 2
+            }}>
+              <Button 
+                onClick={handleCloseForm}
+                sx={{ fontWeight: 700, color: 'text.secondary' }}
+              >
+                CANCEL
+              </Button>
+              <Button 
+                variant="contained" 
+                onClick={handleSubmit}
+                sx={{ 
+                  borderRadius: '0.65rem', 
+                  fontWeight: 600, 
+                  px: 4, 
+                  background: `linear-gradient(135deg, ${theme.palette.primary.main} 0%, ${theme.palette.primary.dark} 100%)`,
+                  boxShadow: `0 8px 20px ${alpha(theme.palette.primary.main, 0.3)}`,
+                  '&:hover': { transform: 'translateY(-2px)', boxShadow: `0 12px 25px ${alpha(theme.palette.primary.main, 0.4)}` }
+                }}
+              >
+                SAVE CHANGES
+              </Button>
+            </Box>
+          </DialogContent>
         </Dialog>
       </Box>
     </Box>

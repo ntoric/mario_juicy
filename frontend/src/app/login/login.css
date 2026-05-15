@@ -6,7 +6,7 @@
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  background: linear-gradient(135deg, #FCF9EA 0%, #F5F0D5 100%);
+  background: linear-gradient(135deg, #E9762B 0%, #D35400 100%);
   padding: 1.5rem;
   transition: background 0.5s ease;
 }
@@ -36,6 +36,14 @@
   display: flex;
   flex-direction: column;
   align-items: center;
+}
+
+.mobile-brand-title {
+  color: white;
+  font-weight: 800;
+  font-size: 1.5rem;
+  letter-spacing: 0.05em;
+  margin-top: 0.5rem;
 }
 
 .brand-icon-wrapper {
@@ -150,7 +158,6 @@
 /* Mobile-First Immersive View */
 @media (max-width: 480px) {
   .login-container {
-    background: linear-gradient(135deg, #E9762B 0%, #D35400 100%);
     padding: 0;
     justify-content: flex-end; /* Push card to bottom like a sheet */
   }
@@ -187,13 +194,5 @@
   
   .login-title {
     font-size: 1.65rem;
-  }
-
-  .mobile-brand-title {
-    color: white;
-    font-weight: 800;
-    font-size: 1.5rem;
-    letter-spacing: 0.05em;
-    margin-top: 0.5rem;
   }
 }

@@ -23,20 +23,18 @@ import {
   alpha,
   keyframes,
   Card,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
 } from "@mui/material";
 import { 
   ImageOutlined as ImageIcon,
-  ArrowBackOutlined as ArrowBackIcon,
-  SaveOutlined as SaveIcon,
+  CloseOutlined as CloseIcon,
 } from "@mui/icons-material";
 import { Item } from "@/services/itemService";
 import { categoryService, Category } from "@/services/categoryService";
 import { getImageUrl } from "@/lib/getImageUrl";
-
-const fadeIn = keyframes`
-  from { opacity: 0; }
-  to { opacity: 1; }
-`;
 
 interface ItemFormProps {
   open: boolean;
@@ -76,12 +74,13 @@ export default function ItemForm({
         console.error("Failed to fetch categories:", error);
       }
     };
-    if (open) {
+    if (open && categories.length === 0) {
         fetchCategories();
     }
-  }, [open]);
+  }, [open, categories.length]);
 
   useEffect(() => {
+    if (!open) return; // Prevent heavy state updates during close animation to fix lag
     if (mode === "edit" && item) {
       setFormData({
         code: item.code || "",
@@ -140,74 +139,65 @@ export default function ItemForm({
     }
   };
 
-  if (!open) return null;
-
   return (
-    <Box sx={{ 
-      flexGrow: 1, 
-      bgcolor: 'transparent', 
-      display: 'flex', 
-      flexDirection: 'column',
-      minHeight: '100%',
-      animation: `${fadeIn} 0.3s ease-out`,
-      position: 'relative',
-      p: { xs: 2, md: 4 }
-    }}>
-      {/* Background Blobs */}
-      <Box sx={{ position: 'absolute', top: -100, right: -100, width: 400, height: 400, background: `radial-gradient(circle, ${alpha(theme.palette.primary.main, 0.05)} 0%, transparent 70%)`, borderRadius: '50%', zIndex: 0 }} />
-      
-      <Box sx={{ position: 'relative', zIndex: 1, maxWidth: 900, mx: 'auto', width: '100%' }}>
-        <Box sx={{ mb: 4, display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexDirection: { xs: 'column', sm: 'row' }, gap: 3 }}>
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-            <IconButton 
-              onClick={onClose} 
-              sx={{ 
-                bgcolor: 'white', 
-                border: '1px solid', 
-                borderColor: alpha(theme.palette.divider, 0.1), 
-                borderRadius: '0.65rem',
-                boxShadow: '0 4px 12px rgba(0,0,0,0.03)',
-                '&:hover': { bgcolor: alpha(theme.palette.primary.main, 0.05), color: theme.palette.primary.main }
-              }}
-            >
-              <ArrowBackIcon />
-            </IconButton>
-            <Box>
-              <Typography variant="h4" sx={{ fontWeight: 1000, letterSpacing: '-0.02em', color: '#1a1a1a' }}>
-                {mode === 'create' ? "Add New Item" : "Edit Menu Item"}
-              </Typography>
-              <Typography variant="body2" sx={{ color: 'text.secondary', fontWeight: 600 }}>
-                {mode === 'create' ? 'Define a new offering for your menu catalog.' : `Update details for ${item?.name}.`}
-              </Typography>
-            </Box>
+    <Dialog 
+      open={open} 
+      onClose={onClose}
+      maxWidth="md"
+      fullWidth
+      scroll="paper"
+      slotProps={{ 
+        paper: { 
+          sx: { 
+            borderRadius: '0.65rem',
+            bgcolor: '#f8fafc' 
+          } 
+        } 
+      }}
+    >
+      <DialogContent sx={{ p: 0, overflowY: 'auto', overflowX: 'hidden', overscrollBehavior: 'contain' }}>
+        {/* Sticky Header */}
+        <Box sx={{ 
+          position: 'sticky', 
+          top: 0, 
+          zIndex: 10, 
+          bgcolor: 'white', 
+          display: 'flex', 
+          alignItems: 'center', 
+          justifyContent: 'space-between', 
+          p: 3, 
+          borderBottom: '1px solid', 
+          borderColor: alpha(theme.palette.divider, 0.1) 
+        }}>
+          <Box>
+            <Typography variant="h5" sx={{ fontWeight: 1000, letterSpacing: '-0.02em', color: '#1a1a1a' }}>
+              {mode === 'create' ? "Add New Item" : "Edit Menu Item"}
+            </Typography>
+            <Typography variant="body2" sx={{ color: 'text.secondary', fontWeight: 600 }}>
+              {mode === 'create' ? 'Define a new offering for your menu catalog.' : `Update details for ${item?.name}.`}
+            </Typography>
           </Box>
-          <Button 
-            variant="contained" 
-            onClick={handleFormSubmit}
-            disabled={loading || !formData.name.trim()}
+          <IconButton 
+            onClick={onClose} 
             sx={{ 
-              borderRadius: '0.65rem', 
-              fontWeight: 1000, 
-              px: 4, 
-              height: 48,
-              background: `linear-gradient(135deg, ${theme.palette.primary.main} 0%, ${theme.palette.primary.dark} 100%)`,
-              boxShadow: `0 8px 20px ${alpha(theme.palette.primary.main, 0.3)}`,
-              '&:hover': { transform: 'translateY(-2px)', boxShadow: `0 12px 25px ${alpha(theme.palette.primary.main, 0.4)}` },
-              '&.Mui-disabled': { bgcolor: alpha(theme.palette.primary.main, 0.3) }
+              bgcolor: alpha(theme.palette.divider, 0.05),
+              '&:hover': { bgcolor: alpha(theme.palette.error.main, 0.1), color: theme.palette.error.main }
             }}
           >
-            {loading ? "SAVING..." : "SAVE CHANGES"}
-          </Button>
+            <CloseIcon />
+          </IconButton>
         </Box>
 
+        {/* Scrollable Body Content */}
+        <Box sx={{ p: { xs: 2, md: 4 } }}>
         <Grid container spacing={3}>
           <Grid size={{ xs: 12 }}>
             <Card sx={{ 
-              p: 4, 
+              p: 3, 
               borderRadius: '0.65rem', 
               border: '1px solid', 
               borderColor: alpha(theme.palette.divider, 0.08), 
-              boxShadow: '0 20px 50px rgba(0,0,0,0.04)',
+              boxShadow: 'none',
               bgcolor: 'white',
             }}>
               <Stack spacing={4}>
@@ -229,8 +219,8 @@ export default function ItemForm({
                       src={getImageUrl(imagePreview)}
                       variant="rounded"
                       sx={{ 
-                        width: 140, 
-                        height: 140, 
+                        width: 120, 
+                        height: 120, 
                         bgcolor: "white", 
                         border: "1px solid",
                         borderColor: alpha(theme.palette.divider, 0.1),
@@ -238,7 +228,7 @@ export default function ItemForm({
                         boxShadow: '0 8px 20px rgba(0,0,0,0.05)'
                       }}
                     >
-                      <ImageIcon sx={{ color: alpha('#1a1a1a', 0.1), fontSize: 60 }} />
+                      <ImageIcon sx={{ color: alpha('#1a1a1a', 0.1), fontSize: 50 }} />
                     </Avatar>
                     <Box sx={{ textAlign: { xs: 'center', sm: 'left' } }}>
                       <Typography variant="subtitle1" sx={{ fontWeight: 1000, mb: 1 }}>Item Photo</Typography>
@@ -393,7 +383,45 @@ export default function ItemForm({
             </Card>
           </Grid>
         </Grid>
-      </Box>
-    </Box>
+        </Box>
+
+        {/* Sticky Footer */}
+        <Box sx={{ 
+          position: 'sticky', 
+          bottom: 0, 
+          zIndex: 10, 
+          bgcolor: 'white', 
+          p: 3, 
+          borderTop: '1px solid', 
+          borderColor: alpha(theme.palette.divider, 0.1), 
+          display: 'flex', 
+          justifyContent: 'flex-end', 
+          gap: 2
+        }}>
+          <Button 
+            onClick={onClose}
+            sx={{ fontWeight: 700, color: 'text.secondary' }}
+          >
+            CANCEL
+          </Button>
+          <Button 
+            variant="contained" 
+            onClick={handleFormSubmit}
+            disabled={loading || !formData.name.trim()}
+            sx={{ 
+              borderRadius: '0.65rem', 
+              fontWeight: 1000, 
+              px: 4, 
+              background: `linear-gradient(135deg, ${theme.palette.primary.main} 0%, ${theme.palette.primary.dark} 100%)`,
+              boxShadow: `0 8px 20px ${alpha(theme.palette.primary.main, 0.3)}`,
+              '&:hover': { transform: 'translateY(-2px)', boxShadow: `0 12px 25px ${alpha(theme.palette.primary.main, 0.4)}` },
+              '&.Mui-disabled': { bgcolor: alpha(theme.palette.primary.main, 0.3) }
+            }}
+          >
+            {loading ? "SAVING..." : "SAVE CHANGES"}
+          </Button>
+        </Box>
+      </DialogContent>
+    </Dialog>
   );
 }

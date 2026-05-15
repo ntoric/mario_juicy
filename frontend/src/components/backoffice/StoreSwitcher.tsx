@@ -11,6 +11,7 @@ import {
   alpha,
   useTheme
 } from '@mui/material';
+import type { SxProps, Theme } from '@mui/material/styles';
 import StoreIcon from '@mui/icons-material/StoreOutlined';
 import KeyboardArrowDownIcon from '@mui/icons-material/KeyboardArrowDownOutlined';
 import { useAuth } from '@/context/AuthContext';
@@ -18,9 +19,10 @@ import { storeService, Store } from '@/services/storeService';
 
 interface StoreSwitcherProps {
   fullWidth?: boolean;
+  sx?: SxProps<Theme>;
 }
 
-const StoreSwitcher: React.FC<StoreSwitcherProps> = ({ fullWidth = false }) => {
+const StoreSwitcher: React.FC<StoreSwitcherProps> = ({ fullWidth = false, sx }) => {
   const theme = useTheme();
   const { user, activeStoreId, setActiveStore, activeStore } = useAuth();
   const [stores, setStores] = useState<Store[]>([]);
@@ -68,7 +70,7 @@ const StoreSwitcher: React.FC<StoreSwitcherProps> = ({ fullWidth = false }) => {
   // For non-super admins, just show the store name without the switcher functionality
   if (!isSuperAdmin) {
     return (
-      <Box sx={{ 
+      <Box sx={[{ 
         display: 'flex', 
         alignItems: 'center', 
         gap: 1, 
@@ -77,7 +79,7 @@ const StoreSwitcher: React.FC<StoreSwitcherProps> = ({ fullWidth = false }) => {
         bgcolor: alpha(theme.palette.primary.main, 0.05),
         borderRadius: '0.65rem',
         border: `1px solid ${alpha(theme.palette.primary.main, 0.1)}`
-      }}>
+      }, ...(Array.isArray(sx) ? sx : [sx])]}>
         <StoreIcon sx={{ fontSize: 20, color: theme.palette.primary.main }} />
         <Typography variant="body2" sx={{ fontWeight: 800, color: theme.palette.primary.main }}>
           {activeStore?.name || 'Loading Store...'}
@@ -87,7 +89,7 @@ const StoreSwitcher: React.FC<StoreSwitcherProps> = ({ fullWidth = false }) => {
   }
 
   return (
-    <Box sx={{ width: fullWidth ? '100%' : 'auto' }}>
+    <Box sx={[{ width: fullWidth ? '100%' : 'auto' }, ...(Array.isArray(sx) ? sx : [sx])]}>
       <Button
         variant="outlined"
         onClick={handleClick}
