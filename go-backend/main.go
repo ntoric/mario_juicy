@@ -44,7 +44,7 @@ func main() {
 
 	config.ConnectDatabase()
 	config.ConnectRedis()
-	config.DB.AutoMigrate(&models.User{}, &models.Group{}, &models.SupportSettings{}, &models.Store{}, &models.Notification{}, &models.BusinessConfig{})
+	config.DB.AutoMigrate(&models.User{}, &models.Group{}, &models.SupportSettings{}, &models.Store{}, &models.Notification{}, &models.BusinessConfig{}, &models.Table{})
 	seedGroups()
 	seedSupportSettings()
 
@@ -67,7 +67,7 @@ func main() {
 			return true 
 		},
 		AllowMethods:     []string{"GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"},
-		AllowHeaders:     []string{"Origin", "Content-Type", "Accept", "Authorization", "X-Store-ID", "X-Requested-With", "Cache-Control", "Access-Control-Allow-Private-Network"},
+		AllowHeaders:     []string{"Origin", "Content-Type", "Accept", "Authorization", "X-Store-ID", "X-Is-Mobile", "X-Is-Desktop", "X-Requested-With", "Cache-Control", "Access-Control-Allow-Private-Network"},
 		ExposeHeaders:    []string{"Content-Length", "Access-Control-Allow-Origin"},
 		AllowCredentials: true,
 	}))

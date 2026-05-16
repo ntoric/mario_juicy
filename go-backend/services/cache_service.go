@@ -46,6 +46,11 @@ func GetTablesCacheKey(storeID uint) string {
 	return fmt.Sprintf("store:%d:tables", storeID)
 }
 
+func InvalidateTablesCache(storeID uint) {
+	InvalidateCache(GetTablesCacheKey(storeID))
+	InvalidateCache(GetTablesCacheKey(storeID) + ":mobile")
+}
+
 // Generic Cache Methods
 func SetCache(key string, data interface{}, expiration time.Duration) {
 	if !isCacheEnabled() || config.Redis == nil {

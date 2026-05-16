@@ -25,6 +25,8 @@ type TableResponse struct {
 	IsActive         bool          `json:"is_active"`
 	PosX             float64       `json:"pos_x"`
 	PosY             float64       `json:"pos_y"`
+	PosXMobile       float64       `json:"pos_x_mobile"`
+	PosYMobile       float64       `json:"pos_y_mobile"`
 	Shape            string        `json:"shape,omitempty"`
 	ActiveOrder      interface{}   `json:"active_order"`
 	ActiveOrders     []interface{} `json:"active_orders"`
@@ -42,6 +44,9 @@ func GetTables(c *gin.Context) {
 	storeID := storeIDVal.(uint)
 
 	cacheKey := services.GetTablesCacheKey(storeID)
+	if utils.IsMobileRequest(c) {
+		cacheKey += ":mobile"
+	}
 	var response []TableResponse
 	if services.GetCache(cacheKey, &response) {
 		utils.Debug("Cache hit for tables", zap.Uint("storeID", storeID))
@@ -92,14 +97,26 @@ func GetTables(c *gin.Context) {
 			activeOrder = activeOrdersResp[0]
 		}
 
+		posX := t.PosX
+		posY := t.PosY
+		if utils.IsMobileRequest(c) {
+			// Fallback to desktop positions if mobile positions are unset (0)
+			if t.PosXMobile != 0 || t.PosYMobile != 0 {
+				posX = t.PosXMobile
+				posY = t.PosYMobile
+			}
+		}
+
 		response = append(response, TableResponse{
 			ID:               t.ID,
 			Number:           t.Number,
 			Capacity:         t.Capacity,
 			Status:           t.Status,
 			IsActive:         t.IsActive,
-			PosX:             t.PosX,
-			PosY:             t.PosY,
+			PosX:             posX,
+			PosY:             posY,
+			PosXMobile:       t.PosXMobile,
+			PosYMobile:       t.PosYMobile,
 			Shape:            "RECT",
 			ActiveOrder:      activeOrder,
 			ActiveOrders:     activeOrdersResp,
@@ -128,6 +145,14 @@ func CreateTable(c *gin.Context) {
 	}
 
 	table.Shape = "RECT"
+	// Initialize mobile positions if not provided
+	if table.PosXMobile == 0 {
+		table.PosXMobile = table.PosX
+	}
+	if table.PosYMobile == 0 {
+		table.PosYMobile = table.PosY
+	}
+
 	if err := config.DB.Create(&table).Error; err != nil {
 		utils.ErrorResponse(c, http.StatusInternalServerError, err.Error())
 		return
@@ -135,10 +160,10 @@ func CreateTable(c *gin.Context) {
 
 	// Invalidate Cache
 	if table.StoreID != nil {
-		services.InvalidateCache(services.GetTablesCacheKey(*table.StoreID))
+		services.InvalidateTablesCache(*table.StoreID)
 	}
 
-	websocket.Broadcast("TABLE_UPDATED", table)
+	websocket.Broadcast("TABLE_UPDATED", gin.H{"id": table.ID, "status": table.Status})
 	utils.SuccessResponse(c, http.StatusCreated, table)
 }
 
@@ -156,6 +181,17 @@ func UpdateTable(c *gin.Context) {
 		return
 	}
 
+	if utils.IsMobileRequest(c) {
+		if val, ok := input["pos_x"]; ok {
+			input["pos_x_mobile"] = val
+			delete(input, "pos_x")
+		}
+		if val, ok := input["pos_y"]; ok {
+			input["pos_y_mobile"] = val
+			delete(input, "pos_y")
+		}
+	}
+
 	if err := config.DB.Model(&table).Updates(input).Error; err != nil {
 		utils.ErrorResponse(c, http.StatusInternalServerError, err.Error())
 		return
@@ -163,10 +199,10 @@ func UpdateTable(c *gin.Context) {
 
 	// Invalidate Cache
 	if table.StoreID != nil {
-		services.InvalidateCache(services.GetTablesCacheKey(*table.StoreID))
+		services.InvalidateTablesCache(*table.StoreID)
 	}
 
-	websocket.Broadcast("TABLE_UPDATED", table)
+	websocket.Broadcast("TABLE_UPDATED", gin.H{"id": table.ID, "status": table.Status})
 	utils.SuccessResponse(c, http.StatusOK, table)
 }
 
@@ -187,7 +223,7 @@ func DeleteTable(c *gin.Context) {
 
 	// Invalidate Cache
 	if storeID != nil {
-		services.InvalidateCache(services.GetTablesCacheKey(*storeID))
+		services.InvalidateTablesCache(*storeID)
 	}
 
 	websocket.Broadcast("TABLE_UPDATED", gin.H{"id": id})
@@ -196,19 +232,25 @@ func DeleteTable(c *gin.Context) {
 
 func UpdateTablePosition(c *gin.Context) {
 	id := c.Param("id")
-	var input struct {
-		PosX  float64 `json:"pos_x"`
-		PosY  float64 `json:"pos_y"`
-	}
+	var input map[string]interface{}
 	if err := c.ShouldBindJSON(&input); err != nil {
 		utils.ErrorResponse(c, http.StatusBadRequest, err.Error())
 		return
 	}
 
-	if err := config.DB.Model(&models.Table{}).Where("id = ?", id).Updates(map[string]interface{}{
-		"pos_x": input.PosX,
-		"pos_y": input.PosY,
-	}).Error; err != nil {
+	if utils.IsMobileRequest(c) {
+		// If mobile, update mobile fields if they are passed as generic pos_x/pos_y
+		if val, ok := input["pos_x"]; ok {
+			input["pos_x_mobile"] = val
+			delete(input, "pos_x")
+		}
+		if val, ok := input["pos_y"]; ok {
+			input["pos_y_mobile"] = val
+			delete(input, "pos_y")
+		}
+	}
+
+	if err := config.DB.Model(&models.Table{}).Where("id = ?", id).Updates(input).Error; err != nil {
 		utils.ErrorResponse(c, http.StatusInternalServerError, err.Error())
 		return
 	}
@@ -216,7 +258,7 @@ func UpdateTablePosition(c *gin.Context) {
 	// Invalidate Cache
 	storeIDVal, _ := c.Get("active_store_id")
 	if storeIDVal != nil {
-		services.InvalidateCache(services.GetTablesCacheKey(storeIDVal.(uint)))
+		services.InvalidateTablesCache(storeIDVal.(uint))
 	}
 
 	websocket.Broadcast("TABLE_UPDATED", gin.H{"id": id})
@@ -233,7 +275,7 @@ func ReleaseTable(c *gin.Context) {
 	// Invalidate Cache
 	storeIDVal, _ := c.Get("active_store_id")
 	if storeIDVal != nil {
-		services.InvalidateCache(services.GetTablesCacheKey(storeIDVal.(uint)))
+		services.InvalidateTablesCache(storeIDVal.(uint))
 	}
 
 	websocket.Broadcast("TABLE_UPDATED", gin.H{"id": id})
@@ -250,7 +292,7 @@ func RecalculateAllTableStatuses(c *gin.Context) {
 	// Invalidate Cache
 	storeIDVal, _ := c.Get("active_store_id")
 	if storeIDVal != nil {
-		services.InvalidateCache(services.GetTablesCacheKey(storeIDVal.(uint)))
+		services.InvalidateTablesCache(storeIDVal.(uint))
 	}
 
 	websocket.Broadcast("TABLE_UPDATED", nil)
@@ -470,7 +512,7 @@ func CreateOrder(c *gin.Context) {
 
 	// Invalidate Table Cache
 	if order.StoreID != nil {
-		services.InvalidateCache(services.GetTablesCacheKey(*order.StoreID))
+		services.InvalidateTablesCache(*order.StoreID)
 	}
 
 	utils.Info("Order created", zap.Uint("orderID", order.ID), zap.String("type", order.OrderType), zap.String("customer", order.CustomerName))
@@ -617,7 +659,7 @@ func UpdateOrder(c *gin.Context) {
 
 	// Invalidate Table Cache
 	if order.StoreID != nil {
-		services.InvalidateCache(services.GetTablesCacheKey(*order.StoreID))
+		services.InvalidateTablesCache(*order.StoreID)
 	}
 
 	websocket.Broadcast("ORDER_UPDATED", MapOrderToResponse(order))
@@ -652,7 +694,7 @@ func DeleteOrder(c *gin.Context) {
 
 	// Invalidate Table Cache
 	if order.StoreID != nil {
-		services.InvalidateCache(services.GetTablesCacheKey(*order.StoreID))
+		services.InvalidateTablesCache(*order.StoreID)
 	}
 
 	websocket.Broadcast("ORDER_DELETED", gin.H{"id": id})
@@ -684,7 +726,7 @@ func SendToKitchen(c *gin.Context) {
 
 	// Invalidate Table Cache
 	if order.StoreID != nil {
-		services.InvalidateCache(services.GetTablesCacheKey(*order.StoreID))
+		services.InvalidateTablesCache(*order.StoreID)
 	}
 
 	websocket.Broadcast("ORDER_UPDATED", gin.H{"id": order.ID, "status": status})
@@ -714,7 +756,7 @@ func ServeAllReady(c *gin.Context) {
 
 	// Invalidate Table Cache
 	if order.StoreID != nil {
-		services.InvalidateCache(services.GetTablesCacheKey(*order.StoreID))
+		services.InvalidateTablesCache(*order.StoreID)
 	}
 
 	websocket.Broadcast("ORDER_UPDATED", gin.H{"id": order.ID, "status": "SERVED"})
@@ -749,7 +791,7 @@ func CancelOrder(c *gin.Context) {
 
 	// Invalidate Table Cache
 	if order.StoreID != nil {
-		services.InvalidateCache(services.GetTablesCacheKey(*order.StoreID))
+		services.InvalidateTablesCache(*order.StoreID)
 	}
 
 	config.DB.Preload("Table").Preload("Items.Item").Preload("Waiter").Preload("Invoice").First(&order, id)
@@ -832,7 +874,7 @@ func ChangeOrderTable(c *gin.Context) {
 
 	// Invalidate Table Cache
 	if order.StoreID != nil {
-		services.InvalidateCache(services.GetTablesCacheKey(*order.StoreID))
+		services.InvalidateTablesCache(*order.StoreID)
 	}
 
 	websocket.Broadcast("ORDER_UPDATED", MapOrderToResponse(order))
@@ -882,7 +924,7 @@ func UpdatePaymentStatus(c *gin.Context) {
 
 	// Invalidate Table Cache
 	if order.StoreID != nil {
-		services.InvalidateCache(services.GetTablesCacheKey(*order.StoreID))
+		services.InvalidateTablesCache(*order.StoreID)
 	}
 
 	utils.SuccessResponse(c, http.StatusOK, MapOrderToResponse(order))

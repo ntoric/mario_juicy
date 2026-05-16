@@ -30,10 +30,13 @@ export const rawFetch = async (endpoint: string, options: RequestInit = {}) => {
 
   const isFormData = options.body instanceof FormData;
 
+  const isMobile = typeof window !== 'undefined' && window.innerWidth < 600;
+
   const headers = {
     ...(!isFormData && { 'Content-Type': 'application/json' }),
     ...(token && { Authorization: `Bearer ${token}` }),
     ...(storeId && { 'X-Store-ID': storeId }),
+    'X-Is-Mobile': isMobile ? 'true' : 'false',
     ...options.headers,
   } as Record<string, string>;
 

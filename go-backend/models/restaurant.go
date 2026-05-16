@@ -12,9 +12,11 @@ type Table struct {
 	Capacity  int       `gorm:"default:2" json:"capacity"`
 	Status    string    `gorm:"size:20;default:'VACANT'" json:"status"`
 	IsActive  bool      `gorm:"default:true" json:"is_active"`
-	PosX      float64   `gorm:"column:pos_x;default:10.0" json:"pos_x"`
-	PosY      float64   `gorm:"column:pos_y;default:10.0" json:"pos_y"`
-	Shape     string    `gorm:"size:10;not null;default:'RECT'" json:"shape"`
+	PosX       float64   `gorm:"column:pos_x;default:10.0" json:"pos_x"`
+	PosY       float64   `gorm:"column:pos_y;default:10.0" json:"pos_y"`
+	PosXMobile float64   `gorm:"column:pos_x_mobile;default:10.0" json:"pos_x_mobile"`
+	PosYMobile float64   `gorm:"column:pos_y_mobile;default:10.0" json:"pos_y_mobile"`
+	Shape      string    `gorm:"size:10;not null;default:'RECT'" json:"shape"`
 	CreatedAt time.Time `json:"created_at"`
 	UpdatedAt time.Time `json:"updated_at"`
 }

@@ -181,13 +181,15 @@ Most endpoints require the following headers:
       "number": "T1",
       "capacity": 4,
       "pos_x": 100.5,
-      "pos_y": 200.0
+      "pos_y": 200.0,
+      "pos_x_mobile": 50.0,
+      "pos_y_mobile": 50.0
     }
     ```
 - `PATCH /restaurants/tables/:id/`: Update table details.
 - `DELETE /restaurants/tables/:id/`: Delete a table.
 - `PATCH /restaurants/tables/:id/update_position/`: Update table layout position.
-  - **Request Body**: `{"pos_x": 150.0, "pos_y": 250.0}`
+  - **Request Body**: `{"pos_x": 150.0, "pos_y": 250.0, "pos_x_mobile": 60.0, "pos_y_mobile": 70.0}` (Fields are optional)
 - `POST /restaurants/tables/:id/release/`: Manually release a table to VACANT.
 - `POST /restaurants/tables/recalculate_all/`: Recalculate all table statuses.
 

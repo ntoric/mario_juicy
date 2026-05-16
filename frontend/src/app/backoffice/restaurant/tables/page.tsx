@@ -121,7 +121,7 @@ export default function TableMapPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [editMode, setEditMode] = useState(false);
-  const [pending, setPending] = useState<Record<number, { pos_x: number; pos_y: number }>>({});
+  const [pending, setPending] = useState<Record<number, { pos_x?: number; pos_y?: number; pos_x_mobile?: number; pos_y_mobile?: number }>>({});
   const [saving, setSaving] = useState(false);
   const [saveFeedback, setSaveFeedback] = useState(false);
   const [dragging, setDragging] = useState<DragState | null>(null);
@@ -208,11 +208,18 @@ export default function TableMapPage() {
     if (!editMode) return;
     e.preventDefault();
     (e.target as HTMLElement).setPointerCapture(e.pointerId);
+    const startPosX = isMobile 
+      ? (pending[table.id]?.pos_x_mobile ?? table.pos_x_mobile)
+      : (pending[table.id]?.pos_x ?? table.pos_x);
+    const startPosY = isMobile
+      ? (pending[table.id]?.pos_y_mobile ?? table.pos_y_mobile)
+      : (pending[table.id]?.pos_y ?? table.pos_y);
+
     setDragging({
       tableId: table.id,
       startMouseX: e.clientX, startMouseY: e.clientY,
-      startPosX: pending[table.id]?.pos_x ?? table.pos_x,
-      startPosY: pending[table.id]?.pos_y ?? table.pos_y,
+      startPosX,
+      startPosY,
     });
   };
 
@@ -222,8 +229,13 @@ export default function TableMapPage() {
     if (!rect) return;
     const newX = Math.max(1, Math.min(88, dragging.startPosX + ((e.clientX - dragging.startMouseX) / rect.width) * 100));
     const newY = Math.max(1, Math.min(88, dragging.startPosY + ((e.clientY - dragging.startMouseY) / rect.height) * 100));
-    setPending(p => ({ ...p, [dragging.tableId]: { pos_x: newX, pos_y: newY } }));
-  }, [dragging]);
+    
+    if (isMobile) {
+      setPending(p => ({ ...p, [dragging.tableId]: { ...p[dragging.tableId], pos_x_mobile: newX, pos_y_mobile: newY } }));
+    } else {
+      setPending(p => ({ ...p, [dragging.tableId]: { ...p[dragging.tableId], pos_x: newX, pos_y: newY } }));
+    }
+  }, [dragging, isMobile]);
 
   const onPointerUp = useCallback(() => setDragging(null), []);
 
@@ -232,7 +244,7 @@ export default function TableMapPage() {
     try {
       await Promise.all(
         Object.entries(pending).map(([id, pos]) =>
-          restaurantService.updateTablePosition(Number(id), pos.pos_x, pos.pos_y)
+          restaurantService.updateTablePosition(Number(id), pos)
         )
       );
       setPending({});
@@ -256,7 +268,7 @@ export default function TableMapPage() {
     const startX = 2;
     const startY = 4;
 
-    const newPending: Record<number, { pos_x: number; pos_y: number }> = { ...pending };
+    const newPending: Record<number, { pos_x?: number; pos_y?: number; pos_x_mobile?: number; pos_y_mobile?: number }> = { ...pending };
     
     // Sort tables by current position or name to keep some order
     const sortedTables = [...tables].sort((a, b) => {
@@ -268,10 +280,14 @@ export default function TableMapPage() {
     sortedTables.forEach((table, index) => {
       const row = Math.floor(index / cols);
       const col = index % cols;
-      newPending[table.id] = {
-        pos_x: Math.min(88, startX + col * gapX),
-        pos_y: Math.min(88, startY + row * gapY)
-      };
+      const posX = Math.min(88, startX + col * gapX);
+      const posY = Math.min(88, startY + row * gapY);
+
+      if (isMobile) {
+        newPending[table.id] = { ...newPending[table.id], pos_x_mobile: posX, pos_y_mobile: posY };
+      } else {
+        newPending[table.id] = { ...newPending[table.id], pos_x: posX, pos_y: posY };
+      }
     });
     
     setPending(newPending);
@@ -498,7 +514,16 @@ export default function TableMapPage() {
           height: '100%'
         } : { position: 'relative', width: '100%', height: '100%', p: 4 }}>
           {visible.map(table => {
-            const pos = pending[table.id] ?? { pos_x: table.pos_x, pos_y: table.pos_y };
+            const pos = isMobile 
+              ? { 
+                  x: pending[table.id]?.pos_x_mobile ?? table.pos_x_mobile, 
+                  y: pending[table.id]?.pos_y_mobile ?? table.pos_y_mobile 
+                }
+              : { 
+                  x: pending[table.id]?.pos_x ?? table.pos_x, 
+                  y: pending[table.id]?.pos_y ?? table.pos_y 
+                };
+            
             const cfg = STATUS_CONFIG[table.status] ?? STATUS_CONFIG['VACANT'];
             const isDragging = dragging?.tableId === table.id;
             const orderContent = !editMode && table.active_order ? renderOrderOverview(table) : null;
@@ -516,8 +541,8 @@ export default function TableMapPage() {
                   onClick={() => { if (!editMode && !dragging) { setOrderTable(table); setOrderDialogOpen(true); } }}
                 sx={{
                   position: isMobile ? 'relative' : 'absolute',
-                  left: isMobile ? 'auto' : `${pos.pos_x}%`,
-                  top: isMobile ? 'auto' : `${pos.pos_y}%`,
+                  left: isMobile ? 'auto' : `${pos.x}%`,
+                  top: isMobile ? 'auto' : `${pos.y}%`,
                   width: isMobile ? '100%' : { sm: '8.5%' },
                   minWidth: isMobile ? 'auto' : 80,
                   maxWidth: isMobile ? 'none' : 110,
@@ -672,7 +697,9 @@ export default function TableMapPage() {
                 }
                 await restaurantService.createTable({ 
                   number: addForm.number, capacity: Number(addForm.capacity), 
-                  status: addForm.status as any, pos_x: nextX, pos_y: nextY 
+                  status: addForm.status as any, 
+                  pos_x: nextX, pos_y: nextY,
+                  pos_x_mobile: nextX, pos_y_mobile: nextY
                 });
                 setAddOpen(false);
                 setAddForm({ number: '', capacity: '4', status: 'VACANT' });

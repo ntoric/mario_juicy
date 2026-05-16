@@ -9,6 +9,8 @@ export interface Table {
   is_active: boolean;
   pos_x: number;
   pos_y: number;
+  pos_x_mobile: number;
+  pos_y_mobile: number;
   active_order?: Order;
   active_orders?: Order[];
 }
@@ -77,10 +79,10 @@ export const restaurantService = {
     method: "PATCH",
     body: JSON.stringify(data),
   }),
-  updateTablePosition: (id: number, pos_x: number, pos_y: number) =>
+  updateTablePosition: (id: number, data: { pos_x?: number; pos_y?: number; pos_x_mobile?: number; pos_y_mobile?: number }) =>
     fetcher(`/restaurants/tables/${id}/update_position/`, {
       method: "PATCH",
-      body: JSON.stringify({ pos_x, pos_y }),
+      body: JSON.stringify(data),
     }),
   releaseTable: (id: number) => fetcher(`/restaurants/tables/${id}/release/`, {
     method: "POST",
